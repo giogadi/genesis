@@ -46,18 +46,34 @@ GetControls: macro
     move.b \1,CONTROLLER
     endm
 
-; d0: x, d1: min, d2: max. output in d0
-Clamp:
+; d0: x, d1: min, output in d0
+ClampMin:
     cmp.w d1,d0 ; x - min
-    bge.s .ClampMax
+    bge.s .ClampMinDone
     move.w d1,d0
+.ClampMinDone:
     rts
-.ClampMax
-    cmp.w d0,d2 ; max - x
-    bge.s .ClampDone
-    move.w d2,d0
-.ClampDone
+
+; d0: x, d1: max, output in d0
+ClampMax:
+    cmp.w d0,d1 ; max - x
+    bge.s .ClampMaxDone
+    move.w d1,d0
+.ClampMaxDone:
     rts
+
+; d0: x, d1: min, d2: max. output in d0
+; Clamp:
+;     cmp.w d1,d0 ; x - min
+;     bge.s .ClampMax
+;     move.w d1,d0
+;     rts
+; .ClampMax
+;     cmp.w d0,d2 ; max - x
+;     bge.s .ClampDone
+;     move.w d2,d0
+; .ClampDone
+;     rts
 
 @test_psg:
     ; Set pitch of channel 0.
@@ -91,12 +107,140 @@ Clamp:
 
     rts
 
-; FUNCTIONS
-
 WaitUntilFmNotBusy:
     add.b #1,d1
 fm_test_wait_loop
     move.b FM_PART1_ADDR,d0
     and.b #%10000000,d0
     bne.s fm_test_wait_loop
+    rts
+
+; tile idx in d0
+DoesTileCollide:
+    move.l #TILEMAP_RAM,a0
+    ; need to move d0 words forward, which is the same as 2*d0 bytes.
+    lsl.w #1,d0
+    add.w d0,a0
+    move.w (a0),d0
+    ; now d0 holds the index into TileCollisions we need to check.
+    move.l #TILE_COLLISIONS,a0
+    ; need to move d0 words forward, which is the same as 2*d0 bytes.
+    lsl.w #1,d0
+    add.w d0,a0
+    ; now load in the collision info to d0
+    move.w (a0),d0
+    rts
+
+; x in d0, y in d1. outputs result in d0. 0 if collision-free, 1 if collision
+CheckCollisions:
+    ; get the tile that CURRENT_X,CURRENT_Y corresponds to.
+    ; first we have translate such that (0,0) corresponds to top-left of tilemap.
+    sub.w #MIN_DISPLAY_X,d0
+    sub.w #MIN_DISPLAY_Y,d1
+    ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
+    lsr.w #3,d0 ; divide by 8 (tile width)
+    lsr.w #3,d1
+    ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index. Oh lord,
+    ; this means querying the tilemap at this location to get the tileset value, and then querying
+    ; the collision data for that tileset value. omg
+    ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
+    mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
+    add.w d1,d0
+    move.w d0,d1
+    ; d0 and d1 now both hold our tile index. We gotta check this tile and the neighboring tiles that the hero
+    ; is also touching. Because the hero position is on the top-left corner of the sprite, we only
+    ; need to check right and down. So we should *always* check 6 cells in the 2x3 area of the sprite.
+    ; we'll also check the next column/row over for offset within the top-left cell.
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0 ; put tile index back in d0
+    add.w #1,d0 ; (1,0)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #2,d0 ; (2,0)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #40,d0 ; (0,1)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #41,d0 ; (1,1)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #42,d0 ; (2,1)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #80,d0 ; (0,2)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #81,d0 ; (1,2)
+    jsr DoesTileCollide
+    tst.w d0
+    bne.s .CheckCollisionsDone
+    move.w d1,d0
+    add.w #82,d0 ; (2,2)
+    jsr DoesTileCollide
+    tst.w d0
+    ;bne.s .CheckCollisionsDone
+.CheckCollisionsDone:
+    rts
+
+
+; x in d0, y in d1. outputs result in d0. 0 if collision-free, 1 if collision
+CheckCollisionsPositionOnly:
+    ; get the tile that CURRENT_X,CURRENT_Y corresponds to.
+    ; first we have translate such that (0,0) corresponds to top-left of tilemap.
+    sub.w #MIN_DISPLAY_X,d0
+    sub.w #MIN_DISPLAY_Y,d1
+    ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
+    lsr.w #3,d0 ; divide by 8 (tile width)
+    lsr.w #3,d1
+    ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index. Oh lord,
+    ; this means querying the tilemap at this location to get the tileset value, and then querying
+    ; the collision data for that tileset value. omg
+    ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
+    mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
+    add.w d1,d0
+    ; Now d0 is our tile index. Check the tilemap+collision-table if this tile collides.
+    jsr DoesTileCollide
+    rts
+
+SetLeftIdleAnim:
+    move.w #SAMURAI_SPRITE_TILE_START,ANIM_START_INDEX
+    move.w #SAMURAI_SPRITE_TILE_START,ANIM_LAST_INDEX
+    move.w #SAMURAI_SPRITE_TILE_START,ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+SetRightIdleAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+2*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+2*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+2*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+SetWalkLeftAnim:
+    move.w #SAMURAI_SPRITE_TILE_START,ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+6),ANIM_LAST_INDEX
+    move.w #SAMURAI_SPRITE_TILE_START,ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+SetWalkRightAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+2*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+3*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+2*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
     rts

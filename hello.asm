@@ -130,16 +130,23 @@ CRAM_MAX_ADDR:    equ $7F
 VSRAM_MAX_ADDR:   equ $4F
 
 RAM_BASE_ADDR:  equ $FF0000
-NEW_FRAME: equ RAM_BASE_ADDR
+    setso RAM_BASE_ADDR
+NEW_FRAME: so.w 1
+
 ; SACBRLDU
-CONTROLLER: equ NEW_FRAME+2
-CURRENT_X: equ CONTROLLER+2
-CURRENT_Y: equ CURRENT_X+2
+CONTROLLER: so.w 1
+CURRENT_X: so.w 1
+CURRENT_Y: so.w 1
 
 MIN_DISPLAY_X: equ 128
 MAX_DISPLAY_X: equ 447
 MIN_DISPLAY_Y: equ 128
 MAX_DISPLAY_Y: equ 351
+
+ANIM_START_INDEX: so.w 1
+ANIM_LAST_INDEX: so.w 1
+ANIM_CURRENT_INDEX: so.w 1
+ANIM_STRIDE: so.w 1
 
     include util.asm
 
@@ -301,22 +308,46 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 ; Load in one simple tile at 2nd loc. Need to start writing to VRAM at $0020 = %0000 0000 0010 0000
 ; NOTE: we don't set the autoincrement to 4 because when 68k does longword writes to VDP, VDP
 ; interprets as 2 separate word writes, so the increment between each of these should still be 2.
-    TILE_SIZE: equ $0020
-    TILE_INDEX: equ 1
-    move.l #(TILE_SIZE*TILE_INDEX),d0
+TILE_SIZE: equ $0020
+FIRST_TILE_INDEX: equ 1
+    move.l #(TILE_SIZE*FIRST_TILE_INDEX),d0
     SetVramAddr d0,d1
     
-    move #(2*24)-1,d0
-    move.l #SamuraiSprite,a0
+SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
+NUM_SAMURAI_TILES: equ (3*2*4)
+    move #(8*NUM_SAMURAI_TILES)-1,d0
+    move.l #SamuraiLeft1Sprite,a0
 @samurai_sprite_load_loop
     move.l (a0)+,vdp_data
     dbra d0,@samurai_sprite_load_loop
 
-    move #(8*30)-1,d0
+TILE_SET_SIZE: equ 30
+TILE_SET_START_INDEX: equ (SAMURAI_SPRITE_TILE_START+NUM_SAMURAI_TILES)
+    move.w #(8*TILE_SET_SIZE)-1,d0
     move.l #TileSet,a0
 @tileset_load_loop
     move.l (a0)+,vdp_data
     dbra d0,@tileset_load_loop
+
+; Now we load the collision data of the above tileset.
+TILE_COLLISIONS: so.w TILE_SET_SIZE
+    move.w #TILE_SET_SIZE-1,d0
+    move.l #TileCollisions,a0
+    move.l #TILE_COLLISIONS,a1
+.tile_collisions_load_loop
+    move.w (a0)+,(a1)+
+    dbra d0,.tile_collisions_load_loop
+
+; Dump the tilemap into RAM for easy access, like for collision data.
+; TODO: maybe figure out how to dedup this with the vram load below.
+TILEMAP_SIZE: equ 40*28
+TILEMAP_RAM: so.w TILEMAP_SIZE
+    move.w #TILEMAP_SIZE-1,d0
+    move.l #TileMap,a0
+    move.l #TILEMAP_RAM,a1
+@tilemap_ram_load_loop
+    move.w (a0)+,(a1)+
+    dbra d0,@tilemap_ram_load_loop
 
 ; Now let's set the entire scroll table to be one tile
 ; We start placing stuff in SCROLL_A_BASE_ADDR. Scroll A is currently set to 
@@ -332,7 +363,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w #SCROLL_A_BASE_ADDR,d0
     SetVramAddr d0,d1
     
-; So now we load our tilemap. We're assuming the tilemap has 40*28 tiles. This is meant to be exactly
+; So now we load our tilemap into VRAM. We're assuming the tilemap has 40*28 tiles. This is meant to be exactly
 ; big enough to cover the visible portion of scroll field A. However, this 40x28 area of tiles must be
 ; placed in a larger area of 64x32 tiles (the entire scroll field). The 40x28 area is located in the
 ; top-left corner of the scroll field. So we loop over each of the 64x32 tiles and check if we're in
@@ -351,7 +382,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     cmp.b d3,d5
     ble.s @outside_window
     move.w (a0)+,d1
-    add.w #7,d1
+    add.w #TILE_SET_START_INDEX,d1
     bra.s @move_into_vram
 @outside_window
     clr.w d1
@@ -365,6 +396,9 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 @samerow
     dbra d0,@tilemap_load_loop
 
+; start with default/idle animation
+    jsr SetLeftIdleAnim
+
 ; Now let's add a sprite!!!!!
     move.w #SPRITE_TABLE_BASE_ADDR,d0
     SetVramAddr d0,d1
@@ -372,7 +406,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 ; That means [287,239] or [%100011111,%11101111]
     move.w #%0000000011101111,vdp_data
     move.w #%0000011000000000,vdp_data
-    move.w #%0000000000000001,vdp_data
+    move.w ANIM_CURRENT_INDEX,vdp_data
     move.w #%0000000100011111,vdp_data
 
 ; FM TEST FM TEST FM TEST
@@ -381,70 +415,154 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 ; MAIN PROGRAM
 ; ------------------------------------------------------------------------------
 __main
-    move.w  #0,d0
-    move.w #VDPREG_INCR|$02,(vdp_control) ; autoincrement vram by 2 bytes
-    move.l  #$C0000003,vdp_control ; Set up VDP to write to CRAM address $0000
-
 ; PSG test.
     ;jsr @test_psg
 
-    ; set VRAM increment to 6 to go directly from V to H
-    move.w  #VDPREG_INCR|$06,vdp_control 
-
     move.w #287,CURRENT_X
     move.w #239,CURRENT_Y
+
+LEFT_IDLE_STATE: equ 0
+RIGHT_IDLE_STATE: equ 1
+WALK_LEFT_STATE: equ 2
+WALK_RIGHT_STATE: equ 3
+PREVIOUS_ANIM_STATE: so.w 1
+    move.w #LEFT_IDLE_STATE,PREVIOUS_ANIM_STATE
+
+
+ITERATIONS_PER_ANIM_FRAME: equ 20
+ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
+    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 loop
-    GetControls d7,d3
+    GetControls d0,d1
 
     clr.w d4 ; dx = 0
     clr.w d5 ; dy = 0
-    move.w #2,d3 ; velocity
+    move.w #1,d3 ; velocity
+
+    ; new anim state. default to anim facing previous direction first.
+    move.w PREVIOUS_ANIM_STATE,d1
+    move.w #LEFT_IDLE_STATE,d0
+    cmp.w d1,d0
+    beq.s .LeftIdleDefault
+    move.w #WALK_LEFT_STATE,d0
+    cmp.w d1,d0
+    beq.s .LeftIdleDefault
+    bra.s .RightIdleDefault
+.LeftIdleDefault
+    move.w #LEFT_IDLE_STATE,d2
+    beq.s .AfterDefaultIdle
+.RightIdleDefault
+    move.w #RIGHT_IDLE_STATE,d2
+.AfterDefaultIdle
 
     move.b CONTROLLER,d7
     moveq #1,d6 ; up mask
     and.b d7,d6 ; is up pressed?
     beq.s .UpNotPressed
     sub.w d3,d5
+    move.w #WALK_RIGHT_STATE,d2
 .UpNotPressed
     lsr.b #1,d7 ; now down is lsb
     moveq #1,d6 ; down mask
     and.b d7,d6 ; is down pressed?
     beq.s .DownNotPressed
     add.w d3,d5
+    move.w #WALK_LEFT_STATE,d2
 .DownNotPressed
     lsr.b #1,d7 ; now left is lsb
     moveq #1,d6 ; left mask
     and.b d7,d6 ; is left pressed?
     beq.s .LeftNotPressed
     sub.w d3,d4
+    move.w #WALK_LEFT_STATE,d2
 .LeftNotPressed
     lsr.b #1,d7 ; now right is lsb
     moveq #1,d6 ; right mask
     and.b d7,d6 ; is right pressed?
     beq.s .RightNotPressed
     add.w d3,d4
+    move.w #WALK_RIGHT_STATE,d2
 .RightNotPressed
-    add.w d4,CURRENT_X ; update current_x
-    add.w d5,CURRENT_Y ; update current_y
+    ; TODO: figure out a way to not require d4/d5 to stay set all the way until clamping below.
+    add.w CURRENT_X,d4 ; new x in d4
+    add.w CURRENT_Y,d5 ; new y in d5
+
+    cmp.w PREVIOUS_ANIM_STATE,d2
+    beq.s .AfterAnimStateUpdate
+    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+    move.w d2,PREVIOUS_ANIM_STATE
+    cmp.w #LEFT_IDLE_STATE,d2
+    bne.s .NotIdleLeft
+    jsr SetLeftIdleAnim
+.NotIdleLeft
+    cmp.w #RIGHT_IDLE_STATE,d2
+    bne.s .NotIdleRight
+    jsr SetRightIdleAnim
+.NotIdleRight
+    cmp.w #WALK_LEFT_STATE,d2
+    bne.s .NotWalkLeft
+    jsr SetWalkLeftAnim
+.NotWalkLeft
+    cmp.w #WALK_RIGHT_STATE,d2
+    bne.s .AfterAnimStateUpdate ; shouldn't happen
+    jsr SetWalkRightAnim
+.AfterAnimStateUpdate
 
     ; clamp sprite x
-    move.w CURRENT_X,d0
+    move.w d4,d0
     move.w #MIN_DISPLAY_X,d1
-    move.w #MAX_DISPLAY_X,d2
-    jsr Clamp
-    move.w d0,CURRENT_X
+    jsr ClampMin
+    move.w #MAX_DISPLAY_X,d1
+    jsr ClampMax
+    move.w d0,d4
 
     ; clamp sprite y
-    move.w CURRENT_Y,d0
+    move.w d5,d0
     move.w #MIN_DISPLAY_Y,d1
-    move.w #MAX_DISPLAY_Y,d2
-    jsr Clamp
-    move.w d0,CURRENT_Y
-    
+    jsr ClampMin
+    move.w #MAX_DISPLAY_Y-24,d1 ; -24 is to account for sprite's origin being at top-left
+    jsr ClampMax
+    move.w d0,d5
+
+    ; check collisions
+    move.w d4,d0
+    move.w d5,d1
+    jsr CheckCollisions
+    ; clr.w d0 ; disable collision result (debug)
+    tst.w d0
+    bne.s .skipPositionUpdate
+
     ; update sprite position
+    move.w d4,CURRENT_X
+    move.w d5,CURRENT_Y
+
+.skipPositionUpdate
+
+    ; update animation
+    sub.w #1,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+    bgt.w .AfterAnimFrameIncrement
+    move.w ANIM_STRIDE,d0
+    add.w d0,ANIM_CURRENT_INDEX
+    move.w ANIM_LAST_INDEX,d0
+    cmp.w ANIM_CURRENT_INDEX,d0
+    bge.w .AfterAnimFrameFlip
+    move.w ANIM_START_INDEX,ANIM_CURRENT_INDEX
+.AfterAnimFrameFlip
+    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+.AfterAnimFrameIncrement:
+
+    ; DEBUG
+    move.w ANIM_LAST_INDEX,a4
+    move.w ITERATIONS_UNTIL_NEXT_ANIM_FRAME,a5
+    move.w ANIM_CURRENT_INDEX,a6
+
+    ; update sprite
     move.w #SPRITE_TABLE_BASE_ADDR,d0
     SetVramAddr d0,d1
     move.w CURRENT_Y,vdp_data
+    ; TODO: what's this again?
+    move.w #%0000011000000000,vdp_data
+    move.w ANIM_CURRENT_INDEX,vdp_data
     move.w CURRENT_X,vdp_data
 
 .waitNewFrame
@@ -473,10 +591,25 @@ SimplePalette:
 TileSet:
     include art/tileset.asm
 
+TileCollisions:
+    include art/tile_collisions.asm
+
 TileMap:
     include art/tilemap.asm
 
 SamuraiSprite:
     include art/samurai_sprite.asm
+
+SamuraiLeft1Sprite:
+    include art/samurai/left1.asm
+
+SamuraiLeft2Sprite:
+    include art/samurai/left2.asm
+
+SamuraiRight1Sprite:
+    include art/samurai/right1.asm
+
+SamuraiRight2Sprite:
+    include art/samurai/right2.asm
 
 __end:
