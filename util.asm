@@ -40,6 +40,7 @@ GetControls: macro
     move.b $A10003,\2 ; get next few buttons
     not.b \2
     ; now reorganize buttons into d7 as SACBRLDU
+    and.b #$3F,\1
     and.b #$30,\2
     lsl.b #2,\2
     or.b \2,\1

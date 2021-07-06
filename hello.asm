@@ -131,10 +131,22 @@ VSRAM_MAX_ADDR:   equ $4F
 
 RAM_BASE_ADDR:  equ $FF0000
     setso RAM_BASE_ADDR
+; DEBUG
+OR_CONTROLLER: so.w 1
+    clr.w OR_CONTROLLER
 NEW_FRAME: so.w 1
 
 ; SACBRLDU
 CONTROLLER: so.w 1
+UP_BIT: equ 0
+DOWN_BIT: equ 1
+LEFT_BIT: equ 2
+RIGHT_BIT: equ 3
+B_BIT: equ 4
+C_BIT: equ 5
+A_BIT: equ 6
+START_BIT: equ 7
+
 CURRENT_X: so.w 1
 CURRENT_Y: so.w 1
 
@@ -329,7 +341,16 @@ TILE_SET_START_INDEX: equ (SAMURAI_SPRITE_TILE_START+NUM_SAMURAI_TILES)
     move.l (a0)+,vdp_data
     dbra d0,@tileset_load_loop
 
-; Now we load the collision data of the above tileset.
+; Load sword slash sprite (4x3 tiles) into VRAM
+SLASH_SPRITE_TILE_START: equ (TILE_SET_START_INDEX+TILE_SET_SIZE)
+SLASH_SPRITE_TILE_SIZE: equ (4*3)
+    move.w #(8*SLASH_SPRITE_TILE_SIZE)-1,d0
+    move.l #SlashRightSprite,a0
+@slash_sprite_load_loop
+    move.l (a0)+,vdp_data
+    dbra d0,@slash_sprite_load_loop
+
+; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w #TILE_SET_SIZE-1,d0
     move.l #TileCollisions,a0
@@ -340,6 +361,8 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
 
 ; Dump the tilemap into RAM for easy access, like for collision data.
 ; TODO: maybe figure out how to dedup this with the vram load below.
+; TODO: Do we even need to do this? Should we just keep it in ROM and access it directly?
+; Is that faster/slower?
 TILEMAP_SIZE: equ 40*28
 TILEMAP_RAM: so.w TILEMAP_SIZE
     move.w #TILEMAP_SIZE-1,d0
@@ -400,7 +423,8 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
     jsr SetLeftIdleAnim
 
 ; Now let's add a sprite!!!!!
-    move.w #SPRITE_TABLE_BASE_ADDR,d0
+SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
+    move.w #SAMURAI_SPRITE_ADDR,d0
     SetVramAddr d0,d1
 ; Then we make a sprite attribute entry. It's 8 bytes. Let's set it smack-dab in the middle.
 ; That means [287,239] or [%100011111,%11101111]
@@ -408,6 +432,8 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
     move.w #%0000011000000000,vdp_data
     move.w ANIM_CURRENT_INDEX,vdp_data
     move.w #%0000000100011111,vdp_data
+
+SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
 
 ; FM TEST FM TEST FM TEST
     include fm_test.asm
@@ -428,12 +454,28 @@ WALK_RIGHT_STATE: equ 3
 PREVIOUS_ANIM_STATE: so.w 1
     move.w #LEFT_IDLE_STATE,PREVIOUS_ANIM_STATE
 
+FACING_UP: equ 0
+FACING_DOWN: equ 1
+FACING_LEFT: equ 2
+FACING_RIGHT: equ 3
+FACING_DIRECTION: so.w 1
+    move.w #FACING_LEFT,FACING_DIRECTION
+
+SLASH_COOLDOWN_ITERS: equ 30
+ITERS_TIL_CAN_SLASH: so.w 1
+    move.w #0,ITERS_TIL_CAN_SLASH
 
 ITERATIONS_PER_ANIM_FRAME: equ 20
 ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+
 loop
     GetControls d0,d1
+    ;DEBUG
+    move.w OR_CONTROLLER,d0
+    or.w CONTROLLER,d0
+    move.w d0,OR_CONTROLLER
+    
 
     clr.w d4 ; dx = 0
     clr.w d5 ; dy = 0
@@ -456,32 +498,29 @@ loop
 .AfterDefaultIdle
 
     move.b CONTROLLER,d7
-    moveq #1,d6 ; up mask
-    and.b d7,d6 ; is up pressed?
+    btst.l #UP_BIT,d7
     beq.s .UpNotPressed
     sub.w d3,d5
     move.w #WALK_RIGHT_STATE,d2
+    move.w #FACING_UP,FACING_DIRECTION
 .UpNotPressed
-    lsr.b #1,d7 ; now down is lsb
-    moveq #1,d6 ; down mask
-    and.b d7,d6 ; is down pressed?
+    btst.l #DOWN_BIT,d7
     beq.s .DownNotPressed
     add.w d3,d5
     move.w #WALK_LEFT_STATE,d2
+    move.w #FACING_DOWN,FACING_DIRECTION
 .DownNotPressed
-    lsr.b #1,d7 ; now left is lsb
-    moveq #1,d6 ; left mask
-    and.b d7,d6 ; is left pressed?
+    btst.l #LEFT_BIT,d7
     beq.s .LeftNotPressed
     sub.w d3,d4
     move.w #WALK_LEFT_STATE,d2
+    move.w #FACING_LEFT,FACING_DIRECTION
 .LeftNotPressed
-    lsr.b #1,d7 ; now right is lsb
-    moveq #1,d6 ; right mask
-    and.b d7,d6 ; is right pressed?
+    btst.l #RIGHT_BIT,d7
     beq.s .RightNotPressed
     add.w d3,d4
     move.w #WALK_RIGHT_STATE,d2
+    move.w #FACING_RIGHT,FACING_DIRECTION
 .RightNotPressed
     ; TODO: figure out a way to not require d4/d5 to stay set all the way until clamping below.
     add.w CURRENT_X,d4 ; new x in d4
@@ -551,19 +590,71 @@ loop
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 .AfterAnimFrameIncrement:
 
-    ; DEBUG
-    move.w ANIM_LAST_INDEX,a4
-    move.w ITERATIONS_UNTIL_NEXT_ANIM_FRAME,a5
-    move.w ANIM_CURRENT_INDEX,a6
-
     ; update sprite
-    move.w #SPRITE_TABLE_BASE_ADDR,d0
+    move.w #SAMURAI_SPRITE_ADDR,d0
     SetVramAddr d0,d1
     move.w CURRENT_Y,vdp_data
-    ; TODO: what's this again?
-    move.w #%0000011000000000,vdp_data
+    ; 2x3 sprite, AND with a link to the next sprite. Not sure yet how link data works,
+    ; but without the 1 at the end there we won't see the next sprite.
+    move.w #%0000011000000001,vdp_data
     move.w ANIM_CURRENT_INDEX,vdp_data
     move.w CURRENT_X,vdp_data
+
+    ; SLASH
+    ; move.w #SLASH_SPRITE_ADDR,d0
+    ; SetVramAddr d0,d1
+    move ITERS_TIL_CAN_SLASH,d0
+    beq.s .AfterSlashCounter
+    sub.w #1,d0
+    move.w d0,ITERS_TIL_CAN_SLASH
+.AfterSlashCounter
+    bne.w .NoSlash ; is slash counter 0?
+    move.b CONTROLLER,d0
+    btst.l #A_BIT,d0
+    beq.s .NoSlash
+    move.w #SLASH_COOLDOWN_ITERS,ITERS_TIL_CAN_SLASH ; reset slash cooldown
+    ; figure out position of slash sprite
+    move.w CURRENT_X,d0
+    move.w CURRENT_Y,d1
+    clr.w d2 ; used for reversing sprite direction
+    move.l #.SlashDirectionJumpTable,a0
+    move.w FACING_DIRECTION,d3 ; offset in longs into jump table
+    lsl.l #2,d3 ; translate longs into bytes
+    add.l d3,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+    ; TODO: consider making the entries into actual branch instructions.
+    ; Can be 2 cycles faster apparently?
+.SlashDirectionJumpTable dc.l .SlashUp,.SlashDown,.SlashLeft,.SlashRight
+.SlashUp
+    sub.w #24,d1
+    bra.s .AfterSlashDirection
+.SlashDown
+    add.w #24,d1
+    bra.s .AfterSlashDirection
+.SlashLeft
+    sub.w #32,d0
+    or.w #$0800,d2
+    bra.s .AfterSlashDirection
+.SlashRight
+    add.w #16,d0
+.AfterSlashDirection
+    move.w d1,vdp_data
+    move.w #%1000111000000000,vdp_data ; 4x3
+    move.w #SLASH_SPRITE_TILE_START,d3
+    or.w d2,d3
+    move.w d3,vdp_data
+    move.w d0,vdp_data
+    bra.s .AfterSlash
+.NoSlash
+    ; clear slash sprite from VRAM
+    move.w #0,vdp_data
+    move.w #0,vdp_data
+    move.w #0,vdp_data
+    move.w #0,vdp_data
+.AfterSlash
+
 
 .waitNewFrame
     cmp.b #1,NEW_FRAME
@@ -611,5 +702,8 @@ SamuraiRight1Sprite:
 
 SamuraiRight2Sprite:
     include art/samurai/right2.asm
+
+SlashRightSprite:
+    include art/slash_sprite.asm
 
 __end:
