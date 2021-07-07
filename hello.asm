@@ -160,6 +160,15 @@ ANIM_LAST_INDEX: so.w 1
 ANIM_CURRENT_INDEX: so.w 1
 ANIM_STRIDE: so.w 1
 
+MAX_NUM_ENEMIES: equ 5
+ENEMY_ALIVE: so.w MAX_NUM_ENEMIES
+ENEMY_X: so.w MAX_NUM_ENEMIES
+ENEMY_Y: so.w MAX_NUM_ENEMIES
+ENEMY_SIZE: so.w MAX_NUM_ENEMIES
+ENEMY_SPRITE_TILE_START: so.w MAX_NUM_ENEMIES
+
+SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
+
     include util.asm
 
 ; INIT
@@ -358,6 +367,14 @@ VERT_SLASH_SPRITE_TILE_SIZE: equ (3*4)
     move.l (a0)+,vdp_data
     dbra d0,@vert_slash_sprite_load_loop
 
+BUTT_SPRITE_TILE_START: equ (VERT_SLASH_SPRITE_TILE_START+VERT_SLASH_SPRITE_TILE_SIZE)
+BUTT_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*BUTT_SPRITE_TILE_SIZE)-1,d0
+    move.l #ButtSprite,a0
+@butt_sprite_load_loop
+    move.l (a0)+,vdp_data
+    dbra d0,@butt_sprite_load_loop
+
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w #TILE_SET_SIZE-1,d0
@@ -442,6 +459,23 @@ SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
     move.w #%0000000100011111,vdp_data
 
 SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
+
+BUTT_SPRITE_ADDR: equ SLASH_SPRITE_ADDR+8
+
+; Place two enemies
+    move.l #ENEMY_ALIVE,a0
+    move.l #ENEMY_X,a1
+    move.l #ENEMY_Y,a2
+    move.l #ENEMY_SPRITE_TILE_START,a3
+    move.w #1,(a0)+
+    move.w #287,(a1)+
+    move.w #180,(a2)+
+    move.w #BUTT_SPRITE_TILE_START,(a3)+
+    move.w #1,(a0)+
+    move.w #240,(a1)+
+    move.w #180,(a2)+
+    move.w #BUTT_SPRITE_TILE_START,(a3)+
+
 
 ; FM TEST FM TEST FM TEST
     include fm_test.asm
@@ -596,16 +630,21 @@ loop
 .AfterAnimFrameIncrement:
 
     ; update sprites
+    move.w #0,SPRITE_COUNTER 
 
     move.w #SAMURAI_SPRITE_ADDR,d0
     SetVramAddr d0,d1
     move.w CURRENT_Y,vdp_data
     ; 2x3 sprite, AND with a link to the next sprite. Not sure yet how link data works,
     ; but without the 1 at the end there we won't see the next sprite.
-    move.w #%0000011000000001,vdp_data
+    move.w #$0600,d0 ; 2x3
+    add.w #1,SPRITE_COUNTER
+    or.w SPRITE_COUNTER,d0
+    move.w d0,vdp_data
     move.w ANIM_CURRENT_INDEX,vdp_data
     move.w CURRENT_X,vdp_data
 
+    add.w #1,SPRITE_COUNTER ; whether we slash or not we have a sprite for it
     tst.w SLASH_ON_THIS_FRAME
     beq.w .NoSlash
     ; figure out position/orientation/image of slash sprite
@@ -625,6 +664,7 @@ loop
     sub.w #24,d1
     move.w #VERT_SLASH_SPRITE_TILE_START,d4
     move.w #$0B00,d3 ; 3x4
+    or.w SPRITE_COUNTER,d3
     bra.s .AfterSlashDirection
 .SlashDown
     add.w #24,d1
@@ -646,18 +686,43 @@ loop
     ; move.w #SLASH_SPRITE_ADDR,d0
     ; SetVramAddr d0,d1
     move.w d1,vdp_data
+    or.w SPRITE_COUNTER,d3 ; link to next sprite
     move.w d3,vdp_data
     move.w d4,vdp_data
     move.w d0,vdp_data
     bra.s .AfterSlash
 .NoSlash
-    ; clear slash sprite from VRAM
+    ; don't draw slash sprite (but give it a proper link data)
     move.w #0,vdp_data
-    move.w #0,vdp_data
+    move.w SPRITE_COUNTER,vdp_data ; link to next sprite
     move.w #0,vdp_data
     move.w #0,vdp_data
 .AfterSlash
 
+; Butt enemy
+    move.w #MAX_NUM_ENEMIES-1,d0
+    move.l #ENEMY_ALIVE,a0
+    move.l #ENEMY_X,a1
+    move.l #ENEMY_Y,a2
+    move.l #ENEMY_SPRITE_TILE_START,a3
+.EnemySpriteLoop
+    move.w (a0)+,d1 ; alive?
+    beq.s .EnemySpriteLoopEnd
+    add.w #1,SPRITE_COUNTER
+    move.w (a1)+,d1 ; x
+    move.w (a2)+,d2 ; y
+    move.w (a3)+,d3 ; tile index
+    move.w #$0500,d4 ; 2x2
+    tst.w d0
+    beq.s .AfterLinkDataSet ; if this is the last enemy, leave link data at 0
+    or.w SPRITE_COUNTER,d4
+.AfterLinkDataSet
+    move.w d2,vdp_data
+    move.w d4,vdp_data
+    move.w d3,vdp_data
+    move.w d1,vdp_data
+.EnemySpriteLoopEnd
+    dbra d0,.EnemySpriteLoop
 
 .waitNewFrame
     cmp.b #1,NEW_FRAME
@@ -717,5 +782,8 @@ SlashRightSprite:
 
 SlashUpSprite:
     include art/slash_vertical.asm
+
+ButtSprite:
+    include art/butt.asm
 
 __end:
