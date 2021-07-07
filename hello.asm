@@ -342,13 +342,21 @@ TILE_SET_START_INDEX: equ (SAMURAI_SPRITE_TILE_START+NUM_SAMURAI_TILES)
     dbra d0,@tileset_load_loop
 
 ; Load sword slash sprite (4x3 tiles) into VRAM
-SLASH_SPRITE_TILE_START: equ (TILE_SET_START_INDEX+TILE_SET_SIZE)
-SLASH_SPRITE_TILE_SIZE: equ (4*3)
-    move.w #(8*SLASH_SPRITE_TILE_SIZE)-1,d0
+HORIZ_SLASH_SPRITE_TILE_START: equ (TILE_SET_START_INDEX+TILE_SET_SIZE)
+HORIZ_SLASH_SPRITE_TILE_SIZE: equ (4*3)
+    move.w #(8*HORIZ_SLASH_SPRITE_TILE_SIZE)-1,d0
     move.l #SlashRightSprite,a0
-@slash_sprite_load_loop
+@horiz_slash_sprite_load_loop
     move.l (a0)+,vdp_data
-    dbra d0,@slash_sprite_load_loop
+    dbra d0,@horiz_slash_sprite_load_loop
+
+VERT_SLASH_SPRITE_TILE_START: equ (HORIZ_SLASH_SPRITE_TILE_START+HORIZ_SLASH_SPRITE_TILE_SIZE)
+VERT_SLASH_SPRITE_TILE_SIZE: equ (3*4)
+    move.w #(8*VERT_SLASH_SPRITE_TILE_SIZE)-1,d0
+    move.l #SlashUpSprite,a0
+@vert_slash_sprite_load_loop
+    move.l (a0)+,vdp_data
+    dbra d0,@vert_slash_sprite_load_loop
 
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
@@ -588,7 +596,7 @@ loop
 .AfterAnimFrameIncrement:
 
     ; update sprites
-    
+
     move.w #SAMURAI_SPRITE_ADDR,d0
     SetVramAddr d0,d1
     move.w CURRENT_Y,vdp_data
@@ -599,11 +607,10 @@ loop
     move.w CURRENT_X,vdp_data
 
     tst.w SLASH_ON_THIS_FRAME
-    beq.s .NoSlash
-    ; figure out position of slash sprite
+    beq.w .NoSlash
+    ; figure out position/orientation/image of slash sprite
     move.w CURRENT_X,d0
     move.w CURRENT_Y,d1
-    clr.w d2 ; used for reversing sprite direction
     move.l #.SlashDirectionJumpTable,a0
     move.w FACING_DIRECTION,d3 ; offset in longs into jump table
     lsl.l #2,d3 ; translate longs into bytes
@@ -616,24 +623,31 @@ loop
 .SlashDirectionJumpTable dc.l .SlashUp,.SlashDown,.SlashLeft,.SlashRight
 .SlashUp
     sub.w #24,d1
+    move.w #VERT_SLASH_SPRITE_TILE_START,d4
+    move.w #$0B00,d3 ; 3x4
     bra.s .AfterSlashDirection
 .SlashDown
     add.w #24,d1
+    move.w #VERT_SLASH_SPRITE_TILE_START,d4
+    move.w #$0B00,d3 ; 3x4
+    bset.l #$0C,d4 ; v-flip
     bra.s .AfterSlashDirection
 .SlashLeft
     sub.w #32,d0
-    or.w #$0800,d2
+    move.w #HORIZ_SLASH_SPRITE_TILE_START,d4
+    move.w #$0E00,d3 ; 4x3
+    bset.l #$0B,d4 ; h-flip
     bra.s .AfterSlashDirection
 .SlashRight
     add.w #16,d0
+    move.w #HORIZ_SLASH_SPRITE_TILE_START,d4
+    move.w #$0E00,d3 ; 4x3
 .AfterSlashDirection
     ; move.w #SLASH_SPRITE_ADDR,d0
     ; SetVramAddr d0,d1
     move.w d1,vdp_data
-    move.w #%1000111000000000,vdp_data ; 4x3
-    move.w #SLASH_SPRITE_TILE_START,d3
-    or.w d2,d3
     move.w d3,vdp_data
+    move.w d4,vdp_data
     move.w d0,vdp_data
     bra.s .AfterSlash
 .NoSlash
@@ -700,5 +714,8 @@ SamuraSlashRightSprite:
 
 SlashRightSprite:
     include art/slash_sprite.asm
+
+SlashUpSprite:
+    include art/slash_vertical.asm
 
 __end:
