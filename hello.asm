@@ -326,7 +326,7 @@ FIRST_TILE_INDEX: equ 1
     SetVramAddr d0,d1
     
 SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
-NUM_SAMURAI_TILES: equ (3*2*4)
+NUM_SAMURAI_TILES: equ (3*2*6)
     move #(8*NUM_SAMURAI_TILES)-1,d0
     move.l #SamuraiLeft1Sprite,a0
 @samurai_sprite_load_loop
@@ -451,8 +451,12 @@ LEFT_IDLE_STATE: equ 0
 RIGHT_IDLE_STATE: equ 1
 WALK_LEFT_STATE: equ 2
 WALK_RIGHT_STATE: equ 3
+SLASH_LEFT_STATE: equ 4
+SLASH_RIGHT_STATE: equ 5
 PREVIOUS_ANIM_STATE: so.w 1
     move.w #LEFT_IDLE_STATE,PREVIOUS_ANIM_STATE
+NEW_ANIM_STATE: so.w 1
+    move.w PREVIOUS_ANIM_STATE,NEW_ANIM_STATE
 
 FACING_UP: equ 0
 FACING_DOWN: equ 1
@@ -464,10 +468,14 @@ FACING_DIRECTION: so.w 1
 SLASH_COOLDOWN_ITERS: equ 30
 ITERS_TIL_CAN_SLASH: so.w 1
     move.w #0,ITERS_TIL_CAN_SLASH
+SLASH_ON_THIS_FRAME: so.w 1
+    move.w #0,SLASH_ON_THIS_FRAME
 
 ITERATIONS_PER_ANIM_FRAME: equ 20
 ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+
+HERO_SPEED: equ 1
 
 loop
     GetControls d0,d1
@@ -476,76 +484,59 @@ loop
     or.w CONTROLLER,d0
     move.w d0,OR_CONTROLLER
     
-
     clr.w d4 ; dx = 0
     clr.w d5 ; dy = 0
-    move.w #1,d3 ; velocity
+    clr.w SLASH_ON_THIS_FRAME ; reset slash bit
 
-    ; new anim state. default to anim facing previous direction first.
-    move.w PREVIOUS_ANIM_STATE,d1
-    move.w #LEFT_IDLE_STATE,d0
-    cmp.w d1,d0
-    beq.s .LeftIdleDefault
-    move.w #WALK_LEFT_STATE,d0
-    cmp.w d1,d0
-    beq.s .LeftIdleDefault
-    bra.s .RightIdleDefault
-.LeftIdleDefault
-    move.w #LEFT_IDLE_STATE,d2
-    beq.s .AfterDefaultIdle
-.RightIdleDefault
-    move.w #RIGHT_IDLE_STATE,d2
-.AfterDefaultIdle
+    ; default to anim facing previous direction first.
+    move.l #.DefaultAnimJumpTable,a0
+    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.DefaultAnimJumpTable dc.l .DefaultFacingUp,.DefaultFacingDown,.DefaultFacingLeft,.DefaultFacingRight
+.DefaultFacingUp
+    move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
+    bra.s .AfterDefaultAnim
+.DefaultFacingDown
+    move.w #LEFT_IDLE_STATE,NEW_ANIM_STATE
+    bra.s .AfterDefaultAnim
+.DefaultFacingLeft
+    move.w #LEFT_IDLE_STATE,NEW_ANIM_STATE
+    bra.s .AfterDefaultAnim
+.DefaultFacingRight
+    move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
+.AfterDefaultAnim
 
     move.b CONTROLLER,d7
     btst.l #UP_BIT,d7
     beq.s .UpNotPressed
-    sub.w d3,d5
-    move.w #WALK_RIGHT_STATE,d2
+    sub.w #HERO_SPEED,d5
+    move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
     move.w #FACING_UP,FACING_DIRECTION
 .UpNotPressed
     btst.l #DOWN_BIT,d7
     beq.s .DownNotPressed
-    add.w d3,d5
-    move.w #WALK_LEFT_STATE,d2
+    add.w #HERO_SPEED,d5
+    move.w #WALK_LEFT_STATE,NEW_ANIM_STATE
     move.w #FACING_DOWN,FACING_DIRECTION
 .DownNotPressed
     btst.l #LEFT_BIT,d7
     beq.s .LeftNotPressed
-    sub.w d3,d4
-    move.w #WALK_LEFT_STATE,d2
+    sub.w #HERO_SPEED,d4
+    move.w #WALK_LEFT_STATE,NEW_ANIM_STATE
     move.w #FACING_LEFT,FACING_DIRECTION
 .LeftNotPressed
     btst.l #RIGHT_BIT,d7
     beq.s .RightNotPressed
-    add.w d3,d4
-    move.w #WALK_RIGHT_STATE,d2
+    add.w #HERO_SPEED,d4
+    move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
     move.w #FACING_RIGHT,FACING_DIRECTION
 .RightNotPressed
-    ; TODO: figure out a way to not require d4/d5 to stay set all the way until clamping below.
     add.w CURRENT_X,d4 ; new x in d4
     add.w CURRENT_Y,d5 ; new y in d5
-
-    cmp.w PREVIOUS_ANIM_STATE,d2
-    beq.s .AfterAnimStateUpdate
-    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-    move.w d2,PREVIOUS_ANIM_STATE
-    cmp.w #LEFT_IDLE_STATE,d2
-    bne.s .NotIdleLeft
-    jsr SetLeftIdleAnim
-.NotIdleLeft
-    cmp.w #RIGHT_IDLE_STATE,d2
-    bne.s .NotIdleRight
-    jsr SetRightIdleAnim
-.NotIdleRight
-    cmp.w #WALK_LEFT_STATE,d2
-    bne.s .NotWalkLeft
-    jsr SetWalkLeftAnim
-.NotWalkLeft
-    cmp.w #WALK_RIGHT_STATE,d2
-    bne.s .AfterAnimStateUpdate ; shouldn't happen
-    jsr SetWalkRightAnim
-.AfterAnimStateUpdate
 
     ; clamp sprite x
     move.w d4,d0
@@ -577,6 +568,12 @@ loop
 
 .skipPositionUpdate
 
+    ; check for slash. update animation if so
+    jsr CheckSlashAndUpdate
+
+    move.w NEW_ANIM_STATE,d0 ; move new anim state to d0
+    jsr UpdateAnimState
+
     ; update animation
     sub.w #1,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
     bgt.w .AfterAnimFrameIncrement
@@ -590,7 +587,8 @@ loop
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 .AfterAnimFrameIncrement:
 
-    ; update sprite
+    ; update sprites
+    
     move.w #SAMURAI_SPRITE_ADDR,d0
     SetVramAddr d0,d1
     move.w CURRENT_Y,vdp_data
@@ -600,19 +598,8 @@ loop
     move.w ANIM_CURRENT_INDEX,vdp_data
     move.w CURRENT_X,vdp_data
 
-    ; SLASH
-    ; move.w #SLASH_SPRITE_ADDR,d0
-    ; SetVramAddr d0,d1
-    move ITERS_TIL_CAN_SLASH,d0
-    beq.s .AfterSlashCounter
-    sub.w #1,d0
-    move.w d0,ITERS_TIL_CAN_SLASH
-.AfterSlashCounter
-    bne.w .NoSlash ; is slash counter 0?
-    move.b CONTROLLER,d0
-    btst.l #A_BIT,d0
+    tst.w SLASH_ON_THIS_FRAME
     beq.s .NoSlash
-    move.w #SLASH_COOLDOWN_ITERS,ITERS_TIL_CAN_SLASH ; reset slash cooldown
     ; figure out position of slash sprite
     move.w CURRENT_X,d0
     move.w CURRENT_Y,d1
@@ -640,6 +627,8 @@ loop
 .SlashRight
     add.w #16,d0
 .AfterSlashDirection
+    ; move.w #SLASH_SPRITE_ADDR,d0
+    ; SetVramAddr d0,d1
     move.w d1,vdp_data
     move.w #%1000111000000000,vdp_data ; 4x3
     move.w #SLASH_SPRITE_TILE_START,d3
@@ -702,6 +691,12 @@ SamuraiRight1Sprite:
 
 SamuraiRight2Sprite:
     include art/samurai/right2.asm
+
+SamuraSlashLeftSprite:
+    include art/samurai/slash_left.asm
+
+SamuraSlashRightSprite:
+    include art/samurai/slash_right.asm
 
 SlashRightSprite:
     include art/slash_sprite.asm

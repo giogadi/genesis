@@ -245,3 +245,87 @@ SetWalkRightAnim:
     move.w #(SAMURAI_SPRITE_TILE_START+2*6),ANIM_CURRENT_INDEX
     move.w #6,ANIM_STRIDE
     rts
+
+SetSlashLeftAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+4*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+4*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+4*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+SetSlashRightAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+5*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+5*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+5*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+; new state is in d0. d0 gets clobbered. No return value
+UpdateAnimState:
+    cmp.w PREVIOUS_ANIM_STATE,d0
+    beq.s .UpdateAnimStateEnd
+    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+    move.w d0,PREVIOUS_ANIM_STATE
+
+    move.l #.NewAnimStateJumpTable,a0
+    ; d0 is now the offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.NewAnimStateJumpTable dc.l .LeftIdle,.RightIdle,.LeftWalk,.RightWalk,.LeftSlashState,.RightSlashState
+.LeftIdle
+    jsr SetLeftIdleAnim
+    rts
+.RightIdle
+    jsr SetRightIdleAnim
+    rts
+.LeftWalk
+    jsr SetWalkLeftAnim
+    rts
+.RightWalk
+    jsr SetWalkRightAnim
+    rts
+.LeftSlashState
+    jsr SetSlashLeftAnim
+    rts
+.RightSlashState
+    jsr SetSlashRightAnim
+.UpdateAnimStateEnd
+    rts
+
+CheckSlashAndUpdate:
+    move ITERS_TIL_CAN_SLASH,d0
+    beq.s .AfterSlashCounter
+    sub.w #1,d0
+    move.w d0,ITERS_TIL_CAN_SLASH
+.AfterSlashCounter
+    bne.w .AfterSlashCheck ; is slash counter 0?
+    move.b CONTROLLER,d0
+    btst.l #A_BIT,d0
+    beq.s .AfterSlashCheck
+    move.w #SLASH_COOLDOWN_ITERS,ITERS_TIL_CAN_SLASH ; reset slash cooldown
+    move.w #1,SLASH_ON_THIS_FRAME
+    ; update animation
+    move.l #.SlashAnimJumpTable,a0
+    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.SlashAnimJumpTable dc.l .SlashFacingUp,.SlashFacingDown,.SlashFacingLeft,.SlashFacingRight
+.SlashFacingUp
+    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSlashCheck
+.SlashFacingDown
+    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSlashCheck
+.SlashFacingLeft
+    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSlashCheck
+.SlashFacingRight
+    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+.AfterSlashCheck
+    rts
