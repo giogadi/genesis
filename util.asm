@@ -265,6 +265,7 @@ UpdateAnimState:
     cmp.w PREVIOUS_ANIM_STATE,d0
     beq.s .UpdateAnimStateEnd
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+    clr.l d0
     move.w d0,PREVIOUS_ANIM_STATE
 
     move.l #.NewAnimStateJumpTable,a0
@@ -310,6 +311,7 @@ CheckSlashAndUpdate:
     move.w #1,SLASH_ON_THIS_FRAME
     ; update animation
     move.l #.SlashAnimJumpTable,a0
+    clr.l d0
     move.w FACING_DIRECTION,d0; offset in longs into jump table
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0

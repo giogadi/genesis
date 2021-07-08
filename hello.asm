@@ -169,6 +169,7 @@ ENEMY_SPRITE_TILE_START: so.w MAX_NUM_ENEMIES
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 NUM_ENEMIES_ALIVE: so.w 1 ; used for link data
+LAST_LINK_WRITTEN: so.w 1
 
     include util.asm
 
@@ -461,8 +462,6 @@ SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
 
 SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
 
-BUTT_SPRITE_ADDR: equ SLASH_SPRITE_ADDR+8
-
 ; Place two enemies
     move.l #ENEMY_ALIVE,a0
     move.l #ENEMY_X,a1
@@ -538,6 +537,7 @@ loop
 
     ; default to anim facing previous direction first.
     move.l #.DefaultAnimJumpTable,a0
+    clr.l d0
     move.w FACING_DIRECTION,d0; offset in longs into jump table
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0
@@ -714,6 +714,7 @@ loop
     move.w CURRENT_X,d0
     move.w CURRENT_Y,d1
     move.l #.SlashDirectionJumpTable,a0
+    clr.l d3
     move.w FACING_DIRECTION,d3 ; offset in longs into jump table
     lsl.l #2,d3 ; translate longs into bytes
     add.l d3,a0
@@ -781,7 +782,7 @@ loop
     add.w #1,SPRITE_COUNTER
     move.w #$0500,d5 ; 2x2
     cmp.w NUM_ENEMIES_ALIVE,d6 ; are we at last alive enemy?
-    beq .AfterLinkData ; if so, skip link data (leave it at 0)
+    ;beq .AfterLinkData ; if so, skip link data (leave it at 0)
     or.w SPRITE_COUNTER,d5
 .AfterLinkData
     move.w d3,vdp_data
@@ -792,18 +793,17 @@ loop
 .EnemySpriteLoopEnd
     dbra d0,.EnemySpriteLoop
 
-    ; TODO: why the heck doesn't this work???
     ; set last sprite's link data to 0
-    ; move.w SPRITE_COUNTER,d0
-    ; move.w d0,a5 ; DEBUG
-    ; sub.w #1,d0
-    ; lsl.w #3,d0 ; now d0 is offset in sprite-entries
-    ; add.w #SPRITE_TABLE_BASE_ADDR+2,d0 ; get to link data entry of table
-    ; move.w d0,a6 ; DEBUG
-    ; SetVramAddr d0,d1
-    ; move.w LAST_LINK_WRITTEN,d0
-    ; and.w #$FF00,d0 ; zero out link data
-    ; move.w d0,vdp_data
+    clr.l d0
+    clr.l d1
+    move.w SPRITE_COUNTER,d0
+    sub.w #1,d0
+    lsl.w #3,d0 ; now d0 is offset in sprite-entries
+    add.w #SPRITE_TABLE_BASE_ADDR+2,d0 ; get to link data entry of table
+    SetVramAddr d0,d1
+    move.w LAST_LINK_WRITTEN,d0
+    and.w #$FF00,d0 ; zero out link data
+    move.w d0,vdp_data
 
 
 .waitNewFrame
@@ -817,6 +817,7 @@ loop
     align 2 ; word-align code
 
 ignore_handler
+    move.w #$0001,a0 ; debug
     rte ; return from exception (seems to restore PC)
 
 v_interrupt_handler:
