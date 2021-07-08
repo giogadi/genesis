@@ -168,6 +168,7 @@ ENEMY_SIZE: so.w MAX_NUM_ENEMIES
 ENEMY_SPRITE_TILE_START: so.w MAX_NUM_ENEMIES
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
+NUM_ENEMIES_ALIVE: so.w 1 ; used for link data
 
     include util.asm
 
@@ -512,6 +513,11 @@ ITERS_TIL_CAN_SLASH: so.w 1
     move.w #0,ITERS_TIL_CAN_SLASH
 SLASH_ON_THIS_FRAME: so.w 1
     move.w #0,SLASH_ON_THIS_FRAME
+; these only valid if SLASH_ON_THIS_FRAME != 0
+SLASH_MIN_X: so.w 1
+SLASH_MIN_Y: so.w 1
+SLASH_MAX_X: so.w 1
+SLASH_MAX_Y: so.w 1
 
 ITERATIONS_PER_ANIM_FRAME: equ 20
 ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
@@ -629,22 +635,79 @@ loop
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 .AfterAnimFrameIncrement:
 
+    ; update enemies from slash
+    tst.w SLASH_ON_THIS_FRAME
+    beq.s .AfterSlashEnemy
+    move.w #MAX_NUM_ENEMIES-1,d0
+    move.l #ENEMY_ALIVE,a0
+    move.l #ENEMY_X,a1
+    move.l #ENEMY_Y,a2
+    move.w SLASH_MIN_X,d1
+    move.w SLASH_MAX_X,d2
+    move.w SLASH_MIN_Y,d3
+    move.w SLASH_MAX_Y,d4
+.SlashEnemyLoop
+    move.w (a0),d5 ; alive (don't increment pointer because we may update it below)
+    beq.s .SlashEnemyLoopContinue
+    ; check slash AABB against enemy's
+    move.w (a1),d5 ; min_enemy_x
+    move.w (a2),d6 ; min_enemy_y
+    cmp.w d2,d5 ; slash_max_x < min_enemy_x?
+    bgt.s .SlashEnemyLoopContinue
+    cmp.w d4,d6 ; slash_max_y < min_enemy_y?
+    bgt.s .SlashEnemyLoopContinue
+    add.w #2*8,d5 ; max_enemy_x (2x2 enemy)
+    cmp.w d5,d1 ; max_enemy_x < slash_min_x?
+    bgt.s .SlashEnemyLoopContinue
+    add.w #2*8,d6 ; max_enemy_y
+    cmp.w d6,d3 ; max_enemy_y < slash_min_y?
+    bgt.s .SlashEnemyLoopContinue
+    ; we have an overlap! kill the enemy
+    move.w #0,(a0)
+.SlashEnemyLoopContinue
+    add.w #2,a0 ; move alive pointer to next entry
+    add.w #2,a1
+    add.w #2,a2
+    dbra d0,.SlashEnemyLoop
+.AfterSlashEnemy
+
+; ugh first we're gonna loop through the enemies to find the last one alive so we can
+; correctly set its link data. ugh.
+    move.w #MAX_NUM_ENEMIES-1,d0
+    clr.w NUM_ENEMIES_ALIVE ; last-alive. we're using a reverse index here instead of actual index
+    move.l #ENEMY_ALIVE,a0
+    clr.w d2
+.LastAliveLoop
+    move.w (a0)+,d1
+    beq.s .LastAliveLoopContinue
+    add.w #1,d2
+.LastAliveLoopContinue
+    dbra d0,.LastAliveLoop
+    move.w d2,NUM_ENEMIES_ALIVE
+
     ; update sprites
     move.w #0,SPRITE_COUNTER 
 
     move.w #SAMURAI_SPRITE_ADDR,d0
     SetVramAddr d0,d1
     move.w CURRENT_Y,vdp_data
-    ; 2x3 sprite, AND with a link to the next sprite. Not sure yet how link data works,
-    ; but without the 1 at the end there we won't see the next sprite.
     move.w #$0600,d0 ; 2x3
     add.w #1,SPRITE_COUNTER
     or.w SPRITE_COUNTER,d0
     move.w d0,vdp_data
+    move.w d0,LAST_LINK_WRITTEN
     move.w ANIM_CURRENT_INDEX,vdp_data
     move.w CURRENT_X,vdp_data
 
+    ; SLASH
+    ; figure out link data. If there are no enemies then this is the last sprite, in which case it
+    ; gets no link data.
     add.w #1,SPRITE_COUNTER ; whether we slash or not we have a sprite for it
+    clr.w d5
+    tst.w NUM_ENEMIES_ALIVE
+    beq.s .SlashSpriteAfterLinkData
+    move.w SPRITE_COUNTER,d5
+.SlashSpriteAfterLinkData
     tst.w SLASH_ON_THIS_FRAME
     beq.w .NoSlash
     ; figure out position/orientation/image of slash sprite
@@ -664,7 +727,6 @@ loop
     sub.w #24,d1
     move.w #VERT_SLASH_SPRITE_TILE_START,d4
     move.w #$0B00,d3 ; 3x4
-    or.w SPRITE_COUNTER,d3
     bra.s .AfterSlashDirection
 .SlashDown
     add.w #24,d1
@@ -686,15 +748,17 @@ loop
     ; move.w #SLASH_SPRITE_ADDR,d0
     ; SetVramAddr d0,d1
     move.w d1,vdp_data
-    or.w SPRITE_COUNTER,d3 ; link to next sprite
+    or.w d5,d3 ; add link data computed way above
     move.w d3,vdp_data
+    move.w d3,LAST_LINK_WRITTEN
     move.w d4,vdp_data
     move.w d0,vdp_data
     bra.s .AfterSlash
 .NoSlash
     ; don't draw slash sprite (but give it a proper link data)
     move.w #0,vdp_data
-    move.w SPRITE_COUNTER,vdp_data ; link to next sprite
+    move.w d5,vdp_data ; link data computed way above
+    move.w d5,LAST_LINK_WRITTEN
     move.w #0,vdp_data
     move.w #0,vdp_data
 .AfterSlash
@@ -705,24 +769,42 @@ loop
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
     move.l #ENEMY_SPRITE_TILE_START,a3
+    clr.w d6 ; used to count num alive
 .EnemySpriteLoop
-    move.w (a0)+,d1 ; alive?
+    move.w (a0)+,d1 ; alive
+    move.w (a1)+,d2 ; x
+    move.w (a2)+,d3 ; y
+    move.w (a3)+,d4 ; tile index
+    tst.w d1 ; alive?
     beq.s .EnemySpriteLoopEnd
+    add.w #1,d6
     add.w #1,SPRITE_COUNTER
-    move.w (a1)+,d1 ; x
-    move.w (a2)+,d2 ; y
-    move.w (a3)+,d3 ; tile index
-    move.w #$0500,d4 ; 2x2
-    tst.w d0
-    beq.s .AfterLinkDataSet ; if this is the last enemy, leave link data at 0
-    or.w SPRITE_COUNTER,d4
-.AfterLinkDataSet
-    move.w d2,vdp_data
-    move.w d4,vdp_data
+    move.w #$0500,d5 ; 2x2
+    cmp.w NUM_ENEMIES_ALIVE,d6 ; are we at last alive enemy?
+    beq .AfterLinkData ; if so, skip link data (leave it at 0)
+    or.w SPRITE_COUNTER,d5
+.AfterLinkData
     move.w d3,vdp_data
-    move.w d1,vdp_data
+    move.w d5,vdp_data
+    move.w d5,LAST_LINK_WRITTEN
+    move.w d4,vdp_data
+    move.w d2,vdp_data
 .EnemySpriteLoopEnd
     dbra d0,.EnemySpriteLoop
+
+    ; TODO: why the heck doesn't this work???
+    ; set last sprite's link data to 0
+    ; move.w SPRITE_COUNTER,d0
+    ; move.w d0,a5 ; DEBUG
+    ; sub.w #1,d0
+    ; lsl.w #3,d0 ; now d0 is offset in sprite-entries
+    ; add.w #SPRITE_TABLE_BASE_ADDR+2,d0 ; get to link data entry of table
+    ; move.w d0,a6 ; DEBUG
+    ; SetVramAddr d0,d1
+    ; move.w LAST_LINK_WRITTEN,d0
+    ; and.w #$FF00,d0 ; zero out link data
+    ; move.w d0,vdp_data
+
 
 .waitNewFrame
     cmp.b #1,NEW_FRAME

@@ -295,16 +295,17 @@ UpdateAnimState:
 .UpdateAnimStateEnd
     rts
 
+; updates ITERS_TIL_CAN_SLASH, SLASH_ON_THIS_FRAME, SLASH_MIN/MAX_X/Y, NEW_ANIM_STATE
 CheckSlashAndUpdate:
     move ITERS_TIL_CAN_SLASH,d0
     beq.s .AfterSlashCounter
     sub.w #1,d0
     move.w d0,ITERS_TIL_CAN_SLASH
 .AfterSlashCounter
-    bne.w .AfterSlashCheck ; is slash counter 0?
+    bne.w .CheckSlashEarlyReturn ; is slash counter 0?
     move.b CONTROLLER,d0
     btst.l #A_BIT,d0
-    beq.s .AfterSlashCheck
+    beq.s .CheckSlashEarlyReturn
     move.w #SLASH_COOLDOWN_ITERS,ITERS_TIL_CAN_SLASH ; reset slash cooldown
     move.w #1,SLASH_ON_THIS_FRAME
     ; update animation
@@ -314,18 +315,48 @@ CheckSlashAndUpdate:
     add.l d0,a0
     ; dereference jump table to get address to jump to
     move.l (a0),a0
+    move.w CURRENT_X,d0
+    move.w CURRENT_Y,d1
     jmp (a0)
+.CheckSlashEarlyReturn
+    rts
 .SlashAnimJumpTable dc.l .SlashFacingUp,.SlashFacingDown,.SlashFacingLeft,.SlashFacingRight
 .SlashFacingUp
+    move.w d0,SLASH_MIN_X
+    add.w #3*8,d0
+    move.w d0,SLASH_MAX_X
+    move.w d1,SLASH_MAX_Y
+    sub.w #4*8,d1
+    move.w d1,SLASH_MIN_Y
     move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
-    bra.s .AfterSlashCheck
-.SlashFacingDown
-    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
-    bra.s .AfterSlashCheck
-.SlashFacingLeft
-    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
-    bra.s .AfterSlashCheck
-.SlashFacingRight
-    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
-.AfterSlashCheck
     rts
+.SlashFacingDown
+    move.w d0,SLASH_MIN_X
+    add.w #3*8,d0
+    move.w d0,SLASH_MAX_X
+    add.w #3*8,d0 ; hero height
+    move.w d1,SLASH_MIN_Y
+    add.w #4*8,d1 ; slash height
+    move.w d1,SLASH_MAX_Y
+    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    rts
+.SlashFacingLeft
+    move.w d0,SLASH_MAX_X
+    sub.w #4*8,d0
+    move.w d0,SLASH_MIN_X
+    move.w d1,SLASH_MIN_Y
+    add.w #3*8,d1
+    move.w d1,SLASH_MAX_Y
+    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    rts
+.SlashFacingRight
+    add.w #2*8,d0 ; hero width
+    move.w d0,SLASH_MIN_X
+    add.w #4*8,d0 ; slash width
+    move.w d0,SLASH_MAX_X
+    move.w d1,SLASH_MIN_Y
+    add.w #3*8,d1
+    move.w d1,SLASH_MAX_Y
+    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    rts
+
