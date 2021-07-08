@@ -265,10 +265,10 @@ UpdateAnimState:
     cmp.w PREVIOUS_ANIM_STATE,d0
     beq.s .UpdateAnimStateEnd
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-    clr.l d0
     move.w d0,PREVIOUS_ANIM_STATE
 
     move.l #.NewAnimStateJumpTable,a0
+    and.l #$0000FFFF,d0 ; d0 is gonna be used as a long, so make sure the upper word is cleared out
     ; d0 is now the offset in longs into jump table
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0
