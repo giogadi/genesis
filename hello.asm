@@ -161,14 +161,18 @@ ANIM_CURRENT_INDEX: so.w 1
 ANIM_STRIDE: so.w 1
 
 MAX_NUM_ENEMIES: equ 5
-ENEMY_ALIVE: so.w MAX_NUM_ENEMIES
+ENEMY_STATE_DEAD: equ 0
+ENEMY_STATE_ALIVE: equ 1
+ENEMY_STATE_DYING: equ 2
+ENEMY_STATE: so.w MAX_NUM_ENEMIES
+ENEMY_DYING_FRAMES: equ 2
+ENEMY_DYING_FRAMES_LEFT: so.w MAX_NUM_ENEMIES ; only valid if DYING
 ENEMY_X: so.w MAX_NUM_ENEMIES
 ENEMY_Y: so.w MAX_NUM_ENEMIES
 ENEMY_SIZE: so.w MAX_NUM_ENEMIES
 ENEMY_SPRITE_TILE_START: so.w MAX_NUM_ENEMIES
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
-; NUM_ENEMIES_ALIVE: so.w 1 ; used for link data
 LAST_LINK_WRITTEN: so.w 1
 
     include util.asm
@@ -463,15 +467,15 @@ SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
 SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
 
 ; Place two enemies
-    move.l #ENEMY_ALIVE,a0
+    move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
     move.l #ENEMY_SPRITE_TILE_START,a3
-    move.w #1,(a0)+
+    move.w #ENEMY_STATE_ALIVE,(a0)+
     move.w #287,(a1)+
     move.w #180,(a2)+
     move.w #BUTT_SPRITE_TILE_START,(a3)+
-    move.w #1,(a0)+
+    move.w #ENEMY_STATE_ALIVE,(a0)+
     move.w #240,(a1)+
     move.w #180,(a2)+
     move.w #BUTT_SPRITE_TILE_START,(a3)+
@@ -522,9 +526,18 @@ ITERATIONS_PER_ANIM_FRAME: equ 20
 ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 
+HITSTOP_FRAMES_LEFT: so.w 1
+HITSTOP_FRAMES: equ 10
+
 HERO_SPEED: equ 1
 
 loop
+    tst.w HITSTOP_FRAMES_LEFT
+    beq.w .NoHitstop
+    sub.w #1,HITSTOP_FRAMES_LEFT
+    jmp .waitNewFrame
+
+.NoHitstop
     GetControls d0,d1
     ;DEBUG
     move.w OR_CONTROLLER,d0
@@ -635,41 +648,51 @@ loop
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 .AfterAnimFrameIncrement:
 
-    ; update enemies from slash
-    tst.w SLASH_ON_THIS_FRAME
-    beq.s .AfterSlashEnemy
+    ; update enemies
+    ; slash, dying, etc
     move.w #MAX_NUM_ENEMIES-1,d0
-    move.l #ENEMY_ALIVE,a0
+    move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
+    move.l #ENEMY_DYING_FRAMES_LEFT,a3
     move.w SLASH_MIN_X,d1
     move.w SLASH_MAX_X,d2
     move.w SLASH_MIN_Y,d3
     move.w SLASH_MAX_Y,d4
-.SlashEnemyLoop
+.EnemyUpdateLoop
     move.w (a0),d5 ; alive (don't increment pointer because we may update it below)
-    beq.s .SlashEnemyLoopContinue
+    beq.s .EnemyUpdateLoopContinue
+    cmp.w #ENEMY_STATE_ALIVE,d5
+    beq.s .CheckSlashEnemy
+    ; otherwise, enemy is dying (TODO use a jump table idiot)
+    sub.w #1,(a3)
+    bne.s .EnemyUpdateLoopContinue ; not dead yet, go to next enemy
+    move.w #ENEMY_STATE_DEAD,(a0)
+    bra.s .EnemyUpdateLoopContinue
+.CheckSlashEnemy
     ; check slash AABB against enemy's
     move.w (a1),d5 ; min_enemy_x
     move.w (a2),d6 ; min_enemy_y
     cmp.w d2,d5 ; slash_max_x < min_enemy_x?
-    bgt.s .SlashEnemyLoopContinue
+    bgt.s .EnemyUpdateLoopContinue
     cmp.w d4,d6 ; slash_max_y < min_enemy_y?
-    bgt.s .SlashEnemyLoopContinue
+    bgt.s .EnemyUpdateLoopContinue
     add.w #2*8,d5 ; max_enemy_x (2x2 enemy)
     cmp.w d5,d1 ; max_enemy_x < slash_min_x?
-    bgt.s .SlashEnemyLoopContinue
+    bgt.s .EnemyUpdateLoopContinue
     add.w #2*8,d6 ; max_enemy_y
     cmp.w d6,d3 ; max_enemy_y < slash_min_y?
-    bgt.s .SlashEnemyLoopContinue
-    ; we have an overlap! kill the enemy
-    move.w #0,(a0)
-.SlashEnemyLoopContinue
+    bgt.s .EnemyUpdateLoopContinue
+    ; we have an overlap! put enemy in "dying" state and activate hitstop
+    move.w #2,(a0)
+    move.w #ENEMY_DYING_FRAMES,(a3)
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+.EnemyUpdateLoopContinue
     add.w #2,a0 ; move alive pointer to next entry
     add.w #2,a1
     add.w #2,a2
-    dbra d0,.SlashEnemyLoop
-.AfterSlashEnemy
+    add.w #2,a3
+    dbra d0,.EnemyUpdateLoop
 
     ; update sprites
     move.w #0,SPRITE_COUNTER 
@@ -746,7 +769,7 @@ loop
 
 ; Butt enemy
     move.w #MAX_NUM_ENEMIES-1,d0
-    move.l #ENEMY_ALIVE,a0
+    move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
     move.l #ENEMY_SPRITE_TILE_START,a3
