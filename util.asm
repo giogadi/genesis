@@ -303,11 +303,18 @@ CheckSlashAndUpdate:
     sub.w #1,d0
     move.w d0,ITERS_TIL_CAN_SLASH
 .AfterSlashCounter
-    bne.w .CheckSlashEarlyReturn ; is slash counter 0?
     move.b CONTROLLER,d0
     btst.l #A_BIT,d0
-    beq.s .CheckSlashEarlyReturn
+    bne.s .AfterSlashButtonCheck
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH ; button's been released, ready to slash again.
+    rts ; no button, no slash this frame
+.AfterSlashButtonCheck
+    tst.w ITERS_TIL_CAN_SLASH
+    bne.w .CheckSlashEarlyReturn ; is slash counter 0?
+    tst.w BUTTON_RELEASED_SINCE_LAST_SLASH
+    beq.s .CheckSlashEarlyReturn ; did we release slash button since last slash?
     move.w #SLASH_COOLDOWN_ITERS,ITERS_TIL_CAN_SLASH ; reset slash cooldown
+    move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH ; wait for button release before next slash
     move.w #1,SLASH_ON_THIS_FRAME
     ; update animation
     move.l #.SlashAnimJumpTable,a0

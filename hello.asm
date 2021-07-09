@@ -511,11 +511,13 @@ FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
 
-SLASH_COOLDOWN_ITERS: equ 30
+SLASH_COOLDOWN_ITERS: equ 15
 ITERS_TIL_CAN_SLASH: so.w 1
     move.w #0,ITERS_TIL_CAN_SLASH
 SLASH_ON_THIS_FRAME: so.w 1
     move.w #0,SLASH_ON_THIS_FRAME
+BUTTON_RELEASED_SINCE_LAST_SLASH: so.w 1
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH
 ; these only valid if SLASH_ON_THIS_FRAME != 0
 SLASH_MIN_X: so.w 1
 SLASH_MIN_Y: so.w 1
@@ -547,6 +549,11 @@ loop
     clr.w d4 ; dx = 0
     clr.w d5 ; dy = 0
     clr.w SLASH_ON_THIS_FRAME ; reset slash bit
+
+    ; check for slash. update animation if so
+    jsr CheckSlashAndUpdate
+    tst.w ITERS_TIL_CAN_SLASH
+    bne .skipPositionUpdate
 
     ; default to anim facing previous direction first.
     move.l #.DefaultAnimJumpTable,a0
@@ -628,9 +635,6 @@ loop
     move.w d5,CURRENT_Y
 
 .skipPositionUpdate
-
-    ; check for slash. update animation if so
-    jsr CheckSlashAndUpdate
 
     move.w NEW_ANIM_STATE,d0 ; move new anim state to d0
     jsr UpdateAnimState
