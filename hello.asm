@@ -341,7 +341,7 @@ FIRST_TILE_INDEX: equ 1
     SetVramAddr d0,d1
     
 SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
-NUM_SAMURAI_TILES: equ (3*2*6)
+NUM_SAMURAI_TILES: equ (3*2*8)
     move #(8*NUM_SAMURAI_TILES)-1,d0
     move.l #SamuraiLeft1Sprite,a0
 @samurai_sprite_load_loop
@@ -499,6 +499,8 @@ WALK_LEFT_STATE: equ 2
 WALK_RIGHT_STATE: equ 3
 SLASH_LEFT_STATE: equ 4
 SLASH_RIGHT_STATE: equ 5
+WINDUP_LEFT_STATE: equ 6
+WINDUP_RIGHT_STATE: equ 7
 PREVIOUS_ANIM_STATE: so.w 1
     move.w #LEFT_IDLE_STATE,PREVIOUS_ANIM_STATE
 NEW_ANIM_STATE: so.w 1
@@ -511,9 +513,21 @@ FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
 
-SLASH_COOLDOWN_ITERS: equ 15
-ITERS_TIL_CAN_SLASH: so.w 1
-    move.w #0,ITERS_TIL_CAN_SLASH
+; when !NONE, slash has priority over animation/movement
+SLASH_STATE_NONE: equ 0
+SLASH_STATE_WINDUP: equ 1
+SLASH_STATE_RELEASE: equ 2
+SLASH_STATE: so.w 1
+    move.w #SLASH_STATE_NONE,SLASH_STATE
+SLASH_STATE_ITERS_LEFT: so.w 1
+    move.w #0,SLASH_STATE_ITERS_LEFT
+
+SLASH_WINDUP_ITERS: equ 20
+SLASH_WINDUP_ITERS_LEFT: so.w 1
+    move.w #0,SLASH_WINDUP_ITERS_LEFT
+SLASH_COOLDOWN_ITERS: equ 20
+; ITERS_TIL_CAN_SLASH: so.w 1
+;     move.w #0,ITERS_TIL_CAN_SLASH
 SLASH_ON_THIS_FRAME: so.w 1
     move.w #0,SLASH_ON_THIS_FRAME
 BUTTON_RELEASED_SINCE_LAST_SLASH: so.w 1
@@ -552,8 +566,8 @@ loop
 
     ; check for slash. update animation if so
     jsr CheckSlashAndUpdate
-    tst.w ITERS_TIL_CAN_SLASH
-    bne .skipPositionUpdate
+    tst.w SLASH_STATE
+    bgt .skipPositionUpdate
 
     ; default to anim facing previous direction first.
     move.l #.DefaultAnimJumpTable,a0
@@ -861,6 +875,12 @@ SamuraSlashLeftSprite:
 
 SamuraSlashRightSprite:
     include art/samurai/slash_right.asm
+
+WindupLeftSprite:
+    include art/samurai/windup_left.asm
+
+WindupRightSprite:
+    include art/samurai/windup_right.asm
 
 SlashRightSprite:
     include art/slash_sprite.asm

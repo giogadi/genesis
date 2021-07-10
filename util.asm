@@ -260,6 +260,20 @@ SetSlashRightAnim:
     move.w #6,ANIM_STRIDE
     rts
 
+SetWindupLeftAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+6*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+6*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+6*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+SetWindupRightAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+7*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+7*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+7*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
 ; new state is in d0. d0 gets clobbered. No return value
 UpdateAnimState:
     cmp.w PREVIOUS_ANIM_STATE,d0
@@ -275,7 +289,7 @@ UpdateAnimState:
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
-.NewAnimStateJumpTable dc.l .LeftIdle,.RightIdle,.LeftWalk,.RightWalk,.LeftSlashState,.RightSlashState
+.NewAnimStateJumpTable dc.l .LeftIdle,.RightIdle,.LeftWalk,.RightWalk,.LeftSlashState,.RightSlashState,.LeftWindupState,.RightWindupState
 .LeftIdle
     jsr SetLeftIdleAnim
     rts
@@ -293,29 +307,64 @@ UpdateAnimState:
     rts
 .RightSlashState
     jsr SetSlashRightAnim
+    rts
+.LeftWindupState
+    jsr SetWindupLeftAnim
+    rts
+.RightWindupState
+    jsr SetWindupRightAnim
 .UpdateAnimStateEnd
     rts
 
-; updates ITERS_TIL_CAN_SLASH, SLASH_ON_THIS_FRAME, SLASH_MIN/MAX_X/Y, NEW_ANIM_STATE
 CheckSlashAndUpdate:
-    move ITERS_TIL_CAN_SLASH,d0
-    beq.s .AfterSlashCounter
-    sub.w #1,d0
-    move.w d0,ITERS_TIL_CAN_SLASH
-.AfterSlashCounter
+    ; First check if slash button has been released to unlock slashing again
     move.b CONTROLLER,d0
     btst.l #A_BIT,d0
     bne.s .AfterSlashButtonCheck
-    move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH ; button's been released, ready to slash again.
-    rts ; no button, no slash this frame
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH ; button's released, slashing unlocked.
 .AfterSlashButtonCheck
-    tst.w ITERS_TIL_CAN_SLASH
-    bne.w .CheckSlashEarlyReturn ; is slash counter 0?
+    move.w SLASH_STATE,d3
+    tst.w d3
+    bne.s .AfterSlashStateNone
+    ; no slash
     tst.w BUTTON_RELEASED_SINCE_LAST_SLASH
-    beq.s .CheckSlashEarlyReturn ; did we release slash button since last slash?
-    move.w #SLASH_COOLDOWN_ITERS,ITERS_TIL_CAN_SLASH ; reset slash cooldown
-    move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH ; wait for button release before next slash
+    beq .CheckSlashEarlyReturn ; did we release slash button since last slash?
+    btst.l #A_BIT,d0 ; is the button pushed now?
+    beq.w .CheckSlashEarlyReturn
+    move.w #SLASH_STATE_WINDUP,SLASH_STATE
+    move.w #SLASH_WINDUP_ITERS,SLASH_STATE_ITERS_LEFT
+    move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH
+    move.l #.WindupAnimJumpTable,a0
+    clr.l d0
+    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.WindupAnimJumpTable dc.l .WindupFacingUp,.WindupFacingDown,.WindupFacingLeft,.WindupFacingRight
+.WindupFacingUp
+    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSlashStateNone
+.WindupFacingDown
+    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSlashStateNone
+.WindupFacingLeft
+    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSlashStateNone
+.WindupFacingRight
+    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+.AfterSlashStateNone
+    ; we're in windup
+    move SLASH_STATE,d3
+    cmp.w #SLASH_STATE_WINDUP,d3
+    bne.w .AfterSlashStateWindup
+    sub.w #1,SLASH_STATE_ITERS_LEFT
+    bgt.w .CheckSlashEarlyReturn
     move.w #1,SLASH_ON_THIS_FRAME
+    move.w #SLASH_STATE_RELEASE,SLASH_STATE
+    move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH
+    move.w #SLASH_COOLDOWN_ITERS,SLASH_STATE_ITERS_LEFT
     ; update animation
     move.l #.SlashAnimJumpTable,a0
     clr.l d0
@@ -327,8 +376,6 @@ CheckSlashAndUpdate:
     move.w CURRENT_X,d0
     move.w CURRENT_Y,d1
     jmp (a0)
-.CheckSlashEarlyReturn
-    rts
 .SlashAnimJumpTable dc.l .SlashFacingUp,.SlashFacingDown,.SlashFacingLeft,.SlashFacingRight
 .SlashFacingUp
     move.w d0,SLASH_MIN_X
@@ -367,5 +414,12 @@ CheckSlashAndUpdate:
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
     move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    rts
+.AfterSlashStateWindup
+    ; we're in cooldown
+    sub.w #1,SLASH_STATE_ITERS_LEFT
+    bgt.s .CheckSlashEarlyReturn
+    move.w #SLASH_STATE_NONE,SLASH_STATE
+.CheckSlashEarlyReturn
     rts
 
