@@ -390,7 +390,7 @@ CheckSlashAndUpdate:
     move.w d0,SLASH_MIN_X
     add.w #3*8,d0
     move.w d0,SLASH_MAX_X
-    add.w #3*8,d0 ; hero height
+    add.w #3*8,d1 ; hero height
     move.w d1,SLASH_MIN_Y
     add.w #4*8,d1 ; slash height
     move.w d1,SLASH_MAX_Y
@@ -423,3 +423,54 @@ CheckSlashAndUpdate:
 .CheckSlashEarlyReturn
     rts
 
+; d0: please don't touch
+; d1: enemy state
+; d2: x
+; d3: y
+; d4: please don't touch
+; d6: enemy dying frames left
+DrawButtEnemy:
+    cmp.w #ENEMY_STATE_DYING,d1
+    beq.s .DrawButtEnemyDying
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d5 ; 2x2
+    or.w SPRITE_COUNTER,d5 ; link to next sprite
+    move.w d3,vdp_data
+    move.w d5,vdp_data
+    move.w d5,LAST_LINK_WRITTEN
+    move.w #BUTT_SPRITE_TILE_START,vdp_data
+    move.w d2,vdp_data
+    bra.s .DrawButtEnemyEnd
+.DrawButtEnemyDying:
+    ; only draw every other frame for a blinking effect
+    btst.l #0,d6
+    bne.s .DrawButtEnemyEnd
+    ; gonna scale slice anim by dying frames left.
+    move.w #ENEMY_DYING_FRAMES,d7
+    sub.w d6,d7 ; number of frames since enemy started dying in d7
+    ; left slice first. offset a few pixels down-left
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d5 ; 2x2
+    or.w SPRITE_COUNTER,d5
+    add.w d7,d3 ; y +=
+    sub.w d7,d2 ; x -=
+    move.w d3,vdp_data
+    move.w d5,vdp_data
+    move.w d5,LAST_LINK_WRITTEN
+    move.w #BUTT_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
+    move.w d2,vdp_data
+    ; right slice next. offset a few pixels up-right
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d5 ; 2x2
+    or.w SPRITE_COUNTER,d5
+    sub.w d7,d3 ; y -=
+    sub.w d7,d3 ; twice to undo change from first half
+    add.w d7,d2 ; x +=
+    add.w d7,d2
+    move.w d3,vdp_data
+    move.w d5,vdp_data
+    move.w d5,LAST_LINK_WRITTEN
+    move.w #BUTT_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
+    move.w d2,vdp_data
+.DrawButtEnemyEnd:
+    rts

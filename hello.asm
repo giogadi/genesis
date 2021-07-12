@@ -165,12 +165,12 @@ ENEMY_STATE_DEAD: equ 0
 ENEMY_STATE_ALIVE: equ 1
 ENEMY_STATE_DYING: equ 2
 ENEMY_STATE: so.w MAX_NUM_ENEMIES
-ENEMY_DYING_FRAMES: equ 2
+ENEMY_DYING_FRAMES: equ 10
 ENEMY_DYING_FRAMES_LEFT: so.w MAX_NUM_ENEMIES ; only valid if DYING
 ENEMY_X: so.w MAX_NUM_ENEMIES
 ENEMY_Y: so.w MAX_NUM_ENEMIES
 ENEMY_SIZE: so.w MAX_NUM_ENEMIES
-ENEMY_SPRITE_TILE_START: so.w MAX_NUM_ENEMIES
+ENEMY_SPRITE_DRAW_FUNCTIONS: so.l MAX_NUM_ENEMIES
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
@@ -381,6 +381,22 @@ BUTT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,@butt_sprite_load_loop
 
+BUTT_SLASHED_LEFT_SPRITE_TILE_START: equ (BUTT_SPRITE_TILE_START+BUTT_SPRITE_TILE_SIZE)
+BUTT_SLASHED_LEFT_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*BUTT_SLASHED_LEFT_SPRITE_TILE_SIZE)-1,d0
+    move.l #ButtSlashedLeftSprite,a0
+@butt_sprite_slashed_left_load_loop
+    move.l (a0)+,vdp_data
+    dbra d0,@butt_sprite_slashed_left_load_loop
+
+BUTT_SLASHED_RIGHT_SPRITE_TILE_START: equ (BUTT_SLASHED_LEFT_SPRITE_TILE_START+BUTT_SLASHED_LEFT_SPRITE_TILE_SIZE)
+BUTT_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*BUTT_SLASHED_RIGHT_SPRITE_TILE_SIZE)-1,d0
+    move.l #ButtSlashedRightSprite,a0
+@butt_sprite_slashed_right_load_loop
+    move.l (a0)+,vdp_data
+    dbra d0,@butt_sprite_slashed_right_load_loop
+
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w #TILE_SET_SIZE-1,d0
@@ -470,15 +486,15 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
-    move.l #ENEMY_SPRITE_TILE_START,a3
+    move.l #ENEMY_SPRITE_DRAW_FUNCTIONS,a3
     move.w #ENEMY_STATE_ALIVE,(a0)+
     move.w #287,(a1)+
     move.w #180,(a2)+
-    move.w #BUTT_SPRITE_TILE_START,(a3)+
+    move.l #DrawButtEnemy,(a3)+
     move.w #ENEMY_STATE_ALIVE,(a0)+
     move.w #240,(a1)+
     move.w #180,(a2)+
-    move.w #BUTT_SPRITE_TILE_START,(a3)+
+    move.l #DrawButtEnemy,(a3)+
 
 
 ; FM TEST FM TEST FM TEST
@@ -790,22 +806,17 @@ loop
     move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
-    move.l #ENEMY_SPRITE_TILE_START,a3
+    move.l #ENEMY_SPRITE_DRAW_FUNCTIONS,a3
+    move.l #ENEMY_DYING_FRAMES_LEFT,a5
 .EnemySpriteLoop
-    move.w (a0)+,d1 ; alive
+    move.w (a0)+,d1 ; enemy state
     move.w (a1)+,d2 ; x
     move.w (a2)+,d3 ; y
-    move.w (a3)+,d4 ; tile index
-    tst.w d1 ; alive?
+    move.l (a3)+,a4 ; sprite function pointer
+    move.w (a5)+,d6 ; enemy dying frames left
+    tst.w d1 ; if dead (== 0) skip to the next sprite
     beq.s .EnemySpriteLoopEnd
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5 ; link to next sprite
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    move.w d4,vdp_data
-    move.w d2,vdp_data
+    jsr (a4)
 .EnemySpriteLoopEnd
     dbra d0,.EnemySpriteLoop
 
@@ -890,5 +901,11 @@ SlashUpSprite:
 
 ButtSprite:
     include art/butt.asm
+
+ButtSlashedLeftSprite:
+    include art/butt_slashed_left.asm
+
+ButtSlashedRightSprite:
+    include art/butt_slashed_right.asm
 
 __end:
