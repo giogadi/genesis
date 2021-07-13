@@ -474,3 +474,49 @@ DrawButtEnemy:
     move.w d2,vdp_data
 .DrawButtEnemyEnd:
     rts
+
+UpdateEnemies:
+    move.w #MAX_NUM_ENEMIES-1,d0
+    move.l #ENEMY_STATE,a0
+    move.l #ENEMY_X,a1
+    move.l #ENEMY_Y,a2
+    move.l #ENEMY_DYING_FRAMES_LEFT,a3
+    move.w SLASH_MIN_X,d1
+    move.w SLASH_MAX_X,d2
+    move.w SLASH_MIN_Y,d3
+    move.w SLASH_MAX_Y,d4
+.EnemyUpdateLoop
+    move.w (a0),d5 ; alive (don't increment pointer because we may update it below)
+    beq.s .EnemyUpdateLoopContinue
+    cmp.w #ENEMY_STATE_ALIVE,d5
+    beq.s .CheckSlashEnemy
+    ; otherwise, enemy is dying (TODO use a jump table idiot)
+    sub.w #1,(a3)
+    bne.s .EnemyUpdateLoopContinue ; not dead yet, go to next enemy
+    move.w #ENEMY_STATE_DEAD,(a0)
+    bra.s .EnemyUpdateLoopContinue
+.CheckSlashEnemy
+    ; check slash AABB against enemy's
+    move.w (a1),d5 ; min_enemy_x
+    move.w (a2),d6 ; min_enemy_y
+    cmp.w d2,d5 ; slash_max_x < min_enemy_x?
+    bgt.s .EnemyUpdateLoopContinue
+    cmp.w d4,d6 ; slash_max_y < min_enemy_y?
+    bgt.s .EnemyUpdateLoopContinue
+    add.w #2*8,d5 ; max_enemy_x (2x2 enemy)
+    cmp.w d5,d1 ; max_enemy_x < slash_min_x?
+    bgt.s .EnemyUpdateLoopContinue
+    add.w #2*8,d6 ; max_enemy_y
+    cmp.w d6,d3 ; max_enemy_y < slash_min_y?
+    bgt.s .EnemyUpdateLoopContinue
+    ; we have an overlap! put enemy in "dying" state and activate hitstop
+    move.w #2,(a0)
+    move.w #ENEMY_DYING_FRAMES,(a3)
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+.EnemyUpdateLoopContinue
+    add.w #2,a0 ; move alive pointer to next entry
+    add.w #2,a1
+    add.w #2,a2
+    add.w #2,a3
+    dbra d0,.EnemyUpdateLoop
+    rts
