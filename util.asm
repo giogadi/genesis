@@ -500,23 +500,33 @@ UpdateEnemies:
     move.w (a1),d5 ; min_enemy_x
     move.w (a2),d6 ; min_enemy_y
     cmp.w d2,d5 ; slash_max_x < min_enemy_x?
-    bgt.s .EnemyUpdateLoopContinue
+    bgt.s .EnemyAI
     cmp.w d4,d6 ; slash_max_y < min_enemy_y?
-    bgt.s .EnemyUpdateLoopContinue
+    bgt.s .EnemyAI
     add.w #2*8,d5 ; max_enemy_x (2x2 enemy)
     cmp.w d5,d1 ; max_enemy_x < slash_min_x?
-    bgt.s .EnemyUpdateLoopContinue
+    bgt.s .EnemyAI
     add.w #2*8,d6 ; max_enemy_y
     cmp.w d6,d3 ; max_enemy_y < slash_min_y?
-    bgt.s .EnemyUpdateLoopContinue
+    bgt.s .EnemyAI
     ; we have an overlap! put enemy in "dying" state and activate hitstop
     move.w #2,(a0)
     move.w #ENEMY_DYING_FRAMES,(a3)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+    bra.s .EnemyUpdateLoopContinue
+.EnemyAI
+    ; Simple for now: move toward player. Uh-oh, how do we do that without vectors
+    move.l #32768,d6
+    lsr.l #1,d6
+    add.l d6,(a2)
+    move.l #56754,d6
+    lsr.l #1,d6
+    add.l d6,(a1)
+
 .EnemyUpdateLoopContinue
     add.w #2,a0 ; move alive pointer to next entry
-    add.w #2,a1
-    add.w #2,a2
+    add.w #4,a1
+    add.w #4,a2
     add.w #2,a3
     dbra d0,.EnemyUpdateLoop
     rts

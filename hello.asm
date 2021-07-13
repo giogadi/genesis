@@ -167,8 +167,8 @@ ENEMY_STATE_DYING: equ 2
 ENEMY_STATE: so.w MAX_NUM_ENEMIES
 ENEMY_DYING_FRAMES: equ 10
 ENEMY_DYING_FRAMES_LEFT: so.w MAX_NUM_ENEMIES ; only valid if DYING
-ENEMY_X: so.w MAX_NUM_ENEMIES
-ENEMY_Y: so.w MAX_NUM_ENEMIES
+ENEMY_X: so.l MAX_NUM_ENEMIES
+ENEMY_Y: so.l MAX_NUM_ENEMIES
 ENEMY_SIZE: so.w MAX_NUM_ENEMIES
 ENEMY_SPRITE_DRAW_FUNCTIONS: so.l MAX_NUM_ENEMIES
 
@@ -488,12 +488,16 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     move.l #ENEMY_Y,a2
     move.l #ENEMY_SPRITE_DRAW_FUNCTIONS,a3
     move.w #ENEMY_STATE_ALIVE,(a0)+
-    move.w #287,(a1)+
-    move.w #180,(a2)+
+    move.w #287,(a1)
+    add.l #4,a1
+    move.w #180,(a2)
+    add.l #4,a2
     move.l #DrawButtEnemy,(a3)+
     move.w #ENEMY_STATE_ALIVE,(a0)+
-    move.w #240,(a1)+
-    move.w #180,(a2)+
+    move.w #240,(a1)
+    add.l #4,a1
+    move.w #180,(a2)
+    add.l #4,a2
     move.l #DrawButtEnemy,(a3)+
 
 
@@ -768,14 +772,16 @@ loop
     move.l #ENEMY_DYING_FRAMES_LEFT,a5
 .EnemySpriteLoop
     move.w (a0)+,d1 ; enemy state
-    move.w (a1)+,d2 ; x
-    move.w (a2)+,d3 ; y
+    move.w (a1),d2 ; x
+    move.w (a2),d3 ; y
     move.l (a3)+,a4 ; sprite function pointer
     move.w (a5)+,d6 ; enemy dying frames left
     tst.w d1 ; if dead (== 0) skip to the next sprite
     beq.s .EnemySpriteLoopEnd
     jsr (a4)
 .EnemySpriteLoopEnd
+    add.l #4,a1
+    add.l #4,a2
     dbra d0,.EnemySpriteLoop
 
     ; set last sprite's link data to 0
