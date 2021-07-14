@@ -515,12 +515,14 @@ UpdateEnemies:
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     bra.s .EnemyUpdateLoopContinue
 .EnemyAI
-    move.w #21,d0 ; ~30 degrees
+    move.w #156,d0 ; ~220 degrees
     jsr Cos
+    ext.l d0 ; output is a word, but we want to add to do a signed add to a long
     lsl.l #7,d0 ; divide out 256, multiply 65536, divide by 2 (half-pixel per frame)
     add.l d0,(a1)
-    move.w #21,d0
+    move.w #156,d0
     jsr Sin
+    ext.l d0
     lsl.l #7,d0
     add.l d0,(a2)
 
