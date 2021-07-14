@@ -872,4 +872,7 @@ ButtSlashedLeftSprite:
 ButtSlashedRightSprite:
     include art/butt_slashed_right.asm
 
+SineLookupTable:
+    include sine_lookup_table.asm
+
 __end:

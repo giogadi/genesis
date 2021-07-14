@@ -476,8 +476,8 @@ DrawButtEnemy:
     rts
 
 UpdateEnemies:
-    move.w #MAX_NUM_ENEMIES-1,d0
-    move.l #ENEMY_STATE,a0
+    move.w #MAX_NUM_ENEMIES-1,d7
+    move.l #ENEMY_STATE,a6
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
     move.l #ENEMY_DYING_FRAMES_LEFT,a3
@@ -486,14 +486,14 @@ UpdateEnemies:
     move.w SLASH_MIN_Y,d3
     move.w SLASH_MAX_Y,d4
 .EnemyUpdateLoop
-    move.w (a0),d5 ; alive (don't increment pointer because we may update it below)
+    move.w (a6),d5 ; alive (don't increment pointer because we may update it below)
     beq.s .EnemyUpdateLoopContinue
     cmp.w #ENEMY_STATE_ALIVE,d5
     beq.s .CheckSlashEnemy
     ; otherwise, enemy is dying (TODO use a jump table idiot)
     sub.w #1,(a3)
     bne.s .EnemyUpdateLoopContinue ; not dead yet, go to next enemy
-    move.w #ENEMY_STATE_DEAD,(a0)
+    move.w #ENEMY_STATE_DEAD,(a6)
     bra.s .EnemyUpdateLoopContinue
 .CheckSlashEnemy
     ; check slash AABB against enemy's
@@ -510,23 +510,44 @@ UpdateEnemies:
     cmp.w d6,d3 ; max_enemy_y < slash_min_y?
     bgt.s .EnemyAI
     ; we have an overlap! put enemy in "dying" state and activate hitstop
-    move.w #2,(a0)
+    move.w #2,(a6)
     move.w #ENEMY_DYING_FRAMES,(a3)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     bra.s .EnemyUpdateLoopContinue
 .EnemyAI
-    ; Simple for now: move toward player. Uh-oh, how do we do that without vectors
-    move.l #32768,d6
-    lsr.l #1,d6
-    add.l d6,(a2)
-    move.l #56754,d6
-    lsr.l #1,d6
-    add.l d6,(a1)
+    move.w #21,d0 ; ~30 degrees
+    jsr Cos
+    lsl.l #7,d0 ; divide out 256, multiply 65536, divide by 2 (half-pixel per frame)
+    add.l d0,(a1)
+    move.w #21,d0
+    jsr Sin
+    lsl.l #7,d0
+    add.l d0,(a2)
 
 .EnemyUpdateLoopContinue
-    add.w #2,a0 ; move alive pointer to next entry
+    add.w #2,a6 ; move alive pointer to next entry
     add.w #4,a1
     add.w #4,a2
     add.w #2,a3
-    dbra d0,.EnemyUpdateLoop
+    dbra d7,.EnemyUpdateLoop
+    rts
+
+; d0 is sin(x)*256, where sin() does a full cycle every 256 units. a0 used
+Sin:
+    move.l #SineLookupTable,a0
+    ; clamp angle to [0,255] and clear upper word
+    and.l #$000000FF,d0
+    add.l d0,d0 ; convert to byte address
+    add.l d0,a0
+    move.w (a0),d0
+    rts
+
+Cos:
+    move.l #SineLookupTable,a0
+    ; add 256/4 to input (like sin(x+90) normally)
+    add.w #256/4,d0
+    and.l #$000000FF,d0
+    add.l d0,d0 ; convert to byte address
+    add.l d0,a0
+    move.w (a0),d0
     rts
