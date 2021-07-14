@@ -481,20 +481,21 @@ UpdateEnemies:
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
     move.l #ENEMY_DYING_FRAMES_LEFT,a3
+    move.l #ENEMY_DATA_1,a4
     move.w SLASH_MIN_X,d1
     move.w SLASH_MAX_X,d2
     move.w SLASH_MIN_Y,d3
     move.w SLASH_MAX_Y,d4
 .EnemyUpdateLoop
     move.w (a6),d5 ; alive (don't increment pointer because we may update it below)
-    beq.s .EnemyUpdateLoopContinue
+    beq.w .EnemyUpdateLoopContinue
     cmp.w #ENEMY_STATE_ALIVE,d5
     beq.s .CheckSlashEnemy
     ; otherwise, enemy is dying (TODO use a jump table idiot)
     sub.w #1,(a3)
-    bne.s .EnemyUpdateLoopContinue ; not dead yet, go to next enemy
+    bne.w .EnemyUpdateLoopContinue ; not dead yet, go to next enemy
     move.w #ENEMY_STATE_DEAD,(a6)
-    bra.s .EnemyUpdateLoopContinue
+    bra.w .EnemyUpdateLoopContinue
 .CheckSlashEnemy
     ; check slash AABB against enemy's AABB
     tst.w SLASH_ON_THIS_FRAME
@@ -517,6 +518,16 @@ UpdateEnemies:
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     bra.s .EnemyUpdateLoopContinue
 .EnemyAI
+    ; ENEMY_DATA_1: byte 15 is 1 if moving. lower byte is frame counter for moving state
+    move.w (a4),d5
+    sub.b #1,d5
+    bgt.s .EnemyAIAfterStateSwap
+    move.b #15,d5 ; 15 frame countdown
+    bchg.l #15,d5
+.EnemyAIAfterStateSwap
+    move.w d5,(a4)
+    btst.l #15,d5
+    beq.s .EnemyUpdateLoopContinue
     clr.l d0
     clr.l d5
     move.w CURRENT_X,d0 ; get (hero - enemy)
@@ -527,19 +538,21 @@ UpdateEnemies:
     move.w d0,d5
     jsr Cos
     ext.l d0 ; output is a word, but we want to add to do a signed add to a long
-    lsl.l #7,d0 ; divide out 256, multiply 65536, divide by 2 (half-pixel per frame)
+    move.b #8,d6
+    lsl.l d6,d0 ; divide out 256, multiply 65536 (1 pixel per frame)
     add.l d0,(a1)
     move.w d5,d0
     jsr Sin
     ext.l d0
-    lsl.l #7,d0
+    move.b #8,d6
+    lsl.l d6,d0
     add.l d0,(a2)
-
 .EnemyUpdateLoopContinue
     add.w #2,a6 ; move alive pointer to next entry
     add.w #4,a1
     add.w #4,a2
     add.w #2,a3
+    add.w #2,a4
     dbra d7,.EnemyUpdateLoop
     rts
 
