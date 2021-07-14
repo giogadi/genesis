@@ -496,7 +496,9 @@ UpdateEnemies:
     move.w #ENEMY_STATE_DEAD,(a6)
     bra.s .EnemyUpdateLoopContinue
 .CheckSlashEnemy
-    ; check slash AABB against enemy's
+    ; check slash AABB against enemy's AABB
+    tst.w SLASH_ON_THIS_FRAME
+    beq.s .EnemyAI
     move.w (a1),d5 ; min_enemy_x
     move.w (a2),d6 ; min_enemy_y
     cmp.w d2,d5 ; slash_max_x < min_enemy_x?
@@ -515,12 +517,19 @@ UpdateEnemies:
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     bra.s .EnemyUpdateLoopContinue
 .EnemyAI
-    move.w #156,d0 ; ~220 degrees
+    clr.l d0
+    clr.l d5
+    move.w CURRENT_X,d0 ; get (hero - enemy)
+    sub.w (a1),d0
+    move.w CURRENT_Y,d5
+    sub.w (a2),d5
+    jsr Atan2
+    move.w d0,d5
     jsr Cos
     ext.l d0 ; output is a word, but we want to add to do a signed add to a long
     lsl.l #7,d0 ; divide out 256, multiply 65536, divide by 2 (half-pixel per frame)
     add.l d0,(a1)
-    move.w #156,d0
+    move.w d5,d0
     jsr Sin
     ext.l d0
     lsl.l #7,d0
@@ -551,5 +560,36 @@ Cos:
     and.l #$000000FF,d0
     add.l d0,d0 ; convert to byte address
     add.l d0,a0
+    move.w (a0),d0
+    rts
+
+; d0: x, d5: y, output in d0
+Atan2:
+    ; 64x64 table. each axis corresponds to [-32,31].
+    ; First we gotta shift each value until it's in that range.
+.Atan2ShiftLoop
+    cmp.w #-32,d0
+    blt.s .Atan2Shift
+    cmp.w #31,d0
+    bgt.s .Atan2Shift
+    cmp.w #-32,d5
+    blt.s .Atan2Shift
+    cmp.w #31,d5
+    bgt.s .Atan2Shift
+    bra.s .Atan2AfterShift
+.Atan2Shift
+    asr.w #1,d0 ; arithmetic shift maintains the sign of the input value!!
+    asr.w #1,d5 ; gotta shift both to maintain the right proportion
+    bra.s .Atan2ShiftLoop
+.Atan2AfterShift
+    ; convert into x/y indices [0,63]
+    add.w #32,d0
+    add.w #32,d5
+    move.l #atan2LookupTable,a0
+    ; index into table = 2*(64*y + x)
+    lsl.l #6,d5
+    add.l d0,d5
+    add.l d5,d5
+    add.l d5,a0
     move.w (a0),d0
     rts

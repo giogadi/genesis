@@ -875,4 +875,7 @@ ButtSlashedRightSprite:
 SineLookupTable:
     include sine_lookup_table.asm
 
+atan2LookupTable:
+    include atan2_lookup_table.asm
+
 __end:
