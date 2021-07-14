@@ -482,6 +482,7 @@ UpdateEnemies:
     move.l #ENEMY_Y,a2
     move.l #ENEMY_DYING_FRAMES_LEFT,a3
     move.l #ENEMY_DATA_1,a4
+    move.l #ENEMY_DATA_2,a5
     move.w SLASH_MIN_X,d1
     move.w SLASH_MAX_X,d2
     move.w SLASH_MIN_Y,d3
@@ -521,13 +522,15 @@ UpdateEnemies:
     ; ENEMY_DATA_1: byte 15 is 1 if moving. lower byte is frame counter for moving state
     move.w (a4),d5
     sub.b #1,d5
+    move.w d5,(a4) ; update DATA_1
+    tst.b d5
     bgt.s .EnemyAIAfterStateSwap
-    move.b #15,d5 ; 15 frame countdown
-    bchg.l #15,d5
-.EnemyAIAfterStateSwap
-    move.w d5,(a4)
+    move.b #30,d5 ; frame countdown
+    bchg.l #15,d5 ; flip moving bit
+    move.w d5,(a4) ; update DATA_1
+    ; if we're about to move, compute angle of motion and save it in DATA_2
     btst.l #15,d5
-    beq.s .EnemyUpdateLoopContinue
+    beq.s .EnemyAIAfterStateSwap
     clr.l d0
     clr.l d5
     move.w CURRENT_X,d0 ; get (hero - enemy)
@@ -535,6 +538,12 @@ UpdateEnemies:
     move.w CURRENT_Y,d5
     sub.w (a2),d5
     jsr Atan2
+    move.w d0,(a5)
+.EnemyAIAfterStateSwap
+    move.w (a4),d5 ; get DATA_1
+    btst.l #15,d5
+    beq.s .EnemyUpdateLoopContinue
+    move.w (a5),d0 ; get DATA_2
     move.w d0,d5
     jsr Cos
     ext.l d0 ; output is a word, but we want to add to do a signed add to a long
@@ -553,6 +562,7 @@ UpdateEnemies:
     add.w #4,a2
     add.w #2,a3
     add.w #2,a4
+    add.w #2,a5
     dbra d7,.EnemyUpdateLoop
     rts
 

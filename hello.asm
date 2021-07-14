@@ -171,6 +171,7 @@ ENEMY_X: so.l MAX_NUM_ENEMIES
 ENEMY_Y: so.l MAX_NUM_ENEMIES
 ENEMY_SIZE: so.w MAX_NUM_ENEMIES
 ENEMY_DATA_1: so.w MAX_NUM_ENEMIES
+ENEMY_DATA_2: so.w MAX_NUM_ENEMIES
 ENEMY_SPRITE_DRAW_FUNCTIONS: so.l MAX_NUM_ENEMIES
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
@@ -496,13 +497,13 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     add.l #4,a2
     move.l #DrawButtEnemy,(a3)+
     move.w #0,(a4)+
-    move.w #ENEMY_STATE_ALIVE,(a0)+
-    move.w #240,(a1)
-    add.l #4,a1
-    move.w #180,(a2)
-    add.l #4,a2
-    move.l #DrawButtEnemy,(a3)+
-    move.w #0,(a4)+
+    ; move.w #ENEMY_STATE_ALIVE,(a0)+
+    ; move.w #240,(a1)
+    ; add.l #4,a1
+    ; move.w #180,(a2)
+    ; add.l #4,a2
+    ; move.l #DrawButtEnemy,(a3)+
+    ; move.w #0,(a4)+
 
 
 ; FM TEST FM TEST FM TEST
