@@ -520,17 +520,24 @@ UpdateEnemies:
     bra.s .EnemyUpdateLoopContinue
 .EnemyAI
     ; ENEMY_DATA_1: byte 15 is 1 if moving. lower byte is frame counter for moving state
+    ; ENEMY_DATA_1: byte 14 is zig/zag.
     move.w (a4),d5
     sub.b #1,d5
     move.w d5,(a4) ; update DATA_1
     tst.b d5
     bgt.s .EnemyAIAfterStateSwap
-    move.b #30,d5 ; frame countdown
     bchg.l #15,d5 ; flip moving bit
-    move.w d5,(a4) ; update DATA_1
-    ; if we're about to move, compute angle of motion and save it in DATA_2
     btst.l #15,d5
-    beq.s .EnemyAIAfterStateSwap
+    bne.s .EnemyAISwitchToMove
+    ; if we're not moving, just set the countdown.
+    move.b #30,d5
+    move.w d5,(a4) ; update DATA_1
+    bra.s .EnemyAIAfterStateSwap
+    ; if we're about to move, update zigzag and compute angle of motion and save it in DATA_2
+.EnemyAISwitchToMove
+    move.b #15,d5 ; set motion countdown
+    bchg.l #14,d5 ; flip zig/zag
+    move.w d5,(a4) ; update DATA_1
     clr.l d0
     clr.l d5
     move.w CURRENT_X,d0 ; get (hero - enemy)
@@ -538,7 +545,16 @@ UpdateEnemies:
     move.w CURRENT_Y,d5
     sub.w (a2),d5
     jsr Atan2
-    move.w d0,(a5)
+    move.w (a4),d6
+    btst.l #14,d6 ; zig or zag
+    bne.s .EnemyAIZag
+    add.w #20,d0
+    bra.s .EnemyAIAfterZigZag
+.EnemyAIZag
+    sub.w #20,d0
+.EnemyAIAfterZigZag
+    and.w #$00FF,d0 ; normalize angle to [0,255]
+    move.w d0,(a5) ; write angle to DATA_2
 .EnemyAIAfterStateSwap
     move.w (a4),d5 ; get DATA_1
     btst.l #15,d5
