@@ -473,14 +473,14 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
 
 ; Now let's add a sprite!!!!!
 SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
-    move.w #SAMURAI_SPRITE_ADDR,d0
-    SetVramAddr d0,d1
-; Then we make a sprite attribute entry. It's 8 bytes. Let's set it smack-dab in the middle.
-; That means [287,239] or [%100011111,%11101111]
-    move.w #%0000000011101111,vdp_data
-    move.w #%0000011000000000,vdp_data
-    move.w ANIM_CURRENT_INDEX,vdp_data
-    move.w #%0000000100011111,vdp_data
+;     move.w #SAMURAI_SPRITE_ADDR,d0
+;     SetVramAddr d0,d1
+; ; Then we make a sprite attribute entry. It's 8 bytes. Let's set it smack-dab in the middle.
+; ; That means [287,239] or [%100011111,%11101111]
+;     move.w #%0000000011101111,vdp_data
+;     move.w #%0000011000000000,vdp_data
+;     move.w ANIM_CURRENT_INDEX,vdp_data
+;     move.w #%0000000100011111,vdp_data
 
 SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
 
@@ -497,13 +497,13 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     add.l #4,a2
     move.l #DrawButtEnemy,(a3)+
     move.w #0,(a4)+
-    ; move.w #ENEMY_STATE_ALIVE,(a0)+
-    ; move.w #240,(a1)
-    ; add.l #4,a1
-    ; move.w #180,(a2)
-    ; add.l #4,a2
-    ; move.l #DrawButtEnemy,(a3)+
-    ; move.w #0,(a4)+
+    move.w #ENEMY_STATE_ALIVE,(a0)+
+    move.w #240,(a1)
+    add.l #4,a1
+    move.w #180,(a2)
+    add.l #4,a2
+    move.l #DrawButtEnemy,(a3)+
+    move.w #0,(a4)+
 
 
 ; FM TEST FM TEST FM TEST
@@ -516,7 +516,7 @@ __main
     ;jsr @test_psg
 
     move.w #287,CURRENT_X
-    move.w #239,CURRENT_Y
+    move.w #310,CURRENT_Y
 
 LEFT_IDLE_STATE: equ 0
 RIGHT_IDLE_STATE: equ 1
@@ -691,8 +691,10 @@ loop
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 .AfterAnimFrameIncrement:
 
-    ; update enemies
-    ; slash, dying, etc
+    ; update enemies' alive states
+    jsr UpdateEnemiesFromSlash
+
+    ; update alive enemies' behavior
     jsr UpdateEnemies
 
     ; update sprites

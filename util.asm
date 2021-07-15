@@ -475,7 +475,7 @@ DrawButtEnemy:
 .DrawButtEnemyEnd:
     rts
 
-UpdateEnemies:
+UpdateEnemiesFromSlash:
     move.w #MAX_NUM_ENEMIES-1,d7
     move.l #ENEMY_STATE,a6
     move.l #ENEMY_X,a1
@@ -487,37 +487,58 @@ UpdateEnemies:
     move.w SLASH_MAX_X,d2
     move.w SLASH_MIN_Y,d3
     move.w SLASH_MAX_Y,d4
-.EnemyUpdateLoop
+.EnemyUpdateSlashLoop
     move.w (a6),d5 ; alive (don't increment pointer because we may update it below)
-    beq.w .EnemyUpdateLoopContinue
+    beq.w .EnemyUpdateSlashLoopContinue
     cmp.w #ENEMY_STATE_ALIVE,d5
     beq.s .CheckSlashEnemy
     ; otherwise, enemy is dying (TODO use a jump table idiot)
     sub.w #1,(a3)
-    bne.w .EnemyUpdateLoopContinue ; not dead yet, go to next enemy
+    bne.w .EnemyUpdateSlashLoopContinue ; not dead yet, go to next enemy
     move.w #ENEMY_STATE_DEAD,(a6)
-    bra.w .EnemyUpdateLoopContinue
+    bra.w .EnemyUpdateSlashLoopContinue
 .CheckSlashEnemy
     ; check slash AABB against enemy's AABB
     tst.w SLASH_ON_THIS_FRAME
-    beq.s .EnemyAI
+    beq.s .EnemyUpdateSlashLoopContinue
     move.w (a1),d5 ; min_enemy_x
     move.w (a2),d6 ; min_enemy_y
     cmp.w d2,d5 ; slash_max_x < min_enemy_x?
-    bgt.s .EnemyAI
+    bgt.s .EnemyUpdateSlashLoopContinue
     cmp.w d4,d6 ; slash_max_y < min_enemy_y?
-    bgt.s .EnemyAI
+    bgt.s .EnemyUpdateSlashLoopContinue
     add.w #2*8,d5 ; max_enemy_x (2x2 enemy)
     cmp.w d5,d1 ; max_enemy_x < slash_min_x?
-    bgt.s .EnemyAI
+    bgt.s .EnemyUpdateSlashLoopContinue
     add.w #2*8,d6 ; max_enemy_y
     cmp.w d6,d3 ; max_enemy_y < slash_min_y?
-    bgt.s .EnemyAI
+    bgt.s .EnemyUpdateSlashLoopContinue
     ; we have an overlap! put enemy in "dying" state and activate hitstop
     move.w #2,(a6)
     move.w #ENEMY_DYING_FRAMES,(a3)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
-    bra.s .EnemyUpdateLoopContinue
+.EnemyUpdateSlashLoopContinue
+    add.w #2,a6 ; move alive pointer to next entry
+    add.w #4,a1
+    add.w #4,a2
+    add.w #2,a3
+    add.w #2,a4
+    add.w #2,a5
+    dbra d7,.EnemyUpdateSlashLoop
+    rts
+
+UpdateEnemies:
+    move.w #MAX_NUM_ENEMIES-1,d7
+    move.l #ENEMY_STATE,a6
+    move.l #ENEMY_X,a1
+    move.l #ENEMY_Y,a2
+    move.l #ENEMY_DATA_1,a4
+    move.l #ENEMY_DATA_2,a5
+.EnemyUpdateLoop
+    move.w (a6),d5 ; alive (don't increment pointer because we may update it below)
+    beq.w .EnemyUpdateLoopContinue
+    cmp.w #ENEMY_STATE_ALIVE,d5
+    bne.w .EnemyUpdateLoopContinue
 .EnemyAI
     ; ENEMY_DATA_1: byte 15 is 1 if moving. lower byte is frame counter for moving state
     ; ENEMY_DATA_1: byte 14 is zig/zag.
@@ -530,7 +551,7 @@ UpdateEnemies:
     btst.l #15,d5
     bne.s .EnemyAISwitchToMove
     ; if we're not moving, just set the countdown.
-    move.b #30,d5
+    move.b #20,d5
     move.w d5,(a4) ; update DATA_1
     bra.s .EnemyAIAfterStateSwap
     ; if we're about to move, update zigzag and compute angle of motion and save it in DATA_2
@@ -544,14 +565,32 @@ UpdateEnemies:
     sub.w (a1),d0
     move.w CURRENT_Y,d5
     sub.w (a2),d5
+    ; get squared length to see how close we are to hero
+    move.w d5,-(sp)
+    move.w d0,-(sp)
+    jsr LengthSqr
+    add.l #4,sp
+    move.w d0,d6 ; move result into d6 for now
+    ; TODO clean this up
+    move.w CURRENT_X,d0 ; get (hero - enemy)
+    sub.w (a1),d0
     jsr Atan2
+    ; if we are within 10 tiles of hero, increase speed. Track that at bit 13 of DATA_1
+    move.w (a4),d5
+    bclr.l #13,d5
+    cmp.w #80*80,d6 ; compare squared distance
+    bgt.s .EnemyAIAfterSpeed
+    bset.l #13,d5
+.EnemyAIAfterSpeed
+    move.w d5,(a4) ; update DATA_1
+
     move.w (a4),d6
     btst.l #14,d6 ; zig or zag
     bne.s .EnemyAIZag
-    add.w #20,d0
+    add.w #10,d0 ; zig/zag amount
     bra.s .EnemyAIAfterZigZag
 .EnemyAIZag
-    sub.w #20,d0
+    sub.w #10,d0 ; zig/zag amount
 .EnemyAIAfterZigZag
     and.w #$00FF,d0 ; normalize angle to [0,255]
     move.w d0,(a5) ; write angle to DATA_2
@@ -559,24 +598,27 @@ UpdateEnemies:
     move.w (a4),d5 ; get DATA_1
     btst.l #15,d5
     beq.s .EnemyUpdateLoopContinue
+    ; figure out speed (d6)
+    move.b #9,d6
+    btst.l #13,d5
+    beq.s .EnemyAINotFast
+    move.b #10,d6
+.EnemyAINotFast
     move.w (a5),d0 ; get DATA_2
     move.w d0,d5
     jsr Cos
     ext.l d0 ; output is a word, but we want to add to do a signed add to a long
-    move.b #8,d6
-    lsl.l d6,d0 ; divide out 256, multiply 65536 (1 pixel per frame)
+    lsl.l d6,d0 ; divide out 256, multiply 65536 (2 pixel per frame)
     add.l d0,(a1)
     move.w d5,d0
     jsr Sin
     ext.l d0
-    move.b #8,d6
     lsl.l d6,d0
     add.l d0,(a2)
 .EnemyUpdateLoopContinue
     add.w #2,a6 ; move alive pointer to next entry
     add.w #4,a1
     add.w #4,a2
-    add.w #2,a3
     add.w #2,a4
     add.w #2,a5
     dbra d7,.EnemyUpdateLoop
@@ -631,4 +673,13 @@ Atan2:
     add.l d5,d5
     add.l d5,a0
     move.w (a0),d0
+    rts
+
+; dx and dy pushed onto the stack behind the stack pointer
+LengthSqr:
+    move.w 4(sp),d0 ; x
+    move.w 6(sp),d1 ; y
+    muls.w d0,d0
+    muls.w d1,d1
+    add.w d1,d0
     rts
