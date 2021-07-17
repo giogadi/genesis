@@ -274,10 +274,26 @@ SetWindupRightAnim:
     move.w #6,ANIM_STRIDE
     rts
 
+SetHurtLeftAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+8*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+8*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+8*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
+SetHurtRightAnim:
+    move.w #(SAMURAI_SPRITE_TILE_START+8*6),ANIM_START_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+8*6),ANIM_LAST_INDEX
+    move.w #(SAMURAI_SPRITE_TILE_START+8*6),ANIM_CURRENT_INDEX
+    move.w #6,ANIM_STRIDE
+    rts
+
 ; new state is in d0. d0 gets clobbered. No return value
 UpdateAnimState:
     cmp.w PREVIOUS_ANIM_STATE,d0
-    beq.s .UpdateAnimStateEnd
+    bne.s .AfterEarlyReturn
+    rts
+.AfterEarlyReturn
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
     move.w d0,PREVIOUS_ANIM_STATE
 
@@ -289,7 +305,7 @@ UpdateAnimState:
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
-.NewAnimStateJumpTable dc.l .LeftIdle,.RightIdle,.LeftWalk,.RightWalk,.LeftSlashState,.RightSlashState,.LeftWindupState,.RightWindupState
+.NewAnimStateJumpTable dc.l .LeftIdle,.RightIdle,.LeftWalk,.RightWalk,.LeftSlashState,.RightSlashState,.LeftWindupState,.RightWindupState,.LeftHurtState,.RightHurtState
 .LeftIdle
     jsr SetLeftIdleAnim
     rts
@@ -313,6 +329,13 @@ UpdateAnimState:
     rts
 .RightWindupState
     jsr SetWindupRightAnim
+    rts
+.LeftHurtState
+    jsr SetHurtLeftAnim
+    rts
+.RightHurtState
+    jsr SetHurtRightAnim
+    rts
 .UpdateAnimStateEnd
     rts
 

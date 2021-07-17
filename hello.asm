@@ -149,6 +149,8 @@ START_BIT: equ 7
 
 CURRENT_X: so.w 1
 CURRENT_Y: so.w 1
+HERO_WIDTH: equ 16
+HERO_HEIGHT: equ 24
 
 MIN_DISPLAY_X: equ 128
 MAX_DISPLAY_X: equ 447
@@ -344,7 +346,7 @@ FIRST_TILE_INDEX: equ 1
     SetVramAddr d0,d1
     
 SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
-NUM_SAMURAI_TILES: equ (3*2*8)
+NUM_SAMURAI_TILES: equ (3*2*9) ; 3x2 sprite with 9 frames
     move #(8*NUM_SAMURAI_TILES)-1,d0
     move.l #SamuraiLeft1Sprite,a0
 @samurai_sprite_load_loop
@@ -474,15 +476,6 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
 
 ; Now let's add a sprite!!!!!
 SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
-;     move.w #SAMURAI_SPRITE_ADDR,d0
-;     SetVramAddr d0,d1
-; ; Then we make a sprite attribute entry. It's 8 bytes. Let's set it smack-dab in the middle.
-; ; That means [287,239] or [%100011111,%11101111]
-;     move.w #%0000000011101111,vdp_data
-;     move.w #%0000011000000000,vdp_data
-;     move.w ANIM_CURRENT_INDEX,vdp_data
-;     move.w #%0000000100011111,vdp_data
-
 SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
 
 ; Place two enemies
@@ -527,6 +520,8 @@ SLASH_LEFT_STATE: equ 4
 SLASH_RIGHT_STATE: equ 5
 WINDUP_LEFT_STATE: equ 6
 WINDUP_RIGHT_STATE: equ 7
+HURT_LEFT_STATE: equ 8
+HURT_RIGHT_STATE: equ 9
 PREVIOUS_ANIM_STATE: so.w 1
     move.w #LEFT_IDLE_STATE,PREVIOUS_ANIM_STATE
 NEW_ANIM_STATE: so.w 1
@@ -538,6 +533,10 @@ FACING_LEFT: equ 2
 FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
+
+HURT_ON_THIS_FRAME: so.w 1
+HURT_FRAMES_LEFT: so.w 1
+    move.w #0,HURT_FRAMES_LEFT
 
 ; when !NONE, slash has priority over animation/movement
 SLASH_STATE_NONE: equ 0
@@ -586,9 +585,97 @@ loop
     or.w CONTROLLER,d0
     move.w d0,OR_CONTROLLER
     
-    clr.w d4 ; dx = 0
-    clr.w d5 ; dy = 0
-    clr.w SLASH_ON_THIS_FRAME ; reset slash bit
+    clr.w SLASH_ON_THIS_FRAME
+    clr.w HURT_ON_THIS_FRAME
+
+    ; Check if player is newly hurt
+    tst.w HURT_FRAMES_LEFT
+    bgt.s .AfterCheckNewHurt ; if player is already hurting, skip
+    move.w #MAX_NUM_ENEMIES-1,d7
+    move.w CURRENT_X,d2 ; hero_min_x
+    move.w CURRENT_Y,d3 ; hero_min_y
+    move.w d2,d4
+    add.w #HERO_WIDTH,d4 ; hero_max_x
+    move.w d3,d5
+    add.w #HERO_HEIGHT,d5 ; hero_max_y
+    move.l #ENEMY_X,a2
+    move.l #ENEMY_Y,a3
+    move.l #ENEMY_STATE,a4
+.CheckHurtLoop:
+    ; if enemy is not alive, skip to next enemy
+    move.w (a4),d6
+    cmp.w #ENEMY_STATE_ALIVE,d6
+    bne.s .CheckHurtLoopContinue
+    ; check hero AABB vs enemy AABB.
+    ; We're also gonna check which direction had the minimum overlap.
+    ; This tells us which side the enemy is of the player, and thus which way the player should
+    ; bounce.
+    ; move.w #0,d0 ; this tracks which direction has least overlap
+    ; move.w #0,d1 ; this tracks the overlap amount of least-overlap-direction
+    ; move.w (a2),d6 ; enemy_min_x (top word is pixel pos)
+    ; sub.w d4,d6 ; enemy_min_x - enemy_max_x
+    ; bgt.s .CheckHurtLoopContinue
+    ; cmp.w d1,d6 ; compare with previous overlap amount
+    ; bgt.s .CheckHurtNotLeastOverlap1
+    ; move.w #0,d0
+    ; move.w d6,d1
+; .CheckHurtNotLeastOverlap1
+    move.w (a2),d6 ; enemy_min_x (top word is pixel pos)
+    cmp.w d4,d6 ; enemy_min_x - hero_max_x
+    bgt.s .CheckHurtLoopContinue
+    move.w (a2),d6 ; enemy_min_x
+    add.w #16,d6 ; enemy_max_x (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
+    cmp.w d6,d2 ; hero_min_x - enemy_max_x
+    bgt.s .CheckHurtLoopContinue
+    move.w (a3),d6 ; enemy_min_y
+    cmp.w d5,d6 ; enemy_min_y - hero_max_y
+    bgt.s .CheckHurtLoopContinue
+    add.w #16,d6 ; enemy_max_y (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
+    cmp.w d6,d3 ; hero_min_y - enemy_max_y
+    bgt.s .CheckHurtLoopContinue
+    ; OK we have an overlap. update HURT_ON_THIS_FRAME and break out of loop
+    move.w #1,HURT_ON_THIS_FRAME
+    bra.s .AfterCheckNewHurt
+.CheckHurtLoopContinue
+    add.l #4,a2
+    add.l #4,a3
+    add.w #2,a4
+    dbra d7,.CheckHurtLoop
+.AfterCheckNewHurt
+
+    tst.w HURT_ON_THIS_FRAME
+    beq.s .AfterSetNewHurtState
+    ; set hurt frame counter
+    move.w #30,HURT_FRAMES_LEFT
+    move.l #.HurtAnimJumpTable,a0
+    clr.l d0
+    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.HurtAnimJumpTable dc.l .HurtFacingUp,.HurtFacingDown,.HurtFacingLeft,.HurtFacingRight
+.HurtFacingUp:
+    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSetNewHurtState
+.HurtFacingDown:
+    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSetNewHurtState
+.HurtFacingLeft:
+    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    bra.s .AfterSetNewHurtState
+.HurtFacingRight:
+    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+.AfterSetNewHurtState
+
+    ; if player is currently hurt, update hurt frame counter+position and skip controls stuff
+    move.w HURT_FRAMES_LEFT,d2
+    ble.s .NotCurrentlyHurt
+    sub.w #1,HURT_FRAMES_LEFT
+    add.w #1,CURRENT_Y ; DEBUG
+    bra.w .skipPositionUpdate ; TODO UPDATE POSITION AND CHECK COLLISIONS ETC
+.NotCurrentlyHurt
 
     ; check for slash. update animation if so
     jsr CheckSlashAndUpdate
@@ -617,6 +704,9 @@ loop
 .DefaultFacingRight
     move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
 .AfterDefaultAnim
+
+    clr.w d4 ; dx = 0
+    clr.w d5 ; dy = 0
 
     move.b CONTROLLER,d7
     btst.l #UP_BIT,d7
@@ -838,9 +928,6 @@ TileCollisions:
 TileMap:
     include art/tilemap.asm
 
-SamuraiSprite:
-    include art/samurai_sprite.asm
-
 SamuraiLeft1Sprite:
     include art/samurai/left1.asm
 
@@ -864,6 +951,9 @@ WindupLeftSprite:
 
 WindupRightSprite:
     include art/samurai/windup_right.asm
+
+HurtLeftSprite:
+    include art/samurai/hurt_left.asm
 
 SlashRightSprite:
     include art/slash_sprite.asm
