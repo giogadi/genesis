@@ -178,6 +178,7 @@ SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
 
     include util.asm
+    include butt_enemy.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------
@@ -497,13 +498,13 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     add.l #4,a2
     move.l #DrawButtEnemy,(a3)+
     move.w #0,(a4)+
-    move.w #ENEMY_STATE_ALIVE,(a0)+
-    move.w #240,(a1)
-    add.l #4,a1
-    move.w #180,(a2)
-    add.l #4,a2
-    move.l #DrawButtEnemy,(a3)+
-    move.w #0,(a4)+
+    ; move.w #ENEMY_STATE_ALIVE,(a0)+
+    ; move.w #240,(a1)
+    ; add.l #4,a1
+    ; move.w #180,(a2)
+    ; add.l #4,a2
+    ; move.l #DrawButtEnemy,(a3)+
+    ; move.w #0,(a4)+
 
 
 ; FM TEST FM TEST FM TEST
