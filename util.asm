@@ -612,3 +612,108 @@ LengthSqr:
     muls.w d1,d1
     add.w d1,d0
     rts
+
+; Updates HURT_ON_THIS_FRAME and HURT_DIRECTION.
+; TODO: currently clobbers a bunch of registers.
+CheckIfHeroNewlyHurt:
+    tst.w HURT_FRAMES_LEFT
+    ble.s .CheckHurtAfterEarlyReturn
+    rts ; if player is already hurting, skip
+.CheckHurtAfterEarlyReturn
+    move.w #MAX_NUM_ENEMIES-1,d7
+    move.w CURRENT_X,d2 ; hero_min_x
+    move.w CURRENT_Y,d3 ; hero_min_y
+    move.w d2,d4
+    add.w #HERO_WIDTH,d4 ; hero_max_x
+    move.w d3,d5
+    add.w #HERO_HEIGHT,d5 ; hero_max_y
+    move.l #ENEMY_X,a2
+    move.l #ENEMY_Y,a3
+    move.l #ENEMY_STATE,a4
+.CheckHurtLoop:
+    ; if enemy is not alive, skip to next enemy
+    move.w (a4),d6
+    cmp.w #ENEMY_STATE_ALIVE,d6
+    bne.s .CheckHurtLoopContinue
+    ; check hero AABB vs enemy AABB.
+    ; We're also gonna check which direction had the minimum overlap.
+    ; This tells us which side the enemy is of the player, and thus which way the player should
+    ; bounce.
+    move.w #0,d0 ; this tracks which direction has least overlap
+    move.w #$0FFF,d1 ; this tracks the overlap amount of least-overlap-direction
+    move.w (a2),d6 ; enemy_min_x (top word is pixel pos)
+    sub.w d4,d6 ; enemy_min_x - hero_max_x
+    bgt.s .CheckHurtLoopContinue
+    neg.w d6 ; make overlap positive
+    cmp.w d1,d6 ; compare with previous overlap amount and keep smaller value
+    bgt.s .CheckHurtNotLeastOverlap1
+    move.w #FACING_LEFT,d0
+    move.w d6,d1
+.CheckHurtNotLeastOverlap1
+    move.w (a2),d6 ; enemy_min_x
+    add.w #16,d6 ; enemy_max_x (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
+    sub.w d2,d6 ; enemy_max_x - hero_min_x
+    blt.s .CheckHurtLoopContinue
+    cmp.w d1,d6 ; compare with previous overlap amount and keep smaller value
+    bge.s .CheckHurtNotLeastOverlap2
+    move.w #FACING_RIGHT,d0
+    move.w d6,d1
+.CheckHurtNotLeastOverlap2
+    move.w (a3),d6 ; enemy_min_y
+    sub.w d5,d6 ; enemy_min_y - hero_max_y
+    bgt.s .CheckHurtLoopContinue
+    neg.w d6 ; make overlap positive
+    cmp.w d1,d6 ; compare with previous overlap amount and keep smaller value
+    bge.s .CheckHurtNotLeastOverlap3
+    move.w #FACING_UP,d0
+    move.w d6,d1
+.CheckHurtNotLeastOverlap3
+    move.w (a3),d6 ; enemy_min_y
+    add.w #16,d6 ; enemy_max_y (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
+    sub.w d3,d6 ; enemy_max_y - hero_min_y
+    blt.s .CheckHurtLoopContinue
+    cmp.w d1,d6 ; compare with previous overlap amount and keep smaller value
+    bge.s .CheckHurtNotLeastOverlap4
+    move.w #FACING_DOWN,d0
+    move.w d6,d1
+.CheckHurtNotLeastOverlap4
+    ; OK we have an overlap. update HURT_ON_THIS_FRAME and break out of loop
+    ; bit 0 is 1 if hurt occurred. upper byte is 0-4 to denote the direction that
+    ; player will be pushed toward.
+    move.w #1,HURT_ON_THIS_FRAME
+    move.w d0,HURT_DIRECTION
+    rts
+.CheckHurtLoopContinue
+    add.l #4,a2
+    add.l #4,a3
+    add.w #2,a4
+    dbra d7,.CheckHurtLoop
+    rts
+
+MaybeSetNewlyHurtState
+    tst.w HURT_ON_THIS_FRAME
+    beq.s .SetNewHurtStateEnd
+    ; set hurt frame counter
+    move.w #30,HURT_FRAMES_LEFT
+    move.l #.HurtAnimJumpTable,a0
+    clr.l d0
+    move.w HURT_DIRECTION,d0; ; direction hero will move during hurt
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.HurtAnimJumpTable dc.l .HurtAnimMovingUp,.HurtAnimMovingDown,.HurtAnimMovingLeft,.HurtAnimMovingRight
+.HurtAnimMovingUp:
+    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    rts
+.HurtAnimMovingDown:
+    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    rts
+.HurtAnimMovingLeft:
+    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    rts
+.HurtAnimMovingRight:
+    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+.SetNewHurtStateEnd
+    rts

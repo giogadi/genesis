@@ -149,6 +149,8 @@ START_BIT: equ 7
 
 CURRENT_X: so.w 1
 CURRENT_Y: so.w 1
+NEW_X: so.w 1
+NEW_Y: so.w 1
 HERO_WIDTH: equ 16
 HERO_HEIGHT: equ 24
 
@@ -537,6 +539,7 @@ FACING_DIRECTION: so.w 1
 HURT_ON_THIS_FRAME: so.w 1
 HURT_FRAMES_LEFT: so.w 1
     move.w #0,HURT_FRAMES_LEFT
+HURT_DIRECTION: so.w 1
 
 ; when !NONE, slash has priority over animation/movement
 SLASH_STATE_NONE: equ 0
@@ -587,94 +590,47 @@ loop
     
     clr.w SLASH_ON_THIS_FRAME
     clr.w HURT_ON_THIS_FRAME
+    move.w CURRENT_X,NEW_X
+    move.w CURRENT_Y,NEW_Y
 
-    ; Check if player is newly hurt
-    tst.w HURT_FRAMES_LEFT
-    bgt.s .AfterCheckNewHurt ; if player is already hurting, skip
-    move.w #MAX_NUM_ENEMIES-1,d7
-    move.w CURRENT_X,d2 ; hero_min_x
-    move.w CURRENT_Y,d3 ; hero_min_y
-    move.w d2,d4
-    add.w #HERO_WIDTH,d4 ; hero_max_x
-    move.w d3,d5
-    add.w #HERO_HEIGHT,d5 ; hero_max_y
-    move.l #ENEMY_X,a2
-    move.l #ENEMY_Y,a3
-    move.l #ENEMY_STATE,a4
-.CheckHurtLoop:
-    ; if enemy is not alive, skip to next enemy
-    move.w (a4),d6
-    cmp.w #ENEMY_STATE_ALIVE,d6
-    bne.s .CheckHurtLoopContinue
-    ; check hero AABB vs enemy AABB.
-    ; We're also gonna check which direction had the minimum overlap.
-    ; This tells us which side the enemy is of the player, and thus which way the player should
-    ; bounce.
-    ; move.w #0,d0 ; this tracks which direction has least overlap
-    ; move.w #0,d1 ; this tracks the overlap amount of least-overlap-direction
-    ; move.w (a2),d6 ; enemy_min_x (top word is pixel pos)
-    ; sub.w d4,d6 ; enemy_min_x - enemy_max_x
-    ; bgt.s .CheckHurtLoopContinue
-    ; cmp.w d1,d6 ; compare with previous overlap amount
-    ; bgt.s .CheckHurtNotLeastOverlap1
-    ; move.w #0,d0
-    ; move.w d6,d1
-; .CheckHurtNotLeastOverlap1
-    move.w (a2),d6 ; enemy_min_x (top word is pixel pos)
-    cmp.w d4,d6 ; enemy_min_x - hero_max_x
-    bgt.s .CheckHurtLoopContinue
-    move.w (a2),d6 ; enemy_min_x
-    add.w #16,d6 ; enemy_max_x (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
-    cmp.w d6,d2 ; hero_min_x - enemy_max_x
-    bgt.s .CheckHurtLoopContinue
-    move.w (a3),d6 ; enemy_min_y
-    cmp.w d5,d6 ; enemy_min_y - hero_max_y
-    bgt.s .CheckHurtLoopContinue
-    add.w #16,d6 ; enemy_max_y (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
-    cmp.w d6,d3 ; hero_min_y - enemy_max_y
-    bgt.s .CheckHurtLoopContinue
-    ; OK we have an overlap. update HURT_ON_THIS_FRAME and break out of loop
-    move.w #1,HURT_ON_THIS_FRAME
-    bra.s .AfterCheckNewHurt
-.CheckHurtLoopContinue
-    add.l #4,a2
-    add.l #4,a3
-    add.w #2,a4
-    dbra d7,.CheckHurtLoop
-.AfterCheckNewHurt
+    ; updates HURT_ON_THIS_FRAME and HURT_DIRECTION
+    jsr CheckIfHeroNewlyHurt
 
-    tst.w HURT_ON_THIS_FRAME
-    beq.s .AfterSetNewHurtState
-    ; set hurt frame counter
-    move.w #30,HURT_FRAMES_LEFT
-    move.l #.HurtAnimJumpTable,a0
+    ; If hero was newly hurt, set the appropriate state
+    jsr MaybeSetNewlyHurtState
+
+    ; if player is currently hurt, update hurt frame counter+position and skip controls stuff
+    ; TODO: what we really need is some kind of giant jump table to separately/exclusively handle the
+    ; following states: walking, slashing, hurt
+    move.w HURT_FRAMES_LEFT,d2
+    ble.s .NotCurrentlyHurt
+    sub.w #1,HURT_FRAMES_LEFT
+    move.l #.HurtMotionJumpTable,a0
     clr.l d0
-    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    move.w HURT_DIRECTION,d0; ; direction hero will move during hurt
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0
     ; dereference jump table to get address to jump to
     move.l (a0),a0
+    move.w CURRENT_X,d4 ; CheckNewPosition expects x,y to be in d4,d5
+    move.w CURRENT_Y,d5
     jmp (a0)
-.HurtAnimJumpTable dc.l .HurtFacingUp,.HurtFacingDown,.HurtFacingLeft,.HurtFacingRight
-.HurtFacingUp:
-    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
-    bra.s .AfterSetNewHurtState
-.HurtFacingDown:
-    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
-    bra.s .AfterSetNewHurtState
-.HurtFacingLeft:
-    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
-    bra.s .AfterSetNewHurtState
-.HurtFacingRight:
-    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
-.AfterSetNewHurtState
-
-    ; if player is currently hurt, update hurt frame counter+position and skip controls stuff
-    move.w HURT_FRAMES_LEFT,d2
-    ble.s .NotCurrentlyHurt
-    sub.w #1,HURT_FRAMES_LEFT
-    add.w #1,CURRENT_Y ; DEBUG
-    bra.w .skipPositionUpdate ; TODO UPDATE POSITION AND CHECK COLLISIONS ETC
+.HurtMotionJumpTable dc.l .HurtMovingUp,.HurtMovingDown,.HurtMovingLeft,.HurtMovingRight
+.HurtMovingUp:
+    sub.w #1,d5
+    bra.s .AfterHurtMotion
+.HurtMovingDown:
+    add.w #1,d5
+    bra.s .AfterHurtMotion
+.HurtMovingLeft:
+    sub.w #1,d4
+    bra.s .AfterHurtMotion
+.HurtMovingRight:
+    add.w #1,d4
+.AfterHurtMotion
+    move.w d4,NEW_X
+    move.w d5,NEW_Y
+    bra.w .CheckNewPosition
 .NotCurrentlyHurt
 
     ; check for slash. update animation if so
@@ -733,8 +689,14 @@ loop
     move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
     move.w #FACING_RIGHT,FACING_DIRECTION
 .RightNotPressed
-    add.w CURRENT_X,d4 ; new x in d4
-    add.w CURRENT_Y,d5 ; new y in d5
+    add.w CURRENT_X,d4
+    add.w CURRENT_Y,d5
+    move.w d4,NEW_X
+    move.w d5,NEW_Y
+
+.CheckNewPosition ; new position is in NEW_X,NEW_Y
+    move.w NEW_X,d4
+    move.w NEW_Y,d5
 
     ; clamp sprite x
     move.w d4,d0
