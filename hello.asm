@@ -329,15 +329,23 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.l #0,(vdp_data)
     dbf d0,@vsram_loop
 
-; Load in our palette
-    clr.w d0
-    SetCramAddr d0,d1
+    jsr LoadNormalPalette
 
-    move #15,d0
-    move.l #SimplePalette,a0
-@palette_loop
-    move.w (a0)+,vdp_data
-    dbra d0,@palette_loop
+; Load in our palettes
+;     clr.w d0
+;     SetCramAddr d0,d1
+
+;     move #15,d0
+;     move.l #SimplePalette,a0
+; @palette_loop
+;     move.w (a0)+,vdp_data
+;     dbra d0,@palette_loop
+
+;     move #15,d0
+;     move.l #InversePalette,a0
+; @inverse_palette_loop
+;     move.w (a0)+,vdp_data
+;     dbra d0,@inverse_palette_loop
 
 ; Load in one simple tile at 2nd loc. Need to start writing to VRAM at $0020 = %0000 0000 0010 0000
 ; NOTE: we don't set the autoincrement to 4 because when 68k does longword writes to VDP, VDP
@@ -575,6 +583,9 @@ HITSTOP_FRAMES: equ 10
 
 HERO_SPEED: equ 1
 
+GLOBAL_PALETTE: so.w 1
+    move.w #0,GLOBAL_PALETTE
+
 loop
     tst.w HITSTOP_FRAMES_LEFT
     beq.w .NoHitstop
@@ -605,6 +616,11 @@ loop
     move.w HURT_FRAMES_LEFT,d2
     ble.s .NotCurrentlyHurt
     sub.w #1,HURT_FRAMES_LEFT
+    ; when hitstop is over, go back to normal palette
+    tst.w HITSTOP_FRAMES_LEFT
+    bgt.w .HurtUpdateAfterPaletteReset
+    jsr LoadNormalPalette
+.HurtUpdateAfterPaletteReset
     move.l #.HurtMotionJumpTable,a0
     clr.l d0
     move.w HURT_DIRECTION,d0; ; direction hero will move during hurt
@@ -612,21 +628,22 @@ loop
     add.l d0,a0
     ; dereference jump table to get address to jump to
     move.l (a0),a0
-    move.w CURRENT_X,d4 ; CheckNewPosition expects x,y to be in d4,d5
+    move.w CURRENT_X,d4
     move.w CURRENT_Y,d5
+    move.w #4,d2 ; speed
     jmp (a0)
 .HurtMotionJumpTable dc.l .HurtMovingUp,.HurtMovingDown,.HurtMovingLeft,.HurtMovingRight
 .HurtMovingUp:
-    sub.w #1,d5
+    sub.w d2,d5
     bra.s .AfterHurtMotion
 .HurtMovingDown:
-    add.w #1,d5
+    add.w d2,d5
     bra.s .AfterHurtMotion
 .HurtMovingLeft:
-    sub.w #1,d4
+    sub.w d2,d4
     bra.s .AfterHurtMotion
 .HurtMovingRight:
-    add.w #1,d4
+    add.w d2,d4
 .AfterHurtMotion
     move.w d4,NEW_X
     move.w d5,NEW_Y
@@ -761,7 +778,12 @@ loop
     or.w SPRITE_COUNTER,d0
     move.w d0,vdp_data
     move.w d0,LAST_LINK_WRITTEN
-    move.w ANIM_CURRENT_INDEX,vdp_data
+    ; construct 3rd entry from color palette number and tile number
+    move.w ANIM_CURRENT_INDEX,d0
+    move.w GLOBAL_PALETTE,d1
+    ror.w #3,d1 ; put palette in position
+    or.w d1,d0 ; add palette to d0
+    move.w d0,vdp_data
     move.w CURRENT_X,vdp_data
 
     ; SLASH
@@ -811,6 +833,10 @@ loop
     or.w SPRITE_COUNTER,d3 ; add link data computed way above
     move.w d3,vdp_data
     move.w d3,LAST_LINK_WRITTEN
+    ; set global palette onto d4
+    move.w GLOBAL_PALETTE,d1
+    ror.w #3,d1
+    or.w d1,d4
     move.w d4,vdp_data
     move.w d0,vdp_data
     bra.s .AfterSlash
@@ -880,6 +906,9 @@ v_interrupt_handler:
 
 SimplePalette:
     include art/simple_palette.asm
+
+InversePalette:
+    include art/inverse_palette.asm
 
 TileSet:
     include art/tileset.asm

@@ -461,7 +461,12 @@ DrawButtEnemy:
     move.w d3,vdp_data
     move.w d5,vdp_data
     move.w d5,LAST_LINK_WRITTEN
-    move.w #BUTT_SPRITE_TILE_START,vdp_data
+    ; add global_palette
+    move.w GLOBAL_PALETTE,d5
+    ror.w #3,d5
+    or.w #BUTT_SPRITE_TILE_START,d5
+    move.w d5,vdp_data
+    ;move.w #BUTT_SPRITE_TILE_START,vdp_data
     move.w d2,vdp_data
     bra.s .DrawButtEnemyEnd
 .DrawButtEnemyDying:
@@ -693,8 +698,12 @@ CheckIfHeroNewlyHurt:
 MaybeSetNewlyHurtState
     tst.w HURT_ON_THIS_FRAME
     beq.s .SetNewHurtStateEnd
+    ; flip palette
+    jsr LoadInversePalette
+    ; add hitstop
+    move.w #3,HITSTOP_FRAMES_LEFT
     ; set hurt frame counter
-    move.w #30,HURT_FRAMES_LEFT
+    move.w #8,HURT_FRAMES_LEFT
     move.l #.HurtAnimJumpTable,a0
     clr.l d0
     move.w HURT_DIRECTION,d0; ; direction hero will move during hurt
@@ -716,4 +725,24 @@ MaybeSetNewlyHurtState
 .HurtAnimMovingRight:
     move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
 .SetNewHurtStateEnd
+    rts
+
+LoadNormalPalette:
+    clr.w d0
+    SetCramAddr d0,d1
+    move #(16-1),d0
+    move.l #SimplePalette,a0
+.normal_palette_loop
+    move.w (a0)+,vdp_data
+    dbra d0,.normal_palette_loop
+    rts
+
+LoadInversePalette:
+    clr.w d0
+    SetCramAddr d0,d1
+    move #(16-1),d0
+    move.l #InversePalette,a0
+.inverse_palette_loop
+    move.w (a0)+,vdp_data
+    dbra d0,.inverse_palette_loop
     rts
