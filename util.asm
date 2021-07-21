@@ -704,6 +704,8 @@ MaybeSetNewlyHurtState
     move.w #3,HITSTOP_FRAMES_LEFT
     ; set hurt frame counter
     move.w #8,HURT_FRAMES_LEFT
+    ; reset slash state
+    move.w #SLASH_STATE_NONE,SLASH_STATE
     move.l #.HurtAnimJumpTable,a0
     clr.l d0
     move.w HURT_DIRECTION,d0; ; direction hero will move during hurt
