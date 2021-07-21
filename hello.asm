@@ -131,9 +131,7 @@ VSRAM_MAX_ADDR:   equ $4F
 
 RAM_BASE_ADDR:  equ $FF0000
     setso RAM_BASE_ADDR
-; DEBUG
-OR_CONTROLLER: so.w 1
-    clr.w OR_CONTROLLER
+
 NEW_FRAME: so.w 1
 
 ; SACBRLDU
@@ -182,6 +180,7 @@ SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
 
     include util.asm
+    include hero_state.asm
     include butt_enemy.asm
 
 ; INIT
@@ -544,35 +543,8 @@ FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
 
-HURT_ON_THIS_FRAME: so.w 1
-HURT_FRAMES_LEFT: so.w 1
-    move.w #0,HURT_FRAMES_LEFT
-HURT_DIRECTION: so.w 1
-
-; when !NONE, slash has priority over animation/movement
-SLASH_STATE_NONE: equ 0
-SLASH_STATE_WINDUP: equ 1
-SLASH_STATE_RELEASE: equ 2
-SLASH_STATE: so.w 1
-    move.w #SLASH_STATE_NONE,SLASH_STATE
-SLASH_STATE_ITERS_LEFT: so.w 1
-    move.w #0,SLASH_STATE_ITERS_LEFT
-
-SLASH_WINDUP_ITERS: equ 20
-SLASH_WINDUP_ITERS_LEFT: so.w 1
-    move.w #0,SLASH_WINDUP_ITERS_LEFT
-SLASH_COOLDOWN_ITERS: equ 20
-; ITERS_TIL_CAN_SLASH: so.w 1
-;     move.w #0,ITERS_TIL_CAN_SLASH
-SLASH_ON_THIS_FRAME: so.w 1
-    move.w #0,SLASH_ON_THIS_FRAME
-BUTTON_RELEASED_SINCE_LAST_SLASH: so.w 1
-    move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH
-; these only valid if SLASH_ON_THIS_FRAME != 0
-SLASH_MIN_X: so.w 1
-SLASH_MIN_Y: so.w 1
-SLASH_MAX_X: so.w 1
-SLASH_MAX_Y: so.w 1
+SLASH_STARTUP_ITERS: equ 20
+SLASH_RECOVERY_ITERS: equ 20
 
 ITERATIONS_PER_ANIM_FRAME: equ 20
 ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
@@ -582,6 +554,29 @@ HITSTOP_FRAMES_LEFT: so.w 1
 HITSTOP_FRAMES: equ 10
 
 HERO_SPEED: equ 1
+
+HERO_STATE: so.w 1
+    move.w #HERO_STATE_IDLE,HERO_STATE
+HERO_STATE_IDLE: equ 0
+HERO_STATE_SLASH_STARTUP: equ 1
+HERO_STATE_SLASH_ACTIVE: equ 2
+HERO_STATE_SLASH_RECOVERY: equ 3
+HERO_STATE_HURT: equ 4
+
+HERO_NEW_STATE: so.w 1
+    move.w #1,HERO_NEW_STATE
+
+HERO_STATE_FRAMES_LEFT: so.w 1
+
+; Hero-state-specific fields
+HURT_DIRECTION: so.w 1
+BUTTON_RELEASED_SINCE_LAST_SLASH: so.w 1
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH
+; these only valid if SLASH_ACTIVE
+SLASH_MIN_X: so.w 1
+SLASH_MIN_Y: so.w 1
+SLASH_MAX_X: so.w 1
+SLASH_MAX_Y: so.w 1
 
 GLOBAL_PALETTE: so.w 1
     move.w #0,GLOBAL_PALETTE
@@ -594,122 +589,14 @@ loop
 
 .NoHitstop
     GetControls d0,d1
-    ;DEBUG
-    move.w OR_CONTROLLER,d0
-    or.w CONTROLLER,d0
-    move.w d0,OR_CONTROLLER
     
-    clr.w SLASH_ON_THIS_FRAME
-    clr.w HURT_ON_THIS_FRAME
+    move.w #0,HERO_NEW_STATE
     move.w CURRENT_X,NEW_X
     move.w CURRENT_Y,NEW_Y
 
-    ; updates HURT_ON_THIS_FRAME and HURT_DIRECTION
-    jsr CheckIfHeroNewlyHurt
+    jsr UpdateButtonReleasedSinceLastSlash
 
-    ; If hero was newly hurt, set the appropriate state
-    jsr MaybeSetNewlyHurtState
-
-    ; if player is currently hurt, update hurt frame counter+position and skip controls stuff
-    ; TODO: what we really need is some kind of giant jump table to separately/exclusively handle the
-    ; following states: walking, slashing, hurt
-    move.w HURT_FRAMES_LEFT,d2
-    ble.s .NotCurrentlyHurt
-    sub.w #1,HURT_FRAMES_LEFT
-    ; when hitstop is over, go back to normal palette
-    tst.w HITSTOP_FRAMES_LEFT
-    bgt.w .HurtUpdateAfterPaletteReset
-    jsr LoadNormalPalette
-.HurtUpdateAfterPaletteReset
-    move.l #.HurtMotionJumpTable,a0
-    clr.l d0
-    move.w HURT_DIRECTION,d0; ; direction hero will move during hurt
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
-    move.w CURRENT_X,d4
-    move.w CURRENT_Y,d5
-    move.w #4,d2 ; speed
-    jmp (a0)
-.HurtMotionJumpTable dc.l .HurtMovingUp,.HurtMovingDown,.HurtMovingLeft,.HurtMovingRight
-.HurtMovingUp:
-    sub.w d2,d5
-    bra.s .AfterHurtMotion
-.HurtMovingDown:
-    add.w d2,d5
-    bra.s .AfterHurtMotion
-.HurtMovingLeft:
-    sub.w d2,d4
-    bra.s .AfterHurtMotion
-.HurtMovingRight:
-    add.w d2,d4
-.AfterHurtMotion
-    move.w d4,NEW_X
-    move.w d5,NEW_Y
-    bra.w .CheckNewPosition
-.NotCurrentlyHurt
-
-    ; check for slash. update animation if so
-    jsr CheckSlashAndUpdate
-    tst.w SLASH_STATE
-    bgt .skipPositionUpdate
-
-    ; default to anim facing previous direction first.
-    move.l #.DefaultAnimJumpTable,a0
-    clr.l d0
-    move.w FACING_DIRECTION,d0; offset in longs into jump table
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
-    jmp (a0)
-.DefaultAnimJumpTable dc.l .DefaultFacingUp,.DefaultFacingDown,.DefaultFacingLeft,.DefaultFacingRight
-.DefaultFacingUp
-    move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
-    bra.s .AfterDefaultAnim
-.DefaultFacingDown
-    move.w #LEFT_IDLE_STATE,NEW_ANIM_STATE
-    bra.s .AfterDefaultAnim
-.DefaultFacingLeft
-    move.w #LEFT_IDLE_STATE,NEW_ANIM_STATE
-    bra.s .AfterDefaultAnim
-.DefaultFacingRight
-    move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
-.AfterDefaultAnim
-
-    clr.w d4 ; dx = 0
-    clr.w d5 ; dy = 0
-
-    move.b CONTROLLER,d7
-    btst.l #UP_BIT,d7
-    beq.s .UpNotPressed
-    sub.w #HERO_SPEED,d5
-    move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
-    move.w #FACING_UP,FACING_DIRECTION
-.UpNotPressed
-    btst.l #DOWN_BIT,d7
-    beq.s .DownNotPressed
-    add.w #HERO_SPEED,d5
-    move.w #WALK_LEFT_STATE,NEW_ANIM_STATE
-    move.w #FACING_DOWN,FACING_DIRECTION
-.DownNotPressed
-    btst.l #LEFT_BIT,d7
-    beq.s .LeftNotPressed
-    sub.w #HERO_SPEED,d4
-    move.w #WALK_LEFT_STATE,NEW_ANIM_STATE
-    move.w #FACING_LEFT,FACING_DIRECTION
-.LeftNotPressed
-    btst.l #RIGHT_BIT,d7
-    beq.s .RightNotPressed
-    add.w #HERO_SPEED,d4
-    move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
-    move.w #FACING_RIGHT,FACING_DIRECTION
-.RightNotPressed
-    add.w CURRENT_X,d4
-    add.w CURRENT_Y,d5
-    move.w d4,NEW_X
-    move.w d5,NEW_Y
+    jsr HeroStateUpdate
 
 .CheckNewPosition ; new position is in NEW_X,NEW_Y
     move.w NEW_X,d4
@@ -789,8 +676,9 @@ loop
     ; SLASH
     ; TODO: with our improved link data handling, see if we can just skip all this if no slash
     add.w #1,SPRITE_COUNTER ; whether we slash or not we have a sprite for it
-    tst.w SLASH_ON_THIS_FRAME
-    beq.w .NoSlash
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_SLASH_ACTIVE,d0
+    bne.w .NoSlash
     ; figure out position/orientation/image of slash sprite
     move.w CURRENT_X,d0
     move.w CURRENT_Y,d1
