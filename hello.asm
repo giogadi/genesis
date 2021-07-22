@@ -554,6 +554,7 @@ HITSTOP_FRAMES_LEFT: so.w 1
 HITSTOP_FRAMES: equ 10
 
 HERO_SPEED: equ 1
+DASHING_SPEED: equ (5*HERO_SPEED)
 
 HERO_STATE: so.w 1
     move.w #HERO_STATE_IDLE,HERO_STATE
@@ -562,6 +563,7 @@ HERO_STATE_SLASH_STARTUP: equ 1
 HERO_STATE_SLASH_ACTIVE: equ 2
 HERO_STATE_SLASH_RECOVERY: equ 3
 HERO_STATE_HURT: equ 4
+HERO_STATE_DASHING: equ 5
 
 HERO_NEW_STATE: so.w 1
     move.w #1,HERO_NEW_STATE
@@ -577,6 +579,8 @@ SLASH_MIN_X: so.w 1
 SLASH_MIN_Y: so.w 1
 SLASH_MAX_X: so.w 1
 SLASH_MAX_Y: so.w 1
+BUTTON_RELEASED_SINCE_LAST_DASH: so.w 1
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_DASH
 
 GLOBAL_PALETTE: so.w 1
     move.w #0,GLOBAL_PALETTE
@@ -595,6 +599,7 @@ loop
     move.w CURRENT_Y,NEW_Y
 
     jsr UpdateButtonReleasedSinceLastSlash
+    jsr UpdateButtonReleasedSinceLastDash
 
     jsr HeroStateUpdate
 

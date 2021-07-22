@@ -7,7 +7,7 @@ HeroStateUpdate:
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
-.HeroStateJumpTable dc.l HeroStateIdle,HeroStateSlashStartup,HeroStateSlashActive,HeroStateSlashRecovery,HeroStateHurt
+.HeroStateJumpTable dc.l HeroStateIdle,HeroStateSlashStartup,HeroStateSlashActive,HeroStateSlashRecovery,HeroStateHurt,HeroStateDashing
 HeroStateIdle:
     jsr HeroStateIdleUpdate
     rts
@@ -23,6 +23,9 @@ HeroStateSlashRecovery:
 HeroStateHurt:
     jsr HeroStateHurtUpdate
     rts
+HeroStateDashing:
+    jsr HeroStateDashingUpdate
+    rts
 
 ; Update FACING_DIRECTION,NEW_ANIM_STATE,NEW_X,NEW_Y
 HeroStateIdleUpdate:
@@ -30,13 +33,19 @@ HeroStateIdleUpdate:
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
-    beq.s HeroStateHurt
+    beq.w HeroStateHurt
 
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_STARTUP,d0
     beq.s HeroStateSlashStartup
+
+    ; Dash Transition
+    jsr HeroStateMaybeStartDash
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_DASHING,d0
+    beq.s HeroStateDashing
 
     ; default to anim facing previous direction first.
     move.l #.DefaultAnimJumpTable,a0
@@ -160,6 +169,12 @@ HeroStateMaybeStartSlash
     rts
 
 HeroStateSlashStartupUpdate
+    ; Hurt Transition
+    jsr CheckIfHeroNewlyHurt
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_HURT,d0
+    beq.w HeroStateHurt
+
     ; New state setup
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
@@ -218,7 +233,26 @@ UpdateButtonReleasedSinceLastSlash
 .End
     rts
 
+UpdateButtonReleasedSinceLastDash
+    tst.w BUTTON_RELEASED_SINCE_LAST_DASH
+    bne.s .End
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_DASHING,d0
+    beq.s .End
+    move.b CONTROLLER,d0
+    btst.l #C_BIT,d0
+    bne.s .End
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_DASH
+.End
+    rts
+
 HeroStateSlashActiveUpdate
+    ; Hurt Transition
+    jsr CheckIfHeroNewlyHurt
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_HURT,d0
+    beq.w HeroStateHurt
+
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
     jsr StateSlashActiveNewState
@@ -288,6 +322,12 @@ StateSlashActiveNewState
     rts
 
 HeroStateSlashRecoveryUpdate
+    ; Hurt Transition
+    jsr CheckIfHeroNewlyHurt
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_HURT,d0
+    beq.w HeroStateHurt
+
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
     move.w #SLASH_RECOVERY_ITERS,HERO_STATE_FRAMES_LEFT
@@ -404,4 +444,52 @@ MaybeSetNewlyHurtState
 .HurtAnimMovingRight:
     move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
 .SetNewHurtStateEnd
+    rts
+
+HeroStateMaybeStartDash
+    tst.w BUTTON_RELEASED_SINCE_LAST_DASH
+    beq.s .End
+    move.b CONTROLLER,d0
+    btst.l #C_BIT,d0
+    beq.s .End
+    move.w #HERO_STATE_DASHING,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+.End    
+    rts
+
+HeroStateDashingUpdate
+    ; handle new state
+    tst.w HERO_NEW_STATE
+    beq.s .AfterNewState
+    move.w #4,HERO_STATE_FRAMES_LEFT
+    move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
+.AfterNewState
+    ; Maybe transition back to idle
+    tst.w HERO_STATE_FRAMES_LEFT
+    bgt.s .NoTransition
+    move.w #HERO_STATE_IDLE,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    jsr HeroStateIdle
+.NoTransition
+    sub.w #1,HERO_STATE_FRAMES_LEFT
+    move.l #.FacingDirectionJumpTable,a0
+    clr.l d0
+    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.FacingDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    sub.w #DASHING_SPEED,NEW_Y
+    rts
+.FacingDown
+    add.w #DASHING_SPEED,NEW_Y
+    rts
+.FacingLeft
+    sub.w #DASHING_SPEED,NEW_X
+    rts
+.FacingRight
+    add.w #DASHING_SPEED,NEW_X
     rts
