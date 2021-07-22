@@ -531,3 +531,17 @@ LoadInversePalette:
     move.w (a0)+,vdp_data
     dbra d0,.inverse_palette_loop
     rts
+
+; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
+; TODO try to avoid long math.
+; SmoothStep:
+;     lsr.l #8,d0 ; cx
+;     move.l d0,d1 ; cx in d1
+;     mulu d1,d0 ; (cx)^2 in d0
+;     mulu d0,d1 ; (cx)^3 in d1
+;     ; TODO AVOID THIS MULTIPLY BY 3
+;     mulu #3,d0 ; 3(cx)^2 in d0
+;     ; c in this case is 256. 2(cx^3)/c is just dividing by 128, or shifting right 7 times.
+;     lsr.l #7,d1 ; 2(cx)^3/c in d1
+;     sub.l d1,d0
+;     rts

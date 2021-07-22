@@ -582,6 +582,11 @@ SLASH_MAX_Y: so.w 1
 BUTTON_RELEASED_SINCE_LAST_DASH: so.w 1
     move.w #1,BUTTON_RELEASED_SINCE_LAST_DASH
 
+; For SmoothStep experiment
+; HERO_DASH_START_X: so.w 1
+; HERO_DASH_START_Y: so.w 1
+; DASH_PARAM: so.w 1
+
 GLOBAL_PALETTE: so.w 1
     move.w #0,GLOBAL_PALETTE
 
