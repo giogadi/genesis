@@ -339,63 +339,6 @@ UpdateAnimState:
 .UpdateAnimStateEnd
     rts
 
-; d0: please don't touch
-; d1: enemy state
-; d2: x
-; d3: y
-; d4: please don't touch
-; d6: enemy dying frames left
-DrawButtEnemy:
-    cmp.w #ENEMY_STATE_DYING,d1
-    beq.s .DrawButtEnemyDying
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5 ; link to next sprite
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    ; add global_palette
-    move.w GLOBAL_PALETTE,d5
-    ror.w #3,d5
-    or.w #BUTT_SPRITE_TILE_START,d5
-    move.w d5,vdp_data
-    ;move.w #BUTT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-    bra.s .DrawButtEnemyEnd
-.DrawButtEnemyDying:
-    ; only draw every other frame for a blinking effect
-    btst.l #0,d6
-    bne.s .DrawButtEnemyEnd
-    ; gonna scale slice anim by dying frames left.
-    move.w #ENEMY_DYING_FRAMES,d7
-    sub.w d6,d7 ; number of frames since enemy started dying in d7
-    ; left slice first. offset a few pixels down-left
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5
-    add.w d7,d3 ; y +=
-    sub.w d7,d2 ; x -=
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    move.w #BUTT_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-    ; right slice next. offset a few pixels up-right
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5
-    sub.w d7,d3 ; y -=
-    sub.w d7,d3 ; twice to undo change from first half
-    add.w d7,d2 ; x +=
-    add.w d7,d2
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    move.w #BUTT_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-.DrawButtEnemyEnd:
-    rts
-
 UpdateEnemiesFromSlash:
     move.w #MAX_NUM_ENEMIES-1,d7
     move.l #ENEMY_STATE,a6
@@ -447,6 +390,47 @@ UpdateEnemiesFromSlash:
     add.w #2,a4
     add.w #2,a5
     dbra d7,.EnemyUpdateSlashLoop
+    rts
+
+UpdateEnemies:
+    move.w #0,d2
+    move.l #ENEMY_STATE,a2
+    move.l #ENEMY_X,a3
+    move.l #ENEMY_Y,a4
+    move.l #ENEMY_DATA_1,a5
+    move.l #ENEMY_DATA_2,a6
+.EnemyUpdateLoop
+    move (a2),d3 ; alive
+    cmp.w #ENEMY_STATE_ALIVE,d3
+    bne.s .EnemyUpdateLoopContinue
+    ; get enemy type
+    clr.l d0
+    move.w d2,d0 ; get enemy index
+    add.w d0,d0 ; multiply index by 2 to get address offset in bytes
+    move.l #ENEMY_TYPE,a0 ; get start of enemy_type array
+    move.w (a0,d0),d0 ; move enemy type into d0
+    move.l #.TypeJumpTable,a0
+    lsl.l #2,d0; ; longs to bytes.
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.TypeJumpTable dc.l .Butt,.HotDog
+.Butt:
+    jsr UpdateButtEnemy
+    bra.s .EnemyUpdateLoopContinue
+.HotDog:
+    jsr UpdateHotDogEnemy
+    bra.s .EnemyUpdateLoopContinue
+.EnemyUpdateLoopContinue
+    add.w #2,a2
+    add.w #4,a3
+    add.w #4,a4
+    add.w #2,a5
+    add.w #2,a6
+    add.w #1,d2
+    cmp.w #MAX_NUM_ENEMIES,d2
+    blt.s .EnemyUpdateLoop
     rts
 
 ; d0 is sin(x)*256, where sin() does a full cycle every 256 units. a0 used

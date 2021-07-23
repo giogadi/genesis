@@ -162,6 +162,9 @@ ANIM_LAST_INDEX: so.w 1
 ANIM_CURRENT_INDEX: so.w 1
 ANIM_STRIDE: so.w 1
 
+ENEMY_TYPE_BUTT: equ 0
+ENEMY_TYPE_HOT_DOG: equ 1
+
 MAX_NUM_ENEMIES: equ 5
 ENEMY_STATE_DEAD: equ 0
 ENEMY_STATE_ALIVE: equ 1
@@ -169,12 +172,12 @@ ENEMY_STATE_DYING: equ 2
 ENEMY_STATE: so.w MAX_NUM_ENEMIES
 ENEMY_DYING_FRAMES: equ 10
 ENEMY_DYING_FRAMES_LEFT: so.w MAX_NUM_ENEMIES ; only valid if DYING
+ENEMY_TYPE: so.w MAX_NUM_ENEMIES
 ENEMY_X: so.l MAX_NUM_ENEMIES
 ENEMY_Y: so.l MAX_NUM_ENEMIES
 ENEMY_SIZE: so.w MAX_NUM_ENEMIES
 ENEMY_DATA_1: so.w MAX_NUM_ENEMIES
 ENEMY_DATA_2: so.w MAX_NUM_ENEMIES
-ENEMY_SPRITE_DRAW_FUNCTIONS: so.l MAX_NUM_ENEMIES
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
@@ -182,6 +185,7 @@ LAST_LINK_WRITTEN: so.w 1
     include util.asm
     include hero_state.asm
     include butt_enemy.asm
+    include hot_dog_enemy.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------
@@ -411,6 +415,14 @@ BUTT_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,@butt_sprite_slashed_right_load_loop
 
+HOT_DOG_SPRITE_TILE_START: equ (BUTT_SLASHED_RIGHT_SPRITE_TILE_START+BUTT_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+HOT_DOG_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*HOT_DOG_SPRITE_TILE_SIZE)-1,d0
+    move.l #HotDogSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w #TILE_SET_SIZE-1,d0
@@ -491,22 +503,22 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
     move.l #ENEMY_Y,a2
-    move.l #ENEMY_SPRITE_DRAW_FUNCTIONS,a3
     move.l #ENEMY_DATA_1,a4
+    move.l #ENEMY_TYPE,a5
     move.w #ENEMY_STATE_ALIVE,(a0)+
     move.w #287,(a1)
     add.l #4,a1
     move.w #180,(a2)
     add.l #4,a2
-    move.l #DrawButtEnemy,(a3)+
     move.w #0,(a4)+
-    ; move.w #ENEMY_STATE_ALIVE,(a0)+
-    ; move.w #240,(a1)
-    ; add.l #4,a1
-    ; move.w #180,(a2)
-    ; add.l #4,a2
-    ; move.l #DrawButtEnemy,(a3)+
-    ; move.w #0,(a4)+
+    move.w #ENEMY_TYPE_BUTT,(a5)+
+    move.w #ENEMY_STATE_ALIVE,(a0)+
+    move.w #240,(a1)
+    add.l #4,a1
+    move.w #180,(a2)
+    add.l #4,a2
+    move.w #0,(a4)+
+    move.w #ENEMY_TYPE_BUTT,(a5)+
 
 
 ; FM TEST FM TEST FM TEST
@@ -594,7 +606,7 @@ loop
     tst.w HITSTOP_FRAMES_LEFT
     beq.w .NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
-    jmp .waitNewFrame
+    jmp WaitNewFrame
 
 .NoHitstop
     GetControls d0,d1
@@ -747,26 +759,39 @@ loop
     move.w #0,vdp_data
 .AfterSlash
 
-; Butt enemy
+DrawEnemies:
     move.w #MAX_NUM_ENEMIES-1,d0
-    move.l #ENEMY_STATE,a0
-    move.l #ENEMY_X,a1
-    move.l #ENEMY_Y,a2
-    move.l #ENEMY_SPRITE_DRAW_FUNCTIONS,a3
-    move.l #ENEMY_DYING_FRAMES_LEFT,a5
-.EnemySpriteLoop
-    move.w (a0)+,d1 ; enemy state
-    move.w (a1),d2 ; x
-    move.w (a2),d3 ; y
-    move.l (a3)+,a4 ; sprite function pointer
-    move.w (a5)+,d6 ; enemy dying frames left
-    tst.w d1 ; if dead (== 0) skip to the next sprite
-    beq.s .EnemySpriteLoopEnd
-    jsr (a4)
-.EnemySpriteLoopEnd
-    add.l #4,a1
-    add.l #4,a2
-    dbra d0,.EnemySpriteLoop
+    move.l #ENEMY_STATE,a2
+    move.l #ENEMY_X,a3
+    move.l #ENEMY_Y,a4
+    move.l #ENEMY_TYPE,a5
+    move.l #ENEMY_DYING_FRAMES_LEFT,a6
+.loop
+    move.w (a2)+,d1 ; enemy state
+    move.w (a3),d2 ; x
+    add.w #4,a3 ; it's actually a long in memory
+    move.w (a4),d3 ; y
+    add.w #4,a4 ; actually a long in memory
+    clr.l d4 ; we're gonna use this as a long later
+    move.w (a5)+,d4 ; type
+    move.w (a6)+,d6 ; dying frames left
+    tst.w d1 ; if dead, skip to next sprite
+    beq.s .loop_continue
+    move.l #.TypeJumpTable,a0
+    lsl.l #2,d4 ; translate longs into bytes
+    add.l d4,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.TypeJumpTable dc.l .Butt,.HotDog
+.Butt:
+    jsr DrawButtEnemy
+    bra.s .loop_continue
+.HotDog:
+    jsr DrawHotDogEnemy
+    bra.s .loop_continue
+.loop_continue
+    dbra d0,.loop
 
     ; set last sprite's link data to 0
     clr.l d0
@@ -781,9 +806,9 @@ loop
     move.w d0,vdp_data
 
 
-.waitNewFrame
+WaitNewFrame
     cmp.b #1,NEW_FRAME
-    bne.s .waitNewFrame
+    bne.s WaitNewFrame
     clr.b NEW_FRAME
     jmp     loop
 
@@ -858,6 +883,9 @@ ButtSlashedLeftSprite:
 
 ButtSlashedRightSprite:
     include art/butt_slashed_right.asm
+
+HotDogSprite:
+    include art/hot_dog_sprite.asm
 
 SineLookupTable:
     include sine_lookup_table.asm

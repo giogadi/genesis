@@ -461,7 +461,7 @@ HeroStateDashingUpdate
     ; handle new state
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
-    move.w #4,HERO_STATE_FRAMES_LEFT
+    move.w #5,HERO_STATE_FRAMES_LEFT
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
 .AfterNewState
     ; Maybe transition back to idle
@@ -494,60 +494,60 @@ HeroStateDashingUpdate
     add.w #DASHING_SPEED,NEW_X
     rts
 
-# HeroStateDashingUpdateSmoothStep
-#     ; handle new state
-#     tst.w HERO_NEW_STATE
-#     beq.s .AfterNewState
-#     move.w #4,HERO_STATE_FRAMES_LEFT
-#     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
-#     move.w CURRENT_X,HERO_DASH_START_X
-#     move.w CURRENT_Y,HERO_DASH_START_Y
-#     move.w #0,DASH_PARAM
-# .AfterNewState
-#     ; Maybe transition back to idle
-#     tst.w HERO_STATE_FRAMES_LEFT
-#     bgt.s .NoTransition
-#     move.w #HERO_STATE_IDLE,HERO_STATE
-#     move.w #1,HERO_NEW_STATE
-#     jsr HeroStateIdle
-# .NoTransition
-#     sub.w #1,HERO_STATE_FRAMES_LEFT
-#     bgt.s .DoSmoothStep
-#     ; on last step, just go to final position.
-#     move.w #32,d1
-#     bra.s .AfterSmoothStep
-# .DoSmoothStep
-#     add.w #16384,DASH_PARAM ; want to get to 65536 in 4 frames
-#     clr.l d0
-#     move.w DASH_PARAM,d0
-#     jsr SmoothStep
-#     ; want to go 64 pixels in total, so multiply by 2^5
-#     lsl.l #5,d0
-#     swap d0
-#     move.w d0,d1 ; new pixel offset is in bottom word of d1.
-# .AfterSmoothStep
-#     move.l #.FacingDirectionJumpTable,a0
-#     clr.l d0
-#     move.w FACING_DIRECTION,d0; offset in longs into jump table
-#     lsl.l #2,d0 ; translate longs into bytes
-#     add.l d0,a0
-#     ; dereference jump table to get address to jump to
-#     move.l (a0),a0
-#     jmp (a0)
-# .FacingDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
-# .FacingUp
-#     move.w HERO_DASH_START_Y,NEW_Y
-#     sub.w d1,NEW_Y
-#     rts
-# .FacingDown
-#     move.w HERO_DASH_START_Y,NEW_Y
-#     add.w d1,NEW_Y
-#     rts
-# .FacingLeft
-#     move.w HERO_DASH_START_X,NEW_X
-#     sub.w d1,NEW_X
-#     rts
-# .FacingRight
-#     move.w HERO_DASH_START_X,NEW_X
-#     add.w d1,NEW_X
-#     rts
+; HeroStateDashingUpdateSmoothStep
+;     ; handle new state
+;     tst.w HERO_NEW_STATE
+;     beq.s .AfterNewState
+;     move.w #4,HERO_STATE_FRAMES_LEFT
+;     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
+;     move.w CURRENT_X,HERO_DASH_START_X
+;     move.w CURRENT_Y,HERO_DASH_START_Y
+;     move.w #0,DASH_PARAM
+; .AfterNewState
+;     ; Maybe transition back to idle
+;     tst.w HERO_STATE_FRAMES_LEFT
+;     bgt.s .NoTransition
+;     move.w #HERO_STATE_IDLE,HERO_STATE
+;     move.w #1,HERO_NEW_STATE
+;     jsr HeroStateIdle
+; .NoTransition
+;     sub.w #1,HERO_STATE_FRAMES_LEFT
+;     bgt.s .DoSmoothStep
+;     ; on last step, just go to final position.
+;     move.w #32,d1
+;     bra.s .AfterSmoothStep
+; .DoSmoothStep
+;     add.w #16384,DASH_PARAM ; want to get to 65536 in 4 frames
+;     clr.l d0
+;     move.w DASH_PARAM,d0
+;     jsr SmoothStep
+;     ; want to go 64 pixels in total, so multiply by 2^5
+;     lsl.l #5,d0
+;     swap d0
+;     move.w d0,d1 ; new pixel offset is in bottom word of d1.
+; .AfterSmoothStep
+;     move.l #.FacingDirectionJumpTable,a0
+;     clr.l d0
+;     move.w FACING_DIRECTION,d0; offset in longs into jump table
+;     lsl.l #2,d0 ; translate longs into bytes
+;     add.l d0,a0
+;     ; dereference jump table to get address to jump to
+;     move.l (a0),a0
+;     jmp (a0)
+; .FacingDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+; .FacingUp
+;     move.w HERO_DASH_START_Y,NEW_Y
+;     sub.w d1,NEW_Y
+;     rts
+; .FacingDown
+;     move.w HERO_DASH_START_Y,NEW_Y
+;     add.w d1,NEW_Y
+;     rts
+; .FacingLeft
+;     move.w HERO_DASH_START_X,NEW_X
+;     sub.w d1,NEW_X
+;     rts
+; .FacingRight
+;     move.w HERO_DASH_START_X,NEW_X
+;     add.w d1,NEW_X
+;     rts
