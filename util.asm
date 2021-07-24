@@ -516,6 +516,14 @@ LoadInversePalette:
     dbra d0,.inverse_palette_loop
     rts
 
+; d0 in/out
+AbsValue:
+    tst.w d0
+    bge.s .End
+    neg.w d0
+.End
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:

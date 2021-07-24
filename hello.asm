@@ -630,6 +630,7 @@ loop
 .NoHitstop
     GetControls d0,d1
     
+    ; TODO: should we move this to the bottom of the loop?
     move.w #0,HERO_NEW_STATE
     move.w CURRENT_X,NEW_X
     move.w CURRENT_Y,NEW_Y

@@ -1,8 +1,129 @@
-HOT_DOG_MOVING: equ 0
-HOT_DOG_SLASHING: equ 1
-HOT_DOG_RECOVERY: equ 2
+HOT_DOG_SLASHING: equ 0
+HOT_DOG_RECOVERY: equ 1
 
+HOT_DOG_SLASH_DURATION: equ 10
+HOT_DOG_RECOVERY_DURATION: equ 30
+
+HOT_DOG_SLASH_SPEED: equ 3
+
+; a2: enemy_state
+; a3: enemy_x
+; a4: enemy_y
+; a5: enemy_data_1
+; a6: enemy_data_2
+; d2: not allowed
+;
+; State:
+; ENEMY_DATA_1: 0000 000(AI_state,1) (frame_counter,8)
+; ENEMY_DATA_2: 0000 000(old_state,1) 0000 00(motion_direction,2)
 UpdateHotDogEnemy:
+    move.l #.StateJumpTable,a0
+    clr.l d0
+    move.b (a5),d0; ENEMY_DATA_1. need AI_state
+    add.b d0,d0 ; longs to bytes
+    add.b d0,d0
+    and.w #%0000000000000100,d0
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.StateJumpTable dc.l HotDogSlashing,HotDogRecovery
+HotDogSlashing:
+    jsr HotDogSlashingUpdate
+    bra.s UpdateHotDogEnemyEnd
+HotDogRecovery:
+    jsr HotDogRecoveryUpdate
+    bra.s UpdateHotDogEnemyEnd
+UpdateHotDogEnemyEnd
+    bset.b #0,(a6) ; clear the "new state" field of enemy_data_2 (by setting "old state")
+    rts
+
+HotDogSlashingUpdate:
+    btst.b #0,(a6) ; 0 if this is a new state
+    bne.s .AfterNewState
+    jsr HotDogSlashingNewState
+.AfterNewState
+    ; maybe transition to recovery if done slashing
+    tst.b 1(a5)
+    bgt.s .NoTransition
+    move.b #HOT_DOG_RECOVERY,(a5)
+    move.b #0,(a6) ; set new state
+    bra.s HotDogRecovery
+.NoTransition
+    sub.b #1,1(a5) ; decrement frame counter
+    move.l #.DirectionJumpTable,a0
+    clr.l d0
+    move.b 1(a6),d0 ; bottom byte of ENEMY_DATA_2 for current direction
+    add.b d0,d0 ; longs to bytes
+    add.b d0,d0 
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+.Up:
+    sub.w #HOT_DOG_SLASH_SPEED,(a4)
+    rts
+.Down:
+    add.w #HOT_DOG_SLASH_SPEED,(a4)
+    rts
+.Left:
+    sub.w #HOT_DOG_SLASH_SPEED,(a3)
+    rts
+.Right:
+    add.w #HOT_DOG_SLASH_SPEED,(a3)
+    rts
+
+HotDogSlashingNewState:
+    move.b #HOT_DOG_SLASH_DURATION,1(a5) ; reset frame timer
+    ; pick the slashing direction. We see whether we are farther from hero in x or y dir,
+    ; then go in that dir.
+    move.w (a3),d0 ; enemy_x
+    move.w (a4),d1 ; enemy_y
+    sub.w CURRENT_X,d0 ; enemy_x - hero_x
+    sub.w CURRENT_Y,d1 ; enemy_y - hero_y
+    move.w d0,d3 ; enemy_x - hero_x in d3
+    jsr AbsValue
+    move.w d0,d4 ; abs(dx) in d4
+    move.w d1,d0
+    jsr AbsValue ; abs(dy) in d0
+    cmp.w d4,d0
+    ble.s .FartherInX
+    ; farther in y. now check whether to go up or down
+    tst.w d1
+    blt.s .GoingDown
+    ; going up
+    move.b #FACING_UP,1(a6) ; enemy_data_2
+    bra.s .End
+.GoingDown
+    move.b #FACING_DOWN,1(a6) ; enemy_data_2
+    bra.s .End
+.FartherInX
+    tst.w d3
+    blt.s .GoingRight
+    ; going left
+    move.b #FACING_LEFT,1(a6)
+    bra.s .End
+.GoingRight
+    move.b #FACING_RIGHT,1(a6)
+    bra.s .End
+.End
+    rts
+
+HotDogRecoveryUpdate:
+    ; do new state setup
+    btst.b #0,(a6) ; 0 if this is a new state
+    bne.s .AfterNewState
+    move.b #HOT_DOG_RECOVERY_DURATION,1(a5)
+.AfterNewState
+    ; maybe transition back to slashing if done with recovery
+    tst.b 1(a5)
+    bgt.s .NoTransition
+    move.b #HOT_DOG_SLASHING,(a5)
+    move.b #0,(a6) ; set new state
+    bra.w HotDogSlashing
+.NoTransition
+    sub.b #1,1(a5) ; decrement frame counter
     rts
 
 ; d0: please don't touch
