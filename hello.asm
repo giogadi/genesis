@@ -514,10 +514,6 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
 ; start with default/idle animation
     jsr SetLeftIdleAnim
 
-; Now let's add a sprite!!!!!
-SAMURAI_SPRITE_ADDR: equ SPRITE_TABLE_BASE_ADDR
-SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
-
 ; Place two enemies
     move.l #ENEMY_STATE,a0
     move.l #ENEMY_X,a1
@@ -696,24 +692,12 @@ loop
     ; update alive enemies' behavior
     jsr UpdateEnemies
 
-    ; update sprites
+    ; SPRITE DRAWING!
+    move.w #SPRITE_TABLE_BASE_ADDR,d0
+    SetVramAddr d0,d1
     move.w #0,SPRITE_COUNTER 
 
-    move.w #SAMURAI_SPRITE_ADDR,d0
-    SetVramAddr d0,d1
-    move.w CURRENT_Y,vdp_data
-    move.w #$0600,d0 ; 2x3
-    add.w #1,SPRITE_COUNTER
-    or.w SPRITE_COUNTER,d0
-    move.w d0,vdp_data
-    move.w d0,LAST_LINK_WRITTEN
-    ; construct 3rd entry from color palette number and tile number
-    move.w ANIM_CURRENT_INDEX,d0
-    move.w GLOBAL_PALETTE,d1
-    ror.w #3,d1 ; put palette in position
-    or.w d1,d0 ; add palette to d0
-    move.w d0,vdp_data
-    move.w CURRENT_X,vdp_data
+    jsr DrawHero
 
     ; SLASH
     ; TODO: with our improved link data handling, see if we can just skip all this if no slash

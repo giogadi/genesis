@@ -339,6 +339,31 @@ UpdateAnimState:
 .UpdateAnimStateEnd
     rts
 
+DrawHero:
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_DASHING,d0
+    bne.s .DoDraw
+    move.w HERO_STATE_FRAMES_LEFT,d0
+    and.w #$0003,d0
+    tst.b d0 ; flicker on every 4th frame
+    beq.s .DoDraw
+    rts
+.DoDraw
+    move.w CURRENT_Y,vdp_data
+    move.w #$0600,d0 ; 2x3
+    add.w #1,SPRITE_COUNTER
+    or.w SPRITE_COUNTER,d0
+    move.w d0,vdp_data
+    move.w d0,LAST_LINK_WRITTEN
+    ; construct 3rd entry from color palette number and tile number
+    move.w ANIM_CURRENT_INDEX,d0
+    move.w GLOBAL_PALETTE,d1
+    ror.w #3,d1 ; put palette in position
+    or.w d1,d0 ; add palette to d0
+    move.w d0,vdp_data
+    move.w CURRENT_X,vdp_data
+    rts
+
 UpdateEnemiesFromSlash:
     move.w #MAX_NUM_ENEMIES-1,d7
     move.l #ENEMY_STATE,a6

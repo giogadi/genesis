@@ -1,3 +1,5 @@
+HERO_STATE_DASHING_DURATION: equ 8
+
 HeroStateUpdate:
     move.l #.HeroStateJumpTable,a0
     clr.l d0
@@ -461,7 +463,7 @@ HeroStateDashingUpdate
     ; handle new state
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
-    move.w #5,HERO_STATE_FRAMES_LEFT
+    move.w #HERO_STATE_DASHING_DURATION,HERO_STATE_FRAMES_LEFT
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
 .AfterNewState
     ; Maybe transition back to idle
