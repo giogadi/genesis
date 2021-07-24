@@ -181,32 +181,6 @@ ButtEnemyCooldownUpdate:
     add.l #5000,(a4)
     rts
 
-; UpdateEnemies:
-;     move.w #MAX_NUM_ENEMIES-1,d2
-;     move.l #ENEMY_STATE,a2
-;     move.l #ENEMY_TYPE,a3
-; .loop
-;     move (a2),d3 ; alive
-;     cmp.w #ENEMY_STATE_ALIVE,d3
-;     bne.s .continue
-;     move.l #.TypeJumpTable,a0
-;     clr.l d0
-;     move.w (a3),a0 ; enemy type
-;     lsl.l #2,d0 ; longs to bytes
-;     add.l d0,a0
-;     move.l (a0),a0
-;     jmp (a0)
-; .TypeJumpTable dc.l .Butt,.HotDog
-; .Butt:
-;     jsr UpdateButtEnemy
-;     bra.s .continue
-; .HotDog:
-;     jsr UpdateHotDogEnemy
-;     bra.s .continue
-; .continue
-;     dbra d2,.loop
-;     rts
-
 ; d0: please don't touch
 ; d1: enemy state
 ; d2: x

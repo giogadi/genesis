@@ -415,10 +415,29 @@ BUTT_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,@butt_sprite_slashed_right_load_loop
 
+HotDogSpriteLoad:
 HOT_DOG_SPRITE_TILE_START: equ (BUTT_SLASHED_RIGHT_SPRITE_TILE_START+BUTT_SLASHED_RIGHT_SPRITE_TILE_SIZE)
 HOT_DOG_SPRITE_TILE_SIZE: equ (2*2)
     move.w #(8*HOT_DOG_SPRITE_TILE_SIZE)-1,d0
     move.l #HotDogSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+HotDogSlashedLeftSpriteLoad:
+HOT_DOG_SLASHED_LEFT_SPRITE_TILE_START: equ (HOT_DOG_SPRITE_TILE_START+HOT_DOG_SPRITE_TILE_SIZE)
+HOT_DOG_SLASHED_LEFT_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*HOT_DOG_SLASHED_LEFT_SPRITE_TILE_SIZE)-1,d0
+    move.l #HotDogSlashedLeftSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+HotDogSlashedRightSpriteLoad:
+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_LEFT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)-1,d0
+    move.l #HotDogSlashedRightSprite,a0
 .loop
     move.l (a0)+,vdp_data
     dbra d0,.loop
@@ -518,7 +537,7 @@ SLASH_SPRITE_ADDR: equ SAMURAI_SPRITE_ADDR+8
     move.w #180,(a2)
     add.l #4,a2
     move.w #0,(a4)+
-    move.w #ENEMY_TYPE_BUTT,(a5)+
+    move.w #ENEMY_TYPE_HOT_DOG,(a5)+
 
 
 ; FM TEST FM TEST FM TEST
@@ -886,6 +905,10 @@ ButtSlashedRightSprite:
 
 HotDogSprite:
     include art/hot_dog_sprite.asm
+HotDogSlashedLeftSprite:
+    include art/hot_dog_slashed_left.asm
+HotDogSlashedRightSprite:
+    include art/hot_dog_slashed_right.asm
 
 SineLookupTable:
     include sine_lookup_table.asm
