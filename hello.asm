@@ -442,6 +442,15 @@ HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+DashBarSpriteLoad:
+DASH_BAR_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
+    move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
+    move.l #DashBarSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w #TILE_SET_SIZE-1,d0
@@ -695,7 +704,9 @@ loop
     ; SPRITE DRAWING!
     move.w #SPRITE_TABLE_BASE_ADDR,d0
     SetVramAddr d0,d1
-    move.w #0,SPRITE_COUNTER 
+    move.w #0,SPRITE_COUNTER
+
+    jsr DrawDashBar
 
     jsr DrawHero
 
@@ -894,6 +905,9 @@ HotDogSlashedLeftSprite:
     include art/hot_dog_slashed_left.asm
 HotDogSlashedRightSprite:
     include art/hot_dog_slashed_right.asm
+
+DashBarSprite:
+    include art/ui/dash_bar.asm
 
 SineLookupTable:
     include sine_lookup_table.asm

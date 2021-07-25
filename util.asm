@@ -364,6 +364,20 @@ DrawHero:
     move.w CURRENT_X,vdp_data
     rts
 
+DrawDashBar:
+    add.w #1,SPRITE_COUNTER
+    move.w CURRENT_X,d0
+    move.w CURRENT_Y,d1
+    sub.w #8,d1 ; move up above hero's head
+    move.w #$0400,d2 ; 1x2 sprite
+    or.w SPRITE_COUNTER,d2 ; add link data
+    move.w d1,vdp_data
+    move.w d2,vdp_data
+    move.w d2,LAST_LINK_WRITTEN
+    move.w #DASH_BAR_SPRITE_TILE_START,vdp_data
+    move.w d0,vdp_data
+    rts
+
 UpdateEnemiesFromSlash:
     move.w #MAX_NUM_ENEMIES-1,d7
     move.l #ENEMY_STATE,a6
