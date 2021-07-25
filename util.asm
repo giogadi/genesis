@@ -365,8 +365,11 @@ DrawHero:
     rts
 
 DrawDashBar:
+    ; only draw dash bar if dash is on cooldown
+    ; TODO: keep drawing bar for a little longer after cooldown is done
+    tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
+    ble.s .End
     add.w #1,SPRITE_COUNTER
-    move.w CURRENT_X,d0
     move.w CURRENT_Y,d1
     sub.w #8,d1 ; move up above hero's head
     move.w #$0400,d2 ; 1x2 sprite
@@ -374,8 +377,21 @@ DrawDashBar:
     move.w d1,vdp_data
     move.w d2,vdp_data
     move.w d2,LAST_LINK_WRITTEN
-    move.w #DASH_BAR_SPRITE_TILE_START,vdp_data
+    move.w HERO_DASH_COOLDOWN_FRAMES_LEFT,d0
+    lsr.w #2,d0 ; divide by 4 to go from 32 to 8. Ugh what a terrible hack
+    sub.w #1,d0
+    ; clamp to 0
+    bgt.s .AfterClamp
+    move.w #0,d0
+.AfterClamp
+   ; flip it around so bar fills up
+    neg.w d0
+    add.w #7,d0
+    add.w d0,d0; mult by 2 to go from frames to tiles.
+    add.w #DASH_BAR_SPRITE_TILE_START,d0
     move.w d0,vdp_data
+    move.w CURRENT_X,vdp_data
+.End
     rts
 
 UpdateEnemiesFromSlash:

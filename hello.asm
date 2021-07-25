@@ -591,6 +591,7 @@ HITSTOP_FRAMES: equ 10
 
 HERO_SPEED: equ 1
 DASHING_SPEED: equ (5*HERO_SPEED)
+HERO_DASH_COOLDOWN: equ 32
 
 HERO_STATE: so.w 1
     move.w #HERO_STATE_IDLE,HERO_STATE
@@ -617,6 +618,7 @@ SLASH_MAX_X: so.w 1
 SLASH_MAX_Y: so.w 1
 BUTTON_RELEASED_SINCE_LAST_DASH: so.w 1
     move.w #1,BUTTON_RELEASED_SINCE_LAST_DASH
+HERO_DASH_COOLDOWN_FRAMES_LEFT: so.w 1
 
 ; For SmoothStep experiment
 ; HERO_DASH_START_X: so.w 1
@@ -642,6 +644,12 @@ loop
 
     jsr UpdateButtonReleasedSinceLastSlash
     jsr UpdateButtonReleasedSinceLastDash
+    ; Update Dash cooldown.
+    tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
+    ble.s .AfterCooldownUpdate
+    sub.w #1,HERO_DASH_COOLDOWN_FRAMES_LEFT
+.AfterCooldownUpdate
+
 
     jsr HeroStateUpdate
 

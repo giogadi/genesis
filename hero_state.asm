@@ -451,6 +451,8 @@ MaybeSetNewlyHurtState
 HeroStateMaybeStartDash
     tst.w BUTTON_RELEASED_SINCE_LAST_DASH
     beq.s .End
+    tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
+    bgt.s .End
     move.b CONTROLLER,d0
     btst.l #C_BIT,d0
     beq.s .End
@@ -469,6 +471,8 @@ HeroStateDashingUpdate
     ; Maybe transition back to idle
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.s .NoTransition
+    ; Reset dash cooldown
+    move.w #HERO_DASH_COOLDOWN,HERO_DASH_COOLDOWN_FRAMES_LEFT
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
     jsr HeroStateIdle
