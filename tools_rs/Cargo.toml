@@ -1,0 +1,18 @@
+[package]
+name = "genesis_tools"
+version = "0.1.0"
+authors = ["Luis G. Torres <lgtorres42@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+xml-rs = "0.8"
+
+[[bin]]
+name = "trig_table_gen"
+path = "src/trig_table_gen.rs"
+
+[[bin]]
+name = "tiled_converter"
+path = "src/tiled_converter.rs"

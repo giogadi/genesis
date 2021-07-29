@@ -473,6 +473,7 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
     move.w (a0)+,(a1)+
     dbra d0,@tilemap_ram_load_loop
 
+LoadTileMap:
 ; Now let's set the entire scroll table to be one tile
 ; We start placing stuff in SCROLL_A_BASE_ADDR. Scroll A is currently set to 
 ; 64H x 32V. Scroll is laid out in row-major order, where each cell is 2 bytes. These
@@ -486,64 +487,36 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
 ; with SCROLL_A_BASE_ADDR = $C000 =  %1100 0000 0000 0000
     move.w #SCROLL_A_BASE_ADDR,d0
     SetVramAddr d0,d1
-    
-; So now we load our tilemap into VRAM. We're assuming the tilemap has 40*28 tiles. This is meant to be exactly
-; big enough to cover the visible portion of scroll field A. However, this 40x28 area of tiles must be
-; placed in a larger area of 64x32 tiles (the entire scroll field). The 40x28 area is located in the
-; top-left corner of the scroll field. So we loop over each of the 64x32 tiles and check if we're in
-; the 40x28 area; if so, we get the next tile of the tilemap; if not, we just output the 0 tile. We
-; have an overall tile counter and separate x and y counters.
+
     move.w #(64*32)-1,d0
-    clr.b d2 ; tile_x
-    clr.b d3 ; tile_y
-    move.b #40,d4 ; max_x_window
-    move.b #28,d5 ; max_y_window
-    move.b #64,d6 ; max_x_scroll
     move.l #TileMap,a0
-@tilemap_load_loop
-    cmp.b d2,d4
-    ble.s @outside_window
-    cmp.b d3,d5
-    ble.s @outside_window
+.loop
     move.w (a0)+,d1
     add.w #TILE_SET_START_INDEX,d1
-    bra.s @move_into_vram
-@outside_window
-    clr.w d1
-@move_into_vram
     move.w d1,vdp_data
-    addq #1,d2
-    cmp.b d2,d6
-    bgt.s @samerow
-    addq #1,d3 ; add 1 to y
-    moveq #0,d2 ; reset x to 0
-@samerow
-    dbra d0,@tilemap_load_loop
+    dbra d0,.loop
+
+LoadEnemies:
+    move.w (a0)+,d0 ; enemy count is in d0
+    sub.w #1,d0
+    blt.s .after_loop
+    move.l #ENEMY_STATE,a1
+    move.l #ENEMY_X,a2
+    move.l #ENEMY_Y,a3
+    move.l #ENEMY_DATA_1,a4
+    move.l #ENEMY_TYPE,a5
+.loop
+    move.w #ENEMY_STATE_ALIVE,(a1)+
+    move.w (a0)+,(a5)+ ; enemy type
+    move.w (a0)+,(a2) ; enemy x
+    add.l #4,a2
+    move.w (a0)+,(a3) ; enemy y
+    add.l #4,a3
+    move.w #0,(a4)+ ; enemy_data_1
+.after_loop
 
 ; start with default/idle animation
     jsr SetLeftIdleAnim
-
-; Place two enemies
-    move.l #ENEMY_STATE,a0
-    move.l #ENEMY_X,a1
-    move.l #ENEMY_Y,a2
-    move.l #ENEMY_DATA_1,a4
-    move.l #ENEMY_TYPE,a5
-    move.w #ENEMY_STATE_ALIVE,(a0)+
-    move.w #287,(a1)
-    add.l #4,a1
-    move.w #180,(a2)
-    add.l #4,a2
-    move.w #0,(a4)+
-    move.w #ENEMY_TYPE_BUTT,(a5)+
-    move.w #ENEMY_STATE_ALIVE,(a0)+
-    move.w #240,(a1)
-    add.l #4,a1
-    move.w #180,(a2)
-    add.l #4,a2
-    move.w #0,(a4)+
-    move.w #ENEMY_TYPE_HOT_DOG,(a5)+
-
 
 ; FM TEST FM TEST FM TEST
     include fm_test.asm
@@ -863,7 +836,7 @@ TileCollisions:
     include art/tile_collisions.asm
 
 TileMap:
-    include art/tilemap.asm
+    include art/tiles/map1_large.asm
 
 SamuraiLeft1Sprite:
     include art/samurai/left1.asm
