@@ -464,7 +464,9 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
 ; TODO: maybe figure out how to dedup this with the vram load below.
 ; TODO: Do we even need to do this? Should we just keep it in ROM and access it directly?
 ; Is that faster/slower?
-TILEMAP_SIZE: equ 40*28
+TILEMAP_WIDTH: equ 64
+TILEMAP_HEIGHT: equ 32
+TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
 TILEMAP_RAM: so.w TILEMAP_SIZE
     move.w #TILEMAP_SIZE-1,d0
     move.l #TileMap,a0
@@ -508,9 +510,13 @@ LoadEnemies:
 .loop
     move.w #ENEMY_STATE_ALIVE,(a1)+
     move.w (a0)+,(a5)+ ; enemy type
-    move.w (a0)+,(a2) ; enemy x
+    move.w (a0)+,d1 ; enemy x
+    add.w #MIN_DISPLAY_X,d1 ; add min display offset TODO: do this properly
+    move.w d1,(a2)
     add.l #4,a2
-    move.w (a0)+,(a3) ; enemy y
+    move.w (a0)+,d1 ; enemy y
+    add.w #MIN_DISPLAY_Y,d1
+    move.w d1,(a3)
     add.l #4,a3
     move.w #0,(a4)+ ; enemy_data_1
 .after_loop

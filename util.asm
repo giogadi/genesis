@@ -145,7 +145,8 @@ CheckCollisions:
     ; this means querying the tilemap at this location to get the tileset value, and then querying
     ; the collision data for that tileset value. omg
     ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
-    mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
+    ;mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
+    lsl.w #6,d1 ; 64 tiles per row, so multiply by 64 by left-shifting 6 times
     add.w d1,d0
     move.w d0,d1
     ; d0 and d1 now both hold our tile index. We gotta check this tile and the neighboring tiles that the hero
@@ -166,32 +167,32 @@ CheckCollisions:
     tst.w d0
     bne.s .CheckCollisionsDone
     move.w d1,d0
-    add.w #40,d0 ; (0,1)
+    add.w #TILEMAP_WIDTH,d0 ; (0,1)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
     move.w d1,d0
-    add.w #41,d0 ; (1,1)
+    add.w #(TILEMAP_WIDTH+1),d0 ; (1,1)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
     move.w d1,d0
-    add.w #42,d0 ; (2,1)
+    add.w #(TILEMAP_WIDTH+2),d0 ; (2,1)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
     move.w d1,d0
-    add.w #80,d0 ; (0,2)
+    add.w #(2*TILEMAP_WIDTH),d0 ; (0,2)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
     move.w d1,d0
-    add.w #81,d0 ; (1,2)
+    add.w #(2*TILEMAP_WIDTH+1),d0 ; (1,2)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
     move.w d1,d0
-    add.w #82,d0 ; (2,2)
+    add.w #(2*TILEMAP_WIDTH+2),d0 ; (2,2)
     jsr DoesTileCollide
     tst.w d0
     ;bne.s .CheckCollisionsDone
@@ -212,7 +213,8 @@ CheckCollisionsPositionOnly:
     ; this means querying the tilemap at this location to get the tileset value, and then querying
     ; the collision data for that tileset value. omg
     ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
-    mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
+    ;mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
+    lsl.w #6,d1 ; 64 tiles per row, so mult by 64 by << 6 (UGH I KNOW OK)
     add.w d1,d0
     ; Now d0 is our tile index. Check the tilemap+collision-table if this tile collides.
     jsr DoesTileCollide
