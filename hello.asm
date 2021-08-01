@@ -146,10 +146,10 @@ C_BIT: equ 5
 A_BIT: equ 6
 START_BIT: equ 7
 
-CURRENT_X: so.w 1
-CURRENT_Y: so.w 1
-NEW_X: so.w 1
-NEW_Y: so.w 1
+CURRENT_X: so.l 1
+CURRENT_Y: so.l 1
+NEW_X: so.l 1
+NEW_Y: so.l 1
 HERO_WIDTH: equ 16
 HERO_HEIGHT: equ 24
 
@@ -604,7 +604,7 @@ SLASH_MAX_Y: so.w 1
 BUTTON_RELEASED_SINCE_LAST_DASH: so.w 1
     move.w #1,BUTTON_RELEASED_SINCE_LAST_DASH
 HERO_DASH_COOLDOWN_FRAMES_LEFT: so.w 1
-HERO_DASH_CURRENT_SPEED: so.w 1
+HERO_DASH_CURRENT_SPEED: so.l 1
 HERO_DASH_CURRENT_STATE: so.w 1 ; 0: accel, 1: decel
 
 ; For SmoothStep experiment
@@ -626,8 +626,8 @@ loop
     
     ; TODO: should we move this to the bottom of the loop?
     move.w #0,HERO_NEW_STATE
-    move.w CURRENT_X,NEW_X
-    move.w CURRENT_Y,NEW_Y
+    move.l CURRENT_X,NEW_X
+    move.l CURRENT_Y,NEW_Y
 
     jsr UpdateButtonReleasedSinceLastSlash
     jsr UpdateButtonReleasedSinceLastDash
@@ -644,6 +644,7 @@ loop
     move.w NEW_X,d4
     move.w NEW_Y,d5
 
+    ; TODO: we should probably clamp the subpixel part of position as well
     ; clamp sprite x
     move.w d4,d0
     move.w #MIN_DISPLAY_X,d1
@@ -652,7 +653,7 @@ loop
     jsr ClampMax
     move.w d0,d4
 
-    ; clamp sprite y
+    ; ; clamp sprite y
     move.w d5,d0
     move.w #MIN_DISPLAY_Y,d1
     jsr ClampMin
@@ -671,6 +672,8 @@ loop
     ; update sprite position
     move.w d4,CURRENT_X
     move.w d5,CURRENT_Y
+    ; move.l NEW_X,CURRENT_X
+    ; move.l NEW_Y,CURRENT_Y
 
 .skipPositionUpdate
 
