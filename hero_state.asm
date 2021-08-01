@@ -472,6 +472,31 @@ HeroStateMaybeStartDash
 .End    
     rts
 
+; TODO re-use this in slash startup?
+; uses d0 and a0
+SetWindupFromFacingDirection:
+    move.l #.AnimJumpTable,a0
+    clr.l d0
+    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    lsl.l #2,d0 ; translate longs into bytes
+    add.l d0,a0
+    ; dereference jump table to get address to jump to
+    move.l (a0),a0
+    jmp (a0)
+.AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    rts
+.FacingDown
+    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    rts
+.FacingLeft
+    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    rts
+.FacingRight
+    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    rts
+
 HeroStateDashingUpdate
     ; handle new state
     tst.w HERO_NEW_STATE
@@ -479,12 +504,19 @@ HeroStateDashingUpdate
     move.l #HERO_DASH_INIT_SPEED,HERO_DASH_CURRENT_SPEED
     move.w #0,HERO_DASH_CURRENT_STATE
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
+    move.w #10,HITSTOP_FRAMES_LEFT
+    move.w #0,HERO_STATE_FRAMES_LEFT ; used for flicker
+    ; set current anim to windup
+    jsr SetWindupFromFacingDirection
+    rts ; no movement until after freeze time.
 .AfterNewState
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_STARTUP,d0
     beq HeroStateSlashStartup
+
+    add.w #1,HERO_STATE_FRAMES_LEFT ; for flicker
 
     ; are we acceling or deceling?
     tst.l HERO_DASH_CURRENT_STATE
@@ -532,7 +564,7 @@ HeroStateDashingUpdate
     add.l d0,NEW_X
     rts
 
-; TODO: consider re-using this in DashUpdate above
+; TODO: consider re-using this in DashingUpdate above
 DashSlashPositionUpdate:
     sub.l #HERO_DASH_DECEL,HERO_DASH_CURRENT_SPEED
     ; clamp to 0 speed
