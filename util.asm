@@ -345,7 +345,7 @@ DrawHero:
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_DASHING,d0
     bne.s .DoDraw
-    move.w HERO_STATE_FRAMES_LEFT,d0
+    move.w FRAME_COUNTER,d0
     and.w #$0003,d0
     tst.b d0 ; flicker on every 4th frame
     beq.s .DoDraw

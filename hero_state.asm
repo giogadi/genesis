@@ -1,4 +1,6 @@
-HERO_STATE_DASHING_DURATION: equ 8
+HERO_DASH_ACCEL: equ 4
+HERO_DASH_MAX_SPEED: equ 12
+HERO_DASH_DECEL: equ 1 
 
 HeroStateUpdate:
     move.l #.HeroStateJumpTable,a0
@@ -187,7 +189,7 @@ HeroStateSlashStartupUpdate
     bgt.w .NoTransition
     move.w #HERO_STATE_SLASH_ACTIVE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    jsr HeroStateSlashActive
+    bra HeroStateSlashActive
 .NoTransition
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
@@ -264,7 +266,7 @@ HeroStateSlashActiveUpdate
     bgt.s .NoTransition
     move.w #HERO_STATE_SLASH_RECOVERY,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    jsr HeroStateSlashRecovery
+    bra HeroStateSlashRecovery
 .NoTransition
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
@@ -337,9 +339,11 @@ HeroStateSlashRecoveryUpdate
     ; Maybe transition back to idle
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.s .NoTransition
+    ; Reset dash cooldown after slash
+    move.w #HERO_DASH_COOLDOWN,HERO_DASH_COOLDOWN_FRAMES_LEFT
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    jsr HeroStateIdle
+    bra HeroStateIdle
 .NoTransition
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
@@ -465,19 +469,32 @@ HeroStateDashingUpdate
     ; handle new state
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
-    move.w #HERO_STATE_DASHING_DURATION,HERO_STATE_FRAMES_LEFT
+    move.w #0,HERO_DASH_CURRENT_SPEED
+    move.w #0,HERO_DASH_CURRENT_STATE
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
 .AfterNewState
-    ; Maybe transition back to idle
-    tst.w HERO_STATE_FRAMES_LEFT
+    ; are we acceling or deceling?
+    tst.w HERO_DASH_CURRENT_STATE
+    bne.s .Deceling
+    ; acceling
+    add.w #HERO_DASH_ACCEL,HERO_DASH_CURRENT_SPEED
+    ; if we've hit max speed, switch to deceling next frame.
+    move.w HERO_DASH_CURRENT_SPEED,d0
+    cmp.w #HERO_DASH_MAX_SPEED,d0
+    blt.s .StillAcceling
+    move.w #HERO_DASH_MAX_SPEED,HERO_DASH_CURRENT_SPEED ; clamp to max speed
+    move.w #1,HERO_DASH_CURRENT_STATE
+.StillAcceling
+    bra.s .NoTransition ; continue dashing
+.Deceling
+    sub.w #HERO_DASH_DECEL,HERO_DASH_CURRENT_SPEED
+    ; if we've hit 0 speed, switch to idle.
     bgt.s .NoTransition
-    ; Reset dash cooldown
     move.w #HERO_DASH_COOLDOWN,HERO_DASH_COOLDOWN_FRAMES_LEFT
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    jsr HeroStateIdle
+    bra HeroStateIdle
 .NoTransition
-    sub.w #1,HERO_STATE_FRAMES_LEFT
     move.l #.FacingDirectionJumpTable,a0
     clr.l d0
     move.w FACING_DIRECTION,d0; offset in longs into jump table
@@ -485,19 +502,20 @@ HeroStateDashingUpdate
     add.l d0,a0
     ; dereference jump table to get address to jump to
     move.l (a0),a0
+    move.w HERO_DASH_CURRENT_SPEED,d0
     jmp (a0)
 .FacingDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    sub.w #DASHING_SPEED,NEW_Y
+    sub.w d0,NEW_Y
     rts
 .FacingDown
-    add.w #DASHING_SPEED,NEW_Y
+    add.w d0,NEW_Y
     rts
 .FacingLeft
-    sub.w #DASHING_SPEED,NEW_X
+    sub.w d0,NEW_X
     rts
 .FacingRight
-    add.w #DASHING_SPEED,NEW_X
+    add.w d0,NEW_X
     rts
 
 ; HeroStateDashingUpdateSmoothStep
@@ -515,7 +533,7 @@ HeroStateDashingUpdate
 ;     bgt.s .NoTransition
 ;     move.w #HERO_STATE_IDLE,HERO_STATE
 ;     move.w #1,HERO_NEW_STATE
-;     jsr HeroStateIdle
+;     bra HeroStateIdle
 ; .NoTransition
 ;     sub.w #1,HERO_STATE_FRAMES_LEFT
 ;     bgt.s .DoSmoothStep
