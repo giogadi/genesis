@@ -1,7 +1,7 @@
 HERO_DASH_INIT_SPEED: equ 0
-HERO_DASH_ACCEL: equ (6*65536)
-HERO_DASH_MAX_SPEED: equ (6*65536)
-HERO_DASH_DECEL: equ (65536/4)
+HERO_DASH_ACCEL: equ (65536/2)
+HERO_DASH_MAX_SPEED: equ (4*65536)
+HERO_DASH_DECEL: equ (65536/8)
 
 HeroStateUpdate:
     move.l #.HeroStateJumpTable,a0
@@ -260,6 +260,15 @@ HeroStateSlashActiveUpdate
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
     beq.w HeroStateHurt
+
+    ; Dash Transition if buffered
+    tst.w DASH_BUFFERED
+    beq.s .AfterDashTransition
+    move.w #HERO_STATE_DASHING,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    move.w #0,DASH_BUFFERED
+    bra HeroStateDashing
+.AfterDashTransition
 
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState

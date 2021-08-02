@@ -581,6 +581,47 @@ AbsValue:
 .End
     rts
 
+; Should be called during freeze only
+CheckForDashBuffer:
+    ; if slash is active, this is an attack hitstop. look for a buffered input to dash.
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_SLASH_ACTIVE,d0
+    bne.w .End
+    tst.w DASH_BUFFERED ; if dash is already buffered, exit
+    bne.w .End
+    GetControls d0,d1
+    move.b CONTROLLER,d0
+    btst.l #C_BIT,d0
+    beq.s .End
+    move.w #1,DASH_BUFFERED
+    ; now look for a direction and update FACING_DIRECTION if we find one
+    ; up
+    btst.l #UP_BIT,d0
+    beq.s .AfterUp
+    move.w #FACING_UP,FACING_DIRECTION
+    rts
+.AfterUp
+    ; down
+    btst.l #DOWN_BIT,d0
+    beq.s .AfterDown
+    move.w #FACING_DOWN,FACING_DIRECTION
+    rts
+.AfterDown
+    ; left
+    btst.l #LEFT_BIT,d0
+    beq.s .AfterLeft
+    move.w #FACING_LEFT,FACING_DIRECTION
+    rts
+.AfterLeft
+    ; right
+    btst.l #RIGHT_BIT,d0
+    beq.s .AfterRight
+    move.w #FACING_RIGHT,FACING_DIRECTION
+    rts
+.AfterRight
+.End
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:

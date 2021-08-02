@@ -607,21 +607,20 @@ HERO_DASH_COOLDOWN_FRAMES_LEFT: so.w 1
 HERO_DASH_CURRENT_SPEED: so.l 1
 HERO_DASH_CURRENT_STATE: so.w 1 ; 0: accel, 1: decel
 
-; For SmoothStep experiment
-; HERO_DASH_START_X: so.w 1
-; HERO_DASH_START_Y: so.w 1
-; DASH_PARAM: so.w 1
-
 GLOBAL_PALETTE: so.w 1
     move.w #0,GLOBAL_PALETTE
 
+DASH_BUFFERED: so.w 1
+    move.w #0,DASH_BUFFERED
+
 loop
     tst.w HITSTOP_FRAMES_LEFT
-    beq.w .NoHitstop
+    beq.w NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
+    jsr CheckForDashBuffer
     jmp WaitNewFrame
 
-.NoHitstop
+NoHitstop
     GetControls d0,d1
     
     ; TODO: should we move this to the bottom of the loop?
