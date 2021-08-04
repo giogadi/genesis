@@ -173,6 +173,32 @@ HeroStateMaybeStartSlash
     beq.s .End
     move.w #HERO_STATE_SLASH_STARTUP,HERO_STATE
     move.w #1,HERO_NEW_STATE
+    ; In order to enable slashing in a different direction from dash, we check if a direction
+    ; is also being pressed and turn the hero that way if so
+    ; up
+    btst.l #UP_BIT,d0
+    beq.s .AfterUp
+    move.w #FACING_UP,FACING_DIRECTION
+    rts
+.AfterUp
+    ; down
+    btst.l #DOWN_BIT,d0
+    beq.s .AfterDown
+    move.w #FACING_DOWN,FACING_DIRECTION
+    rts
+.AfterDown
+    ; left
+    btst.l #LEFT_BIT,d0
+    beq.s .AfterLeft
+    move.w #FACING_LEFT,FACING_DIRECTION
+    rts
+.AfterLeft
+    ; right
+    btst.l #RIGHT_BIT,d0
+    beq.s .AfterRight
+    move.w #FACING_RIGHT,FACING_DIRECTION
+    rts
+.AfterRight
 .End    
     rts
 
@@ -510,6 +536,7 @@ HeroStateDashingUpdate
     ; handle new state
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
+    move.w FACING_DIRECTION,HERO_DASH_DIRECTION
     move.l #HERO_DASH_INIT_SPEED,HERO_DASH_CURRENT_SPEED
     move.w #0,HERO_DASH_CURRENT_STATE
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
@@ -528,7 +555,7 @@ HeroStateDashingUpdate
     add.w #1,HERO_STATE_FRAMES_LEFT ; for flicker
 
     ; are we acceling or deceling?
-    tst.l HERO_DASH_CURRENT_STATE
+    tst.w HERO_DASH_CURRENT_STATE
     bne.s .Deceling
     ; acceling
     add.l #HERO_DASH_ACCEL,HERO_DASH_CURRENT_SPEED
@@ -550,16 +577,16 @@ HeroStateDashingUpdate
     move.w #1,HERO_NEW_STATE
     bra HeroStateIdle
 .NoTransition
-    move.l #.FacingDirectionJumpTable,a0
+    move.l #.DashDirectionJumpTable,a0
     clr.l d0
-    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    move.w HERO_DASH_DIRECTION,d0; offset in longs into jump table
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     move.l HERO_DASH_CURRENT_SPEED,d0
     jmp (a0)
-.FacingDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.DashDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
     sub.l d0,NEW_Y
     rts
