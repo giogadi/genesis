@@ -1,7 +1,8 @@
 HERO_DASH_INIT_SPEED: equ 0
-HERO_DASH_ACCEL: equ (65536/2)
-HERO_DASH_MAX_SPEED: equ (4*65536)
-HERO_DASH_DECEL: equ (65536/8)
+HERO_DASH_ACCEL: equ (5*65536)
+HERO_DASH_MAX_SPEED: equ (5*65536)
+HERO_DASH_DECEL: equ (65536/6)
+HERO_DASH_MIN_SPEED: equ 65536
 
 HeroStateUpdate:
     move.l #.HeroStateJumpTable,a0
@@ -540,7 +541,7 @@ HeroStateDashingUpdate
     move.l #HERO_DASH_INIT_SPEED,HERO_DASH_CURRENT_SPEED
     move.w #0,HERO_DASH_CURRENT_STATE
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
-    move.w #10,HITSTOP_FRAMES_LEFT
+    ;move.w #10,HITSTOP_FRAMES_LEFT
     move.w #0,HERO_STATE_FRAMES_LEFT ; used for flicker
     ; set current anim to windup
     jsr SetWindupFromFacingDirection
@@ -569,6 +570,8 @@ HeroStateDashingUpdate
     bra.s .NoTransition ; continue dashing
 .Deceling
     sub.l #HERO_DASH_DECEL,HERO_DASH_CURRENT_SPEED
+    move.l HERO_DASH_CURRENT_SPEED,d0
+    cmp.l #HERO_DASH_MIN_SPEED,d0
     ; if we've hit 0 speed, switch to idle.
     bgt.s .NoTransition
     move.l #0,HERO_DASH_CURRENT_SPEED
@@ -613,7 +616,7 @@ DashSlashPositionUpdate:
     beq.s .End
     move.l #.FacingDirectionJumpTable,a0
     clr.l d0
-    move.w FACING_DIRECTION,d0; offset in longs into jump table
+    move.w HERO_DASH_DIRECTION,d0; offset in longs into jump table
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0
     ; dereference jump table to get address to jump to

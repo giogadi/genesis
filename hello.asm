@@ -165,6 +165,7 @@ ANIM_STRIDE: so.w 1
 
 ENEMY_TYPE_BUTT: equ 0
 ENEMY_TYPE_HOT_DOG: equ 1
+ENEMY_TYPE_OGRE: equ 2
 
 MAX_NUM_ENEMIES: equ 5
 ENEMY_STATE_DEAD: equ 0
@@ -187,6 +188,7 @@ LAST_LINK_WRITTEN: so.w 1
     include hero_state.asm
     include butt_enemy.asm
     include hot_dog_enemy.asm
+    include ogre_enemy.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------
@@ -443,8 +445,17 @@ HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+OgreSpriteLoad:
+OGRE_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
+    move.w #(8*OGRE_SPRITE_TILE_SIZE)-1,d0
+    move.l #OgreSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 DashBarSpriteLoad:
-DASH_BAR_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+DASH_BAR_SPRITE_TILE_START: equ (OGRE_SPRITE_TILE_START+OGRE_SPRITE_TILE_SIZE)
 DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
     move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
     move.l #DashBarSprite,a0
@@ -570,8 +581,8 @@ ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 
 HITSTOP_FRAMES_LEFT: so.w 1
-;HITSTOP_FRAMES: equ 10
-HITSTOP_FRAMES: equ 20
+HITSTOP_FRAMES: equ 15
+;HITSTOP_FRAMES: equ 20
 
 HERO_SPEED: equ 1
 DASHING_SPEED: equ (5*HERO_SPEED)
@@ -796,12 +807,15 @@ DrawEnemies:
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
-.TypeJumpTable dc.l .Butt,.HotDog
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
     jsr DrawButtEnemy
     bra.s .loop_continue
 .HotDog:
     jsr DrawHotDogEnemy
+    bra.s .loop_continue
+.Ogre:
+    jsr DrawOgreEnemy
     bra.s .loop_continue
 .loop_continue
     dbra d0,.loop
@@ -904,6 +918,9 @@ HotDogSlashedLeftSprite:
     include art/hot_dog_slashed_left.asm
 HotDogSlashedRightSprite:
     include art/hot_dog_slashed_right.asm
+
+OgreSprite:
+    include art/ogre_sprite.asm
 
 DashBarSprite:
     include art/ui/dash_bar.asm

@@ -472,12 +472,15 @@ UpdateEnemies:
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
-.TypeJumpTable dc.l .Butt,.HotDog
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
     jsr UpdateButtEnemy
     bra.s .EnemyUpdateLoopContinue
 .HotDog:
     jsr UpdateHotDogEnemy
+    bra.s .EnemyUpdateLoopContinue
+.Ogre:
+    jsr UpdateOgreEnemy
     bra.s .EnemyUpdateLoopContinue
 .EnemyUpdateLoopContinue
     add.w #2,a2
