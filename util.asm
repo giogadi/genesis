@@ -1,3 +1,9 @@
+InfiniteLoop: macro
+.infinite:
+    move.b #0,d7
+    beq.s .infinite
+    endm
+
 ; \1: address, \2: aux register, \3: ram id code
 SetXramAddr: macro
     move.w \1,\2

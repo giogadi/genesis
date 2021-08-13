@@ -4,7 +4,7 @@ HOT_DOG_RECOVERY: equ 1
 HOT_DOG_SLASH_DURATION: equ 10
 HOT_DOG_RECOVERY_DURATION: equ 30
 
-HOT_DOG_SLASH_SPEED: equ 3
+HOT_DOG_SLASH_SPEED: equ 4
 
 ; a2: enemy_state
 ; a3: enemy_x
@@ -16,7 +16,8 @@ HOT_DOG_SLASH_SPEED: equ 3
 ; State:
 ; ENEMY_DATA_1: 0000 000(AI_state,1) (frame_counter,8)
 ; ENEMY_DATA_2: 0000 000(old_state,1) 0000 00(motion_direction,2)
-UpdateHotDogEnemy:
+UpdateHotDogEnemy:    
+    rts ; DEBUG
     move.l #.StateJumpTable,a0
     clr.l d0
     move.b (a5),d0; ENEMY_DATA_1. need AI_state
@@ -126,57 +127,83 @@ HotDogRecoveryUpdate:
     sub.b #1,1(a5) ; decrement frame counter
     rts
 
+; sp: rts
+; sp+4: ENEMY_Y
+; sp+8: ENEMY_X
+; SP+12: ENEMY_DATA_2
+; sp+14: ENEMY_DATA_1
+; sp+16: dying_frame_left
+; sp+18: state
+;
+; Don't touch d2
+DrawHotDogEnemy:
+    move.w 18(sp),d0
+    cmp.w #ENEMY_STATE_DYING,d0
+    beq.s .DrawDying
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d0; 2x2
+    or.w SPRITE_COUNTER,d0 ; link to next sprite
+    move.w 4(sp),vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d0,LAST_LINK_WRITTEN
+    move.w #HOT_DOG_SPRITE_TILE_START,vdp_data
+    move.w 8(sp),vdp_data ; x
+    bra.s .End
+.DrawDying
+.End
+    rts
+
 ; d0: please don't touch
 ; d1: enemy state
 ; d2: x
 ; d3: y
 ; d6: enemy dying frames left
-DrawHotDogEnemy:
-    cmp.w #ENEMY_STATE_DYING,d1
-    beq.s .DrawDying
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5 ; link to next sprite
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    ; add global_palette
-    move.w GLOBAL_PALETTE,d5
-    ror.w #3,d5
-    or.w #HOT_DOG_SPRITE_TILE_START,d5
-    move.w d5,vdp_data
-    move.w d2,vdp_data
-    bra.s .End
-.DrawDying:
-    ; only draw every other frame for a blinking effect
-    btst.l #0,d6
-    bne.s .End
-    ; gonna scale slice anim by dying frames left.
-    move.w #ENEMY_DYING_FRAMES,d7
-    sub.w d6,d7 ; number of frames since enemy started dying in d7
-    ; left slice first. offset a few pixels down-left
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5
-    add.w d7,d3 ; y +=
-    sub.w d7,d2 ; x -=
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    move.w #HOT_DOG_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-    ; right slice next. offset a few pixels up-right
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5
-    sub.w d7,d3 ; y -=
-    sub.w d7,d3 ; twice to undo change from first half
-    add.w d7,d2 ; x +=
-    add.w d7,d2
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    move.w #HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-.End:
-    rts
+; DrawHotDogEnemy:
+;     cmp.w #ENEMY_STATE_DYING,d1
+;     beq.s .DrawDying
+;     add.w #1,SPRITE_COUNTER
+;     move.w #$0500,d5 ; 2x2
+;     or.w SPRITE_COUNTER,d5 ; link to next sprite
+;     move.w d3,vdp_data
+;     move.w d5,vdp_data
+;     move.w d5,LAST_LINK_WRITTEN
+;     ; add global_palette
+;     move.w GLOBAL_PALETTE,d5
+;     ror.w #3,d5
+;     or.w #HOT_DOG_SPRITE_TILE_START,d5
+;     move.w d5,vdp_data
+;     move.w d2,vdp_data
+;     bra.s .End
+; .DrawDying:
+;     ; only draw every other frame for a blinking effect
+;     btst.l #0,d6
+;     bne.s .End
+;     ; gonna scale slice anim by dying frames left.
+;     move.w #ENEMY_DYING_FRAMES,d7
+;     sub.w d6,d7 ; number of frames since enemy started dying in d7
+;     ; left slice first. offset a few pixels down-left
+;     add.w #1,SPRITE_COUNTER
+;     move.w #$0500,d5 ; 2x2
+;     or.w SPRITE_COUNTER,d5
+;     add.w d7,d3 ; y +=
+;     sub.w d7,d2 ; x -=
+;     move.w d3,vdp_data
+;     move.w d5,vdp_data
+;     move.w d5,LAST_LINK_WRITTEN
+;     move.w #HOT_DOG_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
+;     move.w d2,vdp_data
+;     ; right slice next. offset a few pixels up-right
+;     add.w #1,SPRITE_COUNTER
+;     move.w #$0500,d5 ; 2x2
+;     or.w SPRITE_COUNTER,d5
+;     sub.w d7,d3 ; y -=
+;     sub.w d7,d3 ; twice to undo change from first half
+;     add.w d7,d2 ; x +=
+;     add.w d7,d2
+;     move.w d3,vdp_data
+;     move.w d5,vdp_data
+;     move.w d5,LAST_LINK_WRITTEN
+;     move.w #HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
+;     move.w d2,vdp_data
+; .End:
+;     rts

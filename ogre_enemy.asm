@@ -1,55 +1,58 @@
-; d0: please don't touch
-; d1: enemy state
-; d2: x (safe to edit)
-; d3: y (safe to edit)
-; d6: enemy dying frames left
+; sp: rts
+; sp+4: ENEMY_Y
+; sp+8: ENEMY_X
+; SP+12: ENEMY_DATA_2
+; sp+14: ENEMY_DATA_1
+; sp+16: dying_frame_left
+; sp+18: state
+;
+; Don't touch d2
 DrawOgreEnemy:
-    ; cmp.w #ENEMY_STATE_DYING,d1
-    ; beq.s .DrawDying
-    move.w #$0A00,d4 ; 3x3
+    move.w #$0A00,d0 ; 3x3 (to be combined with link data)
     add.w #1,SPRITE_COUNTER
-    move.b (SPRITE_COUNTER+1),d4 ; link to next sprite
-    move.w d3,vdp_data
-    move.w d4,vdp_data
-    move.w d4,LAST_LINK_WRITTEN
-    ; add global_palette
-    move.w GLOBAL_PALETTE,d5
-    ror.w #3,d5
-    or.w #OGRE_SPRITE_TILE_START,d5
-    move.w d5,vdp_data
-    move.w d2,vdp_data
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    move.w 4(sp),d3 ; y
+    move.w 8(sp),d4 ; x
+    move.w #OGRE_SPRITE_TILE_START,d1
+    move.w d3,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d4,vdp_data ; x
 
     add.w #1,SPRITE_COUNTER
-    move.b (SPRITE_COUNTER+1),d4 ; link to next sprite
-    move.w d4,LAST_LINK_WRITTEN
-    add.w #(3*3),d5 ; next tile group start
-    add.w #(3*8),d2 ; start drawing tile at tile group (1,0)
-    move.w d3,vdp_data
-    move.w d4,vdp_data
-    move.w d5,vdp_data
-    move.w d2,vdp_data
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(3*3),d1 ; next tile group start
+    add.w #(3*8),d4 ; position of next tile group start (1,0)
+    move.w d3,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d4,vdp_data ; x
 
     add.w #1,SPRITE_COUNTER
-    move.b (SPRITE_COUNTER+1),d4 ; link to next sprite
-    move.w d4,LAST_LINK_WRITTEN
-    add.w #(3*3),d5 ; next tile group start
-    sub.w #(3*8),d2 ; start drawing tile at tile group (0,1)
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(3*3),d1 ; next tile group start
+    sub.w #(3*8),d4 ; position of next tile group start (0,1)
     add.w #(3*8),d3
-    move.w d3,vdp_data
-    move.w d4,vdp_data
-    move.w d5,vdp_data
-    move.w d2,vdp_data
+    move.w d3,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d4,vdp_data ; x
 
     add.w #1,SPRITE_COUNTER
-    move.b (SPRITE_COUNTER+1),d4 ; link to next sprite
-    move.w d4,LAST_LINK_WRITTEN
-    add.w #(3*3),d5 ; next tile group start
-    add.w #(3*8),d2 ; start drawing tile 3 tiles to the right
-    move.w d3,vdp_data
-    move.w d4,vdp_data
-    move.w d5,vdp_data
-    move.w d2,vdp_data
-    bra.s .End
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(3*3),d1 ; next tile group start
+    add.w #(3*8),d4 ; position of next tile group start (1,1)
+    move.w d3,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d4,vdp_data ; x
+    rts
+
+; draw ogre dying
 ; .DrawDying:
 ;     ; only draw every other frame for a blinking effect
 ;     btst.l #0,d6
@@ -81,8 +84,16 @@ DrawOgreEnemy:
 ;     move.w d5,LAST_LINK_WRITTEN
 ;     move.w #HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
 ;     move.w d2,vdp_data
-.End:
-    rts
 
+; a2: enemy_state
+; a3: enemy_x
+; a4: enemy_y
+; a5: enemy_data_1
+; a6: enemy_data_2
+; d2: not allowed
+;
+; ENEMY_DATA_1: 0000 0000 0000 0000
+; ENEMY_DATA_2: 0000 0000 0000 00(direction,2)
 UpdateOgreEnemy:
+    
     rts
