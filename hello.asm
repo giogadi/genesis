@@ -519,8 +519,36 @@ LoadEnemies:
     move.l #ENEMY_Y,a3
     move.l #ENEMY_DATA_1,a4
     move.l #ENEMY_TYPE,a5
+    move.l #ENEMY_SIZE,a6
 .loop
     move.w #ENEMY_STATE_ALIVE,(a1)+
+    ; push a1 onto the stack so we can reuse it for this jump table
+    move.l a1,-(sp)
+
+    move.l #.EnemyTypeJumpTable,a1
+    clr.l d3
+    move.w (a0),d3 ; Enemy type is in a0 right now.
+    lsl.l #2,d3 ; translate longs into bytes
+    add.l d3,a1
+    ; dereference jump table to get address to jump to
+    move.l (a1),a1
+    jmp (a1)
+    ; TODO: consider making the entries into actual branch instructions.
+    ; Can be 2 cycles faster apparently?
+.EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.Butt:
+    move.w #$1010,(a6)+
+    bra.s .AfterJumpTable
+.HotDog:
+    move.w #$1010,(a6)+
+    bra.s .AfterJumpTable
+.Ogre:
+    move.w #$3030,(a6)+
+    bra.s .AfterJumpTable
+.AfterJumpTable
+
+    move.l (sp)+,a1
+
     move.w (a0)+,(a5)+ ; enemy type
     move.w (a0)+,d1 ; enemy x
     add.w #MIN_DISPLAY_X,d1 ; add min display offset TODO: do this properly

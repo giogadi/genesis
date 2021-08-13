@@ -404,6 +404,7 @@ CheckIfHeroNewlyHurt:
     move.l #ENEMY_X,a2
     move.l #ENEMY_Y,a3
     move.l #ENEMY_STATE,a4
+    move.l #ENEMY_SIZE,a5
 .CheckHurtLoop:
     ; if enemy is not alive, skip to next enemy
     move.w (a4),d6
@@ -424,8 +425,9 @@ CheckIfHeroNewlyHurt:
     move.w #FACING_LEFT,d0
     move.w d6,d1
 .CheckHurtNotLeastOverlap1
-    move.w (a2),d6 ; enemy_min_x
-    add.w #16,d6 ; enemy_max_x (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
+    clr.w d6
+    move.b (a5),d6 ; enemy_width
+    add.w (a2),d6 ; enemy_min_x + enemy_width = enemy_max_x
     sub.w d2,d6 ; enemy_max_x - hero_min_x
     blt.s .CheckHurtLoopContinue
     cmp.w d1,d6 ; compare with previous overlap amount and keep smaller value
@@ -442,8 +444,9 @@ CheckIfHeroNewlyHurt:
     move.w #FACING_UP,d0
     move.w d6,d1
 .CheckHurtNotLeastOverlap3
-    move.w (a3),d6 ; enemy_min_y
-    add.w #16,d6 ; enemy_max_y (TODO USE A VARIABLE FOR ENEMY SIZE!!!!!)
+    clr.w d6
+    move.b 1(a5),d6 ; enemy_height
+    add.w (a3),d6 ; enemy_min_x + enemy_width = enemy_max_x
     sub.w d3,d6 ; enemy_max_y - hero_min_y
     blt.s .CheckHurtLoopContinue
     cmp.w d1,d6 ; compare with previous overlap amount and keep smaller value
@@ -460,6 +463,7 @@ CheckIfHeroNewlyHurt:
     add.l #4,a2
     add.l #4,a3
     add.w #2,a4
+    add.w #2,a5
     dbra d7,.CheckHurtLoop
     rts
 
