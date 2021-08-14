@@ -849,7 +849,7 @@ DrawEnemiesNew:
     jmp (a0)
 .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
-    ; jsr DrawButtEnemy
+    jsr DrawButtEnemy
     bra.s .AfterJumpTable
 .HotDog:
     jsr DrawHotDogEnemy
@@ -863,43 +863,6 @@ DrawEnemiesNew:
     add.b #1,d2
     bra.w .loop
 .end
-
-; DrawEnemies:
-;     move.w #MAX_NUM_ENEMIES-1,d0
-;     move.l #ENEMY_STATE,a2
-;     move.l #ENEMY_X,a3
-;     move.l #ENEMY_Y,a4
-;     move.l #ENEMY_TYPE,a5
-;     move.l #ENEMY_DYING_FRAMES_LEFT,a6
-; .loop
-;     move.w (a2)+,d1 ; enemy state
-;     move.w (a3),d2 ; x
-;     add.w #4,a3 ; it's actually a long in memory
-;     move.w (a4),d3 ; y
-;     add.w #4,a4 ; actually a long in memory
-;     clr.l d4 ; we're gonna use this as a long later
-;     move.w (a5)+,d4 ; type
-;     move.w (a6)+,d6 ; dying frames left
-;     tst.w d1 ; if dead, skip to next sprite
-;     beq.s .loop_continue
-;     move.l #.TypeJumpTable,a0
-;     lsl.l #2,d4 ; translate longs into bytes
-;     add.l d4,a0
-;     ; dereference jump table to get address to jump to
-;     move.l (a0),a0
-;     jmp (a0)
-; .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-; .Butt:
-;     jsr DrawButtEnemy
-;     bra.s .loop_continue
-; .HotDog:
-;     jsr DrawHotDogEnemy
-;     bra.s .loop_continue
-; .Ogre:
-;     ; jsr DrawOgreEnemy
-;     bra.s .loop_continue
-; .loop_continue
-;     dbra d0,.loop
 
     ; set last sprite's link data to 0
     clr.l d0

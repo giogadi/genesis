@@ -10,7 +10,7 @@ BUTT_ENEMY_COOLDOWN: equ 3
 ; a6: enemy_data_2
 ; d2: not allowed
 UpdateButtEnemy:
-    ;rts ; DEBUGGGGG
+    rts ; DEBUGGGGG
     ; State:
     ; motion states: stepping, charging, zooming, zoom-cooldown. Need 2 bits for this.
     ; frame counter for current state. 8 bits.
@@ -181,58 +181,52 @@ ButtEnemyCooldownUpdate:
     add.l #5000,(a4)
     rts
 
-; d0: please don't touch
-; d1: enemy state
-; d2: x
-; d3: y
-; d6: enemy dying frames left
 DrawButtEnemy:
-    cmp.w #ENEMY_STATE_DYING,d1
-    beq.s .DrawButtEnemyDying
+    move.w 18(sp),d0
+    cmp.w #ENEMY_STATE_DYING,d0
+    beq.s .DrawDying
     add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5 ; link to next sprite
-    move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
-    ; add global_palette
-    move.w GLOBAL_PALETTE,d5
-    ror.w #3,d5
-    or.w #BUTT_SPRITE_TILE_START,d5
-    move.w d5,vdp_data
-    ;move.w #BUTT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-    bra.s .DrawButtEnemyEnd
-.DrawButtEnemyDying:
+    move.w #$0500,d0; 2x2
+    or.w SPRITE_COUNTER,d0 ; link to next sprite
+    move.w 4(sp),vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d0,LAST_LINK_WRITTEN
+    move.w #BUTT_SPRITE_TILE_START,vdp_data
+    move.w 8(sp),vdp_data ; x
+    bra.w .End
+.DrawDying
     ; only draw every other frame for a blinking effect
-    btst.l #0,d6
-    bne.s .DrawButtEnemyEnd
+    move.w 16(sp),d0 ; lsb of dying_frame_left
+    btst.l #0,d0
+    bne.s .End
     ; gonna scale slice anim by dying frames left.
-    move.w #ENEMY_DYING_FRAMES,d7
-    sub.w d6,d7 ; number of frames since enemy started dying in d7
+    move.w #ENEMY_DYING_FRAMES,d1
+    sub.w d0,d1 ; number of frames since enemy started dying in d7
     ; left slice first. offset a few pixels down-left
     add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5
-    add.w d7,d3 ; y +=
-    sub.w d7,d2 ; x -=
+    move.w #$0500,d0 ; 2x2
+    or.w SPRITE_COUNTER,d0
+    move.w 4(sp),d3 ; y
+    add.w d1,d3 ; y +=
     move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
+    move.w d0,vdp_data
+    move.w d0,LAST_LINK_WRITTEN
     move.w #BUTT_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-    ; right slice next. offset a few pixels up-right
-    add.w #1,SPRITE_COUNTER
-    move.w #$0500,d5 ; 2x2
-    or.w SPRITE_COUNTER,d5
-    sub.w d7,d3 ; y -=
-    sub.w d7,d3 ; twice to undo change from first half
-    add.w d7,d2 ; x +=
-    add.w d7,d2
+    move.w 8(sp),d3 ; x
+    sub.w d1,d3 ; x -=
     move.w d3,vdp_data
-    move.w d5,vdp_data
-    move.w d5,LAST_LINK_WRITTEN
+    ; right slice next. offset up-right
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d0 ; 2x2
+    or.w SPRITE_COUNTER,d0
+    move.w 4(sp),d3 ; y
+    sub.w d1,d3 ; y -=
+    move.w d3,vdp_data
+    move.w d0,vdp_data
+    move.w d0,LAST_LINK_WRITTEN
     move.w #BUTT_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
-    move.w d2,vdp_data
-.DrawButtEnemyEnd:
+    move.w 8(sp),d3 ; x
+    add.w d1,d3 ; x +=
+    move.w d3,vdp_data
+.End
     rts
