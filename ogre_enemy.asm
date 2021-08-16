@@ -1,3 +1,7 @@
+OGRE_DESIRED_DIST: equ 48 ; pixels
+OGRE_WIDTH: equ 48 ; pixels
+OGRE_HEIGHT: equ 48 ; pixels
+OGRE_WALK_SPEED: equ (65536/2) ; 1 pixel per frame
 ; sp: rts
 ; sp+4: ENEMY_Y
 ; sp+8: ENEMY_X
@@ -8,12 +12,12 @@
 ;
 ; DON'T TOUCH d2
 DrawOgreEnemy:
-    ; get the appropriate pose based on direction
     move.l #.DirectionJumpTable,a0
     clr.l d0
     move.b 13(sp),d0 ; direction
     lsl.l #2,d0 ; translate longs into bytes
     add.l d0,a0
+    move.w FRAME_COUNTER,d0
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
@@ -21,16 +25,32 @@ DrawOgreEnemy:
     ; Can be 2 cycles faster apparently?
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
-    move.w #(OGRE_SPRITE_TILE_START+5*36),d1
-    bra.s .AfterDirectionJump
+    btst.l #4,d0
+    bne.s .DrawRightWalk2
+    bra.s .DrawRightWalk
 .Down
-    move.w #OGRE_SPRITE_TILE_START,d1
-    bra.s .AfterDirectionJump
+    btst.l #4,d0
+    bne.s .DrawLeftWalk2
+    bra.s .DrawLeftWalk
 .Left
+    btst.l #4,d0
+    bne.s .DrawLeftWalk2
+    bra.s .DrawLeftWalk
+.Right
+    btst.l #4,d0
+    bne.s .DrawRightWalk2
+    bra.s .DrawRightWalk
+.DrawLeftWalk
     move.w #OGRE_SPRITE_TILE_START,d1
     bra.s .AfterDirectionJump
-.Right
+.DrawLeftWalk2
+    move.w #(OGRE_SPRITE_TILE_START+36),d1
+    bra.s .AfterDirectionJump
+.DrawRightWalk
     move.w #(OGRE_SPRITE_TILE_START+5*36),d1
+    bra.s .AfterDirectionJump
+.DrawRightWalk2
+    move.w #(OGRE_SPRITE_TILE_START+6*36),d1
     bra.s .AfterDirectionJump
 .AfterDirectionJump
 
@@ -40,7 +60,6 @@ DrawOgreEnemy:
     move.w d0,LAST_LINK_WRITTEN
     move.w 4(sp),d3 ; y
     move.w 8(sp),d4 ; x
-    ;move.w #OGRE_SPRITE_TILE_START,d1
     move.w d3,vdp_data ; y
     move.w d0,vdp_data ; link data
     move.w d1,vdp_data ; tile (default palette)
@@ -78,49 +97,13 @@ DrawOgreEnemy:
     move.w d4,vdp_data ; x
     rts
 
-; draw ogre dying
-; .DrawDying:
-;     ; only draw every other frame for a blinking effect
-;     btst.l #0,d6
-;     bne.s .End
-;     ; gonna scale slice anim by dying frames left.
-;     move.w #ENEMY_DYING_FRAMES,d7
-;     sub.w d6,d7 ; number of frames since enemy started dying in d7
-;     ; left slice first. offset a few pixels down-left
-;     add.w #1,SPRITE_COUNTER
-;     move.w #$0500,d5 ; 2x2
-;     or.w SPRITE_COUNTER,d5
-;     add.w d7,d3 ; y +=
-;     sub.w d7,d2 ; x -=
-;     move.w d3,vdp_data
-;     move.w d5,vdp_data
-;     move.w d5,LAST_LINK_WRITTEN
-;     move.w #HOT_DOG_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
-;     move.w d2,vdp_data
-;     ; right slice next. offset a few pixels up-right
-;     add.w #1,SPRITE_COUNTER
-;     move.w #$0500,d5 ; 2x2
-;     or.w SPRITE_COUNTER,d5
-;     sub.w d7,d3 ; y -=
-;     sub.w d7,d3 ; twice to undo change from first half
-;     add.w d7,d2 ; x +=
-;     add.w d7,d2
-;     move.w d3,vdp_data
-;     move.w d5,vdp_data
-;     move.w d5,LAST_LINK_WRITTEN
-;     move.w #HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
-;     move.w d2,vdp_data
-
 ; a2: enemy_state
 ; a3: enemy_x
 ; a4: enemy_y
 ; a5: enemy_data_1
 ; a6: enemy_data_2
 ; d2: not allowed
-;
-; ENEMY_DATA_1: 0000 0000 0000 0000
-; ENEMY_DATA_2: 0000 0000 0000 00(direction,2)
-UpdateOgreEnemy:
+UpdateFacingDirection:
     move.w (a3),d0 ; enemy_x
     sub.w CURRENT_X,d0 ; enemy_x - hero_x
     jsr AbsValue ; | enemy_x - hero_x |
@@ -136,18 +119,102 @@ UpdateOgreEnemy:
     blt.s .FacingDown
     ; facing up
     move.b #FACING_UP,1(a6)
-    bra.s .End
+    rts
 .FacingDown
     move.b #FACING_DOWN,1(a6)
-    bra.s .End
+    rts
 .FacingX
     move.w (a3),d0 ; enemy_x
     sub.w CURRENT_X,d0 ; enemy_x - hero_x
     blt.s .FacingRight
     ; facing left
     move.b #FACING_LEFT,1(a6)
-    bra.s .End
+    rts
 .FacingRight
     move.b #FACING_RIGHT,1(a6)
-.End
+    rts
+
+; put target position in d0,d1
+GetTargetPosition:
+    ; ogre above hero: y > x && y > -x
+    ; ogre below hero: y < x && y < -x
+    ; ogre left of hero: y > x && y < -x
+    ; ogre right of hero: y < x && y > -x
+    ; keep things simple; using sprite centerpoints for positions. but what can go wrong?
+    move.w (a3),d0 ; enemy_min_x
+    add.w #(OGRE_WIDTH/2),d0 ; enemy_center_x
+    sub.w CURRENT_X,d0 ; enemy_center_x - hero_min_x
+    sub.w #(HERO_WIDTH/2),d0 ; enemy_center_x - hero_min_x
+    
+    move.w (a4),d1 ; enemy_min_y
+    add.w #(OGRE_WIDTH/2),d1 ; enemy_center_y
+    sub.w CURRENT_Y,d1 ; enemy_center_y - hero_min_y
+    sub.w #(HERO_HEIGHT/2),d1 ; enemy_center_y - hero_center_y
+
+    cmp.w d0,d1
+    bgt.s .ygtx
+    ; y <= x
+    neg.w d0 ; -x
+    cmp.w d0,d1
+    bgt.s .RightOfHero
+    bra.s .AboveHero
+.ygtx
+    neg.w d0 ; -x
+    cmp.w d0,d1
+    bgt.s .BelowHero
+    bra.s .LeftOfHero
+.AboveHero
+    move.w CURRENT_X,d0
+    add.w #((HERO_WIDTH/2)-(OGRE_WIDTH/2)),d0
+    move.w CURRENT_Y,d1
+    sub.w #(OGRE_DESIRED_DIST+OGRE_HEIGHT),d1
+    rts
+.BelowHero
+    move.w CURRENT_X,d0
+    add.w #((HERO_WIDTH/2)-(OGRE_WIDTH/2)),d0
+    move.w CURRENT_Y,d1
+    add.w #(OGRE_DESIRED_DIST+HERO_HEIGHT),d1
+    rts
+.LeftOfHero
+    move.w CURRENT_X,d0
+    sub.w #(OGRE_DESIRED_DIST+OGRE_WIDTH),d0
+    move.w CURRENT_Y,d1
+    add.w #((HERO_HEIGHT/2)-(OGRE_HEIGHT/2)),d1
+    rts
+.RightOfHero
+    move.w CURRENT_X,d0
+    add.w #(OGRE_DESIRED_DIST+HERO_WIDTH),d0
+    move.w CURRENT_Y,d1
+    add.w #((HERO_HEIGHT/2)-(OGRE_HEIGHT/2)),d1
+    rts
+
+; a2: enemy_state
+; a3: enemy_x
+; a4: enemy_y
+; a5: enemy_data_1
+; a6: enemy_data_2
+; d2: not allowed
+;
+; ENEMY_DATA_1: 0000 0000 0000 0000
+; ENEMY_DATA_2: 0000 0000 0000 00(direction,2)
+; TODO: pass the ogre size in so maybe we can generalize this to any enemy
+UpdateOgreEnemy:
+    jsr UpdateFacingDirection
+    jsr GetTargetPosition
+    sub.w (a3),d0 ; target_x - ogre_x
+    blt.s .MoveLeft
+    ; move right
+    add.l #OGRE_WALK_SPEED,(a3)
+    bra.s .Next
+.MoveLeft
+    sub.l #OGRE_WALK_SPEED,(a3)
+.Next
+    sub.w (a4),d1 ; target_y - ogre_y
+    blt.s .MoveUp
+    ; move down
+    add.l #OGRE_WALK_SPEED,(a4)
+    bra.s .AfterWalk
+.MoveUp
+    sub.l #OGRE_WALK_SPEED,(a4)
+.AfterWalk
     rts
