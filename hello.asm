@@ -129,6 +129,19 @@ VRAM_MAX_ADDR:    equ $FFFF
 CRAM_MAX_ADDR:    equ $7F
 VSRAM_MAX_ADDR:   equ $4F
 
+; struct Enemy
+    setso 0
+N_ENEMY_STATE: so.w 1
+N_ENEMY_DYING_FRAMES_LEFT: so.w 1
+N_ENEMY_TYPE: so.w 1
+N_ENEMY_X: so.l 1
+N_ENEMY_Y: so.l 1
+N_ENEMY_W: so.b 1
+N_ENEMY_H: so.b 1
+N_ENEMY_DATA1: so.w 1
+N_ENEMY_DATA2: so.w 1
+N_ENEMY_SIZE: equ __SO
+
 RAM_BASE_ADDR:  equ $FF0000
     setso RAM_BASE_ADDR
 
@@ -180,6 +193,8 @@ ENEMY_Y: so.l MAX_NUM_ENEMIES
 ENEMY_SIZE: so.w MAX_NUM_ENEMIES
 ENEMY_DATA_1: so.w MAX_NUM_ENEMIES
 ENEMY_DATA_2: so.w MAX_NUM_ENEMIES
+
+N_ENEMIES: so.b (MAX_NUM_ENEMIES*N_ENEMY_SIZE)
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
@@ -510,57 +525,8 @@ LoadTileMap:
     move.w d1,vdp_data
     dbra d0,.loop
 
-LoadEnemies:
-    move.w (a0)+,d0 ; enemy count is in d0
-    sub.w #1,d0
-    blt.s .after_loop
-    move.l #ENEMY_STATE,a1
-    move.l #ENEMY_X,a2
-    move.l #ENEMY_Y,a3
-    move.l #ENEMY_DATA_1,a4
-    move.l #ENEMY_TYPE,a5
-    move.l #ENEMY_SIZE,a6
-.loop
-    move.w #ENEMY_STATE_ALIVE,(a1)+
-    ; push a1 onto the stack so we can reuse it for this jump table
-    move.l a1,-(sp)
-
-    move.l #.EnemyTypeJumpTable,a1
-    clr.l d3
-    move.w (a0),d3 ; Enemy type is in a0 right now.
-    lsl.l #2,d3 ; translate longs into bytes
-    add.l d3,a1
-    ; dereference jump table to get address to jump to
-    move.l (a1),a1
-    jmp (a1)
-    ; TODO: consider making the entries into actual branch instructions.
-    ; Can be 2 cycles faster apparently?
-.EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre
-.Butt:
-    move.w #$1010,(a6)+
-    bra.s .AfterJumpTable
-.HotDog:
-    move.w #$1010,(a6)+
-    bra.s .AfterJumpTable
-.Ogre:
-    move.w #$3030,(a6)+
-    bra.s .AfterJumpTable
-.AfterJumpTable
-
-    move.l (sp)+,a1
-
-    move.w (a0)+,(a5)+ ; enemy type
-    move.w (a0)+,d1 ; enemy x
-    add.w #MIN_DISPLAY_X,d1 ; add min display offset TODO: do this properly
-    move.w d1,(a2)
-    add.l #4,a2
-    move.w (a0)+,d1 ; enemy y
-    add.w #MIN_DISPLAY_Y,d1
-    move.w d1,(a3)
-    add.l #4,a3
-    move.w #0,(a4)+ ; enemy_data_1
-    dbra d0,.loop
-.after_loop
+    ; jsr LoadEnemies
+    jsr UtilLoadEnemies
 
 ; start with default/idle animation
     jsr SetLeftIdleAnim
@@ -811,58 +777,8 @@ NoHitstop
     move.w #0,vdp_data
 .AfterSlash
 
-DrawEnemiesNew:
-    clr.l d2
-    move.b #0,d2
-.loop
-    cmp.b #MAX_NUM_ENEMIES,d2
-    bge.w .end
-    move.l #ENEMY_STATE,a0
-    clr.w d3
-    move.b d2,d3
-    add.b d3,d3
-    move.w 0(a0,d3),d0
-    ; if dead, skip to next enemy
-    beq.s .loop_continue
-    ; push everything we need onto the stack: state, dying_frames, data1, data2, x, y
-    move.w d0,-(sp) ; state
-    move.l #ENEMY_DYING_FRAMES_LEFT,a0
-    move.w 0(a0,d3),-(sp)
-    move.l #ENEMY_DATA_1,a0
-    move.w 0(a0,d3),-(sp)
-    move.l #ENEMY_DATA_2,a0
-    move.w 0(a0,d3),-(sp)
-    move.l #ENEMY_TYPE,a0
-    move.w 0(a0,d3),d0 ; enemy type in d0
-    ; X and Y are 4 bytes, so multiply d3 by 2 again
-    add.b d3,d3
-    move.l #ENEMY_X,a0
-    move.l (0,a0,d3),-(sp)
-    move.l #ENEMY_Y,a0
-    move.l (0,a0,d3),-(sp)
-    ; now jump to draw function appropriate to this enemy type
-    move.l #.TypeJumpTable,a0
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
-    jmp (a0)
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-.Butt:
-    jsr DrawButtEnemy
-    bra.s .AfterJumpTable
-.HotDog:
-    jsr DrawHotDogEnemy
-    bra.s .AfterJumpTable
-.Ogre:
-    jsr DrawOgreEnemy
-    bra.s .AfterJumpTable
-.AfterJumpTable
-    add.l #(2+2+4+4+2+2),sp
-.loop_continue
-    add.b #1,d2
-    bra.w .loop
-.end
+    jsr DrawEnemies
+    jsr UtilDrawEnemies
 
     ; set last sprite's link data to 0
     clr.l d0
