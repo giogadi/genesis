@@ -465,42 +465,29 @@ UpdateEnemiesFromSlash:
     dbra d7,.EnemyUpdateSlashLoop
     rts
 
-; UpdateEnemiesNew:
-;     clr.l d2
-;     move.b #0,d2
-; .loop
-;     cmp.b #MAX_NUM_ENEMIES,d2
-;     bge.s .loop_end
-;     move.l #ENEMY_STATE,a0
-;     clr.w d3
-;     move.b d2,d3
-;     add.b d3,d3
-;     move.w 0(a0,d3),d0
-;     ; if dead, skip to next enemy
-;     beq.s .loop_continue
-;     move.l #.TypeJumpTable,a0
-;     lsl.l #2,d0 ; translate longs into bytes
-;     add.l d0,a0
-;     ; dereference jump table to get address to jump to
-;     move.l (a0),a0
-;     jmp (a0)
-; .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-; .Butt:
-;     ;jsr UpdateButtEnemy
-;     bra.s .AfterJumpTable
-; .HotDog:
-;     ;jsr UpdateHotDogEnemy
-;     bra.s .AfterJumpTable
-; .Ogre:
-;     ;jsr UpdateOgreEnemy
-;     bra.s .AfterJumpTable
-; .AfterJumpTable
-; .loop_continue
-;     add.b #1,d2
-;     bra.w .loop
-; .loop_end
-; .end
-;     rts
+UtilUpdateEnemies:
+    move.w #MAX_NUM_ENEMIES-1,d2
+    move.l #N_ENEMIES,a2
+    clr.l d0
+.loop
+    move.w N_ENEMY_STATE(a2),d0
+    beq.s .continue_loop ; if dead, skip to next enemy
+    move.w N_ENEMY_TYPE(a2),d0
+    M_JumpTable #.TypeJumpTable,a0,d0
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.Butt:
+    bra.s .AfterJumpTable
+.HotDog:
+    bra.s .AfterJumpTable
+.Ogre:
+    jsr OgreEnemyUpdate
+    bra.s .AfterJumpTable
+.AfterJumpTable
+.continue_loop
+    add.l #N_ENEMY_SIZE,a2
+    dbra d2,.loop
+.end_loop
+    rts
 
 UpdateEnemies:
     move.w #0,d2
@@ -831,7 +818,7 @@ DrawEnemies:
     jsr DrawHotDogEnemy
     bra.s .AfterJumpTable
 .Ogre:
-    jsr DrawOgreEnemy
+    ;jsr DrawOgreEnemy
     bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #(2+2+4+4+2+2),sp

@@ -702,7 +702,8 @@ NoHitstop
     jsr UpdateEnemiesFromSlash
 
     ; update alive enemies' behavior
-    jsr UpdateEnemies
+    ;jsr UpdateEnemies
+    jsr UtilUpdateEnemies
 
     ; SPRITE DRAWING!
     move.w #SPRITE_TABLE_BASE_ADDR,d0
@@ -777,7 +778,7 @@ NoHitstop
     move.w #0,vdp_data
 .AfterSlash
 
-    jsr DrawEnemies
+    ; jsr DrawEnemies
     jsr UtilDrawEnemies
 
     ; set last sprite's link data to 0
