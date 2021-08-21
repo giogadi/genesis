@@ -136,8 +136,8 @@ N_ENEMY_DYING_FRAMES_LEFT: so.w 1
 N_ENEMY_TYPE: so.w 1
 N_ENEMY_X: so.l 1
 N_ENEMY_Y: so.l 1
-N_ENEMY_W: so.b 1
-N_ENEMY_H: so.b 1
+N_ENEMY_HALF_W: so.w 1
+N_ENEMY_HALF_H: so.w 1
 N_ENEMY_DATA1: so.w 1
 N_ENEMY_DATA2: so.w 1
 N_ENEMY_SIZE: equ __SO
@@ -699,7 +699,7 @@ NoHitstop
 .AfterAnimFrameIncrement:
 
     ; update enemies' alive states
-    jsr UpdateEnemiesFromSlash
+    ; jsr UpdateEnemiesFromSlash
 
     ; update alive enemies' behavior
     ;jsr UpdateEnemies

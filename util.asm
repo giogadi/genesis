@@ -515,7 +515,7 @@ UpdateEnemies:
     jsr UpdateHotDogEnemy
     bra.s .EnemyUpdateLoopContinue
 .Ogre:
-    jsr UpdateOgreEnemy
+    ;jsr UpdateOgreEnemy
     bra.s .EnemyUpdateLoopContinue
 .EnemyUpdateLoopContinue
     add.w #2,a2
@@ -680,16 +680,16 @@ UtilLoadEnemies:
     M_JumpTable #.EnemyTypeJumpTable,a2,d3
 .EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
-    move.b #16,N_ENEMY_W(a1)
-    move.b #16,N_ENEMY_H(a1)
+    move.w #8,N_ENEMY_HALF_W(a1)
+    move.w #8,N_ENEMY_HALF_H(a1)
     bra.s .AfterJumpTable
 .HotDog:
-    move.b #16,N_ENEMY_W(a1)
-    move.b #16,N_ENEMY_H(a1)
+    move.w #8,N_ENEMY_HALF_W(a1)
+    move.w #8,N_ENEMY_HALF_H(a1)
     bra.s .AfterJumpTable
 .Ogre:
-    move.b #48,N_ENEMY_W(a1)
-    move.b #48,N_ENEMY_H(a1)
+    move.w #24,N_ENEMY_HALF_W(a1)
+    move.w #24,N_ENEMY_HALF_H(a1)
     bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #N_ENEMY_SIZE,a1
