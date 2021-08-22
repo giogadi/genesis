@@ -591,17 +591,16 @@ LengthSqr:
     add.w d1,d0
     rts
 
-LoadNormalPalette:
-    clr.w d0
-    SetCramAddr d0,d1
+LoadPalettes:
+    jsr LoadNormalPaletteIntoFirst
     move #(16-1),d0
-    move.l #SimplePalette,a0
-.normal_palette_loop
+    move.l #InversePalette,a0
+.inverse_palette_loop
     move.w (a0)+,vdp_data
-    dbra d0,.normal_palette_loop
+    dbra d0,.inverse_palette_loop
     rts
 
-LoadInversePalette:
+LoadInversePaletteIntoFirst:
     clr.w d0
     SetCramAddr d0,d1
     move #(16-1),d0
@@ -609,6 +608,16 @@ LoadInversePalette:
 .inverse_palette_loop
     move.w (a0)+,vdp_data
     dbra d0,.inverse_palette_loop
+    rts
+
+LoadNormalPaletteIntoFirst:
+    clr.w d0
+    SetCramAddr d0,d1
+    move #(16-1),d0
+    move.l #SimplePalette,a0
+.normal_palette_loop
+    move.w (a0)+,vdp_data
+    dbra d0,.normal_palette_loop
     rts
 
 ; d0 in/out
@@ -664,7 +673,7 @@ CheckForDashBuffer:
 UtilLoadEnemies:
     move (a0)+,d2 ; enemy count is in d2
     sub.w #1,d2
-    blt.s .after_loop
+    blt.w .after_loop
     move.l #N_ENEMIES,a1
     clr.l d3
 .loop
@@ -682,14 +691,17 @@ UtilLoadEnemies:
 .Butt:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
+    move.w #1,N_ENEMY_HP(a1)
     bra.s .AfterJumpTable
 .HotDog:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
+    move.w #1,N_ENEMY_HP(a1)
     bra.s .AfterJumpTable
 .Ogre:
     move.w #24,N_ENEMY_HALF_W(a1)
     move.w #24,N_ENEMY_HALF_H(a1)
+    move.w #4,N_ENEMY_HP(a1)
     bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #N_ENEMY_SIZE,a1

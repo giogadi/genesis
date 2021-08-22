@@ -136,7 +136,7 @@ HeroStateHurtUpdate:
     ; when hitstop is over, go back to normal palette
     tst.w HITSTOP_FRAMES_LEFT
     bgt.w .HurtUpdateAfterPaletteReset
-    jsr LoadNormalPalette
+    jsr LoadNormalPaletteIntoFirst
 .HurtUpdateAfterPaletteReset
     move.l #.HurtMotionJumpTable,a0
     clr.l d0
@@ -469,7 +469,7 @@ CheckIfHeroNewlyHurt:
 
 MaybeSetNewlyHurtState
     ; flip palette
-    jsr LoadInversePalette
+    jsr LoadInversePaletteIntoFirst
     ; add hitstop
     move.w #3,HITSTOP_FRAMES_LEFT
     ; set hurt frame counter

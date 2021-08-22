@@ -132,12 +132,13 @@ VSRAM_MAX_ADDR:   equ $4F
 ; struct Enemy
     setso 0
 N_ENEMY_STATE: so.w 1
-N_ENEMY_DYING_FRAMES_LEFT: so.w 1
+N_ENEMY_STATE_FRAMES_LEFT: so.w 1
 N_ENEMY_TYPE: so.w 1
 N_ENEMY_X: so.l 1
 N_ENEMY_Y: so.l 1
 N_ENEMY_HALF_W: so.w 1
 N_ENEMY_HALF_H: so.w 1
+N_ENEMY_HP: so.w 1
 N_ENEMY_DATA1: so.w 1
 N_ENEMY_DATA2: so.w 1
 N_ENEMY_SIZE: equ __SO
@@ -184,6 +185,7 @@ MAX_NUM_ENEMIES: equ 5
 ENEMY_STATE_DEAD: equ 0
 ENEMY_STATE_ALIVE: equ 1
 ENEMY_STATE_DYING: equ 2
+ENEMY_STATE_HITSTUN: equ 3
 ENEMY_STATE: so.w MAX_NUM_ENEMIES
 ENEMY_DYING_FRAMES: equ 10
 ENEMY_DYING_FRAMES_LEFT: so.w MAX_NUM_ENEMIES ; only valid if DYING
@@ -350,23 +352,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.l #0,(vdp_data)
     dbf d0,@vsram_loop
 
-    jsr LoadNormalPalette
-
-; Load in our palettes
-;     clr.w d0
-;     SetCramAddr d0,d1
-
-;     move #15,d0
-;     move.l #SimplePalette,a0
-; @palette_loop
-;     move.w (a0)+,vdp_data
-;     dbra d0,@palette_loop
-
-;     move #15,d0
-;     move.l #InversePalette,a0
-; @inverse_palette_loop
-;     move.w (a0)+,vdp_data
-;     dbra d0,@inverse_palette_loop
+    jsr LoadPalettes
 
 ; Load in one simple tile at 2nd loc. Need to start writing to VRAM at $0020 = %0000 0000 0010 0000
 ; NOTE: we don't set the autoincrement to 4 because when 68k does longword writes to VDP, VDP
