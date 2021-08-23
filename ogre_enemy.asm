@@ -4,42 +4,133 @@ OGRE_HEIGHT: equ 48 ; pixels
 OGRE_WALK_SPEED: equ (65536/2) ; 1 pixel per frame
 OGRE_HITSTUN_DURATION: equ 20 ; frames
 
-; a2: enemy struct start
-; d2: don't touch
-NewDrawOgreEnemy:
-    clr.l d0
-    move.b (N_ENEMY_DATA2+1)(a2),d0
+OGRE_STATE_IDLE: equ 0
+OGRE_STATE_STARTUP: equ 1
+OGRE_STATE_SLASHING: equ 2
+OGRE_STATE_RECOVERY: equ 3
+
+OgreGetIdleTileIndex:
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
     btst.b #4,(FRAME_COUNTER+1)
-    bne.s .DrawRightWalk2
-    bra.s .DrawRightWalk
+    bne.s .Up2
+    ; right walk 1
+    move.w #(OGRE_SPRITE_TILE_START+5*36),d1
+    rts
+.Up2
+    move.w #(OGRE_SPRITE_TILE_START+6*36),d1
+    rts
 .Down
     btst.b #4,(FRAME_COUNTER+1)
-    bne.s .DrawLeftWalk2
-    bra.s .DrawLeftWalk
-.Left
-    btst.b #4,(FRAME_COUNTER+1)
-    bne.s .DrawLeftWalk2
-    bra.s .DrawLeftWalk
-.Right
-    btst.b #4,(FRAME_COUNTER+1)
-    bne.s .DrawRightWalk2
-    bra.s .DrawRightWalk
-.DrawLeftWalk
+    bne.s .Down2
+    ; left walk 1
     move.w #OGRE_SPRITE_TILE_START,d1
-    bra.s .AfterDirectionJump
-.DrawLeftWalk2
+    rts
+.Down2
     move.w #(OGRE_SPRITE_TILE_START+36),d1
-    bra.s .AfterDirectionJump
-.DrawRightWalk
-    move.w #(OGRE_SPRITE_TILE_START+5*36),d1
-    bra.s .AfterDirectionJump
-.DrawRightWalk2
-    move.w #(OGRE_SPRITE_TILE_START+6*36),d1
-    bra.s .AfterDirectionJump
-.AfterDirectionJump
+    rts
+.Left
+    bra.s .Down
+.Right
+    bra.s .Up
+
+OgreGetStartupTileIndex:
+    jsr OgreGetIdleTileIndex ; todo
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable
+.Up
+.Down
+.Left
+.Right
+    rts
+
+OgreGetSlashingTileIndex:
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable
+.Up
+.Down
+.Left
+.Right
+    rts
+
+OgreGetRecoveryTileIndex:
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable
+.Up
+.Down
+.Left
+.Right
+    rts
+
+; State:
+; ENEMY_DATA_1: 0000 00(next_state,2) 0000 00(state,2)
+; ENEMY_DATA_2: 0000 0000 0000 00(facing_direction,2)
+
+; a2: enemy struct start
+; d2: don't touch
+DrawOgreEnemy:
+    ; Do a two-level jump table (across state + direction) to figure out what
+    ; the starting tile index should be. tile index will be in d1 after the dust settles.
+    clr.l d0
+    move.b (N_ENEMY_DATA1+1)(a2),d0 ; load state
+    M_JumpTable #.StateJumpTable,a0,d0
+.StateJumpTable dc.l .Idle,.Startup,.Slashing,.Recovery
+.Idle
+    jsr OgreGetIdleTileIndex
+    bra.s .AfterTileIndex
+.Startup
+    move.w #OGRE_SPRITE_TILE_START,d1
+    ;jsr OgreGetStartupTileIndex
+    bra.s .AfterTileIndex
+.Slashing
+    jsr OgreGetSlashingTileIndex
+    bra.s .AfterTileIndex
+.Recovery
+    jsr OgreGetRecoveryTileIndex
+    bra.s .AfterTileIndex
+.AfterTileIndex
+
+; ; a2: enemy struct start
+; ; d2: don't touch
+; DrawOgreEnemy:
+;     clr.l d0
+;     move.b (N_ENEMY_DATA2+1)(a2),d0
+;     M_JumpTable #.DirectionJumpTable,a0,d0
+; .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+; .Up
+;     btst.b #4,(FRAME_COUNTER+1)
+;     bne.s .DrawRightWalk2
+;     bra.s .DrawRightWalk
+; .Down
+;     btst.b #4,(FRAME_COUNTER+1)
+;     bne.s .DrawLeftWalk2
+;     bra.s .DrawLeftWalk
+; .Left
+;     btst.b #4,(FRAME_COUNTER+1)
+;     bne.s .DrawLeftWalk2
+;     bra.s .DrawLeftWalk
+; .Right
+;     btst.b #4,(FRAME_COUNTER+1)
+;     bne.s .DrawRightWalk2
+;     bra.s .DrawRightWalk
+; .DrawLeftWalk
+;     move.w #OGRE_SPRITE_TILE_START,d1
+;     bra.s .AfterDirectionJump
+; .DrawLeftWalk2
+;     move.w #(OGRE_SPRITE_TILE_START+36),d1
+;     bra.s .AfterDirectionJump
+; .DrawRightWalk
+;     move.w #(OGRE_SPRITE_TILE_START+5*36),d1
+;     bra.s .AfterDirectionJump
+; .DrawRightWalk2
+;     move.w #(OGRE_SPRITE_TILE_START+6*36),d1
+;     bra.s .AfterDirectionJump
+; .AfterDirectionJump
     ; store palette in d5. If in hitstun, we'll be flickering the palette.
     clr.w d5
     move.w N_ENEMY_STATE(a2),d0
@@ -285,9 +376,7 @@ OgreEnemyUpdate:
 .end
     rts
 
-; a2: ogre struct
-; d2: not allowed
-OgreEnemyAliveUpdate:
+OgreIdleUpdate:
     jsr OgreUpdateFacingDirection
     jsr OgreGetTargetPosition ; position in d0,d1
     sub.w N_ENEMY_X(a2),d0 ; target_x - ogre_x
@@ -306,6 +395,37 @@ OgreEnemyAliveUpdate:
 .MoveUp
     sub.l #OGRE_WALK_SPEED,N_ENEMY_Y(a2)
 .AfterWalk
+    ; check if should switch to slash startup state. For now, it's on a timer.
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt.s .NoTransition
+    and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to startup
+    or.b #OGRE_STATE_STARTUP,N_ENEMY_DATA1(a2)
+.NoTransition
+    rts
+
+OgreStartupUpdate:
+    rts
+
+; a2: ogre struct
+; d2: not allowed
+OgreEnemyAliveUpdate:
+    clr.l d0
+    ; transition to "next state" by copying next state into current state.
+    move.b N_ENEMY_DATA1(a2),d0
+    and.b #%00000011,d0
+    and.b #%11111100,(N_ENEMY_DATA1+1)(a2)
+    or.b d0,(N_ENEMY_DATA1+1)(a2)
+    M_JumpTable #.StateJumpTable,a0,d0 ; new state still in d0
+.StateJumpTable dc.l .Idle,.Startup,.Slashing,.Recovery
+.Idle:
+    jsr OgreIdleUpdate
+    rts
+.Startup:
+    jsr OgreStartupUpdate
+    rts
+.Slashing:
+    rts
+.Recovery:
     rts
 
 ; a2: ogre struct
