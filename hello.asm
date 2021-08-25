@@ -868,6 +868,10 @@ HotDogSlashedRightSprite:
 
 OgreSprite:
     include art/ogre_sprite.asm
+OgreSlashRightSprite:
+    include art/ogre_slash_sprite.asm
+OgreSlashUpSprite:
+    include art/ogre_slash_vertical.asm
 
 DashBarSprite:
     include art/ui/dash_bar.asm
