@@ -3,11 +3,36 @@ OGRE_WIDTH: equ 48 ; pixels
 OGRE_HEIGHT: equ 48 ; pixels
 OGRE_WALK_SPEED: equ (65536/2) ; 1 pixel per frame
 OGRE_HITSTUN_DURATION: equ 20 ; frames
+OGRE_STARTUP_DURATION: equ 30 ; frames
+OGRE_RECOVERY_DURATION: equ 60 ; frames
 
 OGRE_STATE_IDLE: equ 0
 OGRE_STATE_STARTUP: equ 1
 OGRE_STATE_SLASHING: equ 2
 OGRE_STATE_RECOVERY: equ 3
+
+OGRE_IDLE_HALF_W: equ 9
+OGRE_IDLE_HALF_H: equ 20
+
+OGRE_LEFT_STARTUP_HALF_W: equ 15
+OGRE_LEFT_STARTUP_HALF_H: equ 20
+OGRE_LEFT_SLASHING_HALF_W: equ 17
+OGRE_LEFT_SLASHING_HALF_H: equ 19
+
+OGRE_RIGHT_STARTUP_HALF_W: equ 15
+OGRE_RIGHT_STARTUP_HALF_H: equ 20
+OGRE_RIGHT_SLASHING_HALF_W: equ 17
+OGRE_RIGHT_SLASHING_HALF_H: equ 19
+
+OGRE_DOWN_STARTUP_HALF_W: equ 10
+OGRE_DOWN_STARTUP_HALF_H: equ 22
+OGRE_DOWN_SLASHING_HALF_W: equ 13
+OGRE_DOWN_SLASHING_HALF_H: equ 21
+
+OGRE_UP_STARTUP_HALF_W: equ 10
+OGRE_UP_STARTUP_HALF_H: equ 22
+OGRE_UP_SLASHING_HALF_W: equ 13
+OGRE_UP_SLASHING_HALF_H: equ 21
 
 OgreGetIdleTileIndex:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
@@ -37,34 +62,85 @@ OgreGetIdleTileIndex:
     bra.s .Up
 
 OgreGetStartupTileIndex:
-    jsr OgreGetIdleTileIndex ; todo
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     M_JumpTable #.DirectionJumpTable,a0,d0
-.DirectionJumpTable
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
+    move.w #(OGRE_SPRITE_TILE_START+13*36),d1
+    rts
 .Down
+    move.w #(OGRE_SPRITE_TILE_START+10*36),d1
+    rts
 .Left
+    move.w #(OGRE_SPRITE_TILE_START+2*36),d1
+    rts
 .Right
+    move.w #(OGRE_SPRITE_TILE_START+7*36),d1
     rts
 
 OgreGetSlashingTileIndex:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     M_JumpTable #.DirectionJumpTable,a0,d0
-.DirectionJumpTable
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
+    move.w #(OGRE_SPRITE_TILE_START+14*36),d1
+    rts
 .Down
+    move.w #(OGRE_SPRITE_TILE_START+11*36),d1
+    rts
 .Left
+    move.w #(OGRE_SPRITE_TILE_START+3*36),d1
+    rts
 .Right
+    move.w #(OGRE_SPRITE_TILE_START+8*36),d1
     rts
 
-OgreGetRecoveryTileIndex:
+OgreSetIdleHurtboxSize:
+    ; same size regardless of direction
+    move.w #OGRE_IDLE_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_IDLE_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
+
+OgreSetSlashStartupHurtboxSize:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     M_JumpTable #.DirectionJumpTable,a0,d0
-.DirectionJumpTable
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
+    move.w #OGRE_UP_STARTUP_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_UP_STARTUP_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
 .Down
+    move.w #OGRE_DOWN_STARTUP_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_DOWN_STARTUP_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
 .Left
+    move.w #OGRE_LEFT_STARTUP_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_LEFT_STARTUP_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
 .Right
+    move.w #OGRE_RIGHT_STARTUP_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_RIGHT_STARTUP_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
+
+OgreSetSlashingHurtboxSize:
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+.Up
+    move.w #OGRE_UP_SLASHING_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_UP_SLASHING_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
+.Down
+    move.w #OGRE_DOWN_SLASHING_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_DOWN_SLASHING_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
+.Left
+    move.w #OGRE_LEFT_SLASHING_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_LEFT_SLASHING_HALF_H,N_ENEMY_HALF_H(a2)
+    rts
+.Right
+    move.w #OGRE_RIGHT_SLASHING_HALF_W,N_ENEMY_HALF_W(a2)
+    move.w #OGRE_RIGHT_SLASHING_HALF_H,N_ENEMY_HALF_H(a2)
     rts
 
 ; State:
@@ -84,53 +160,15 @@ DrawOgreEnemy:
     jsr OgreGetIdleTileIndex
     bra.s .AfterTileIndex
 .Startup
-    move.w #OGRE_SPRITE_TILE_START,d1
-    ;jsr OgreGetStartupTileIndex
+    jsr OgreGetStartupTileIndex
     bra.s .AfterTileIndex
 .Slashing
     jsr OgreGetSlashingTileIndex
     bra.s .AfterTileIndex
 .Recovery
-    jsr OgreGetRecoveryTileIndex
+    jsr OgreGetSlashingTileIndex
     bra.s .AfterTileIndex
 .AfterTileIndex
-
-; ; a2: enemy struct start
-; ; d2: don't touch
-; DrawOgreEnemy:
-;     clr.l d0
-;     move.b (N_ENEMY_DATA2+1)(a2),d0
-;     M_JumpTable #.DirectionJumpTable,a0,d0
-; .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
-; .Up
-;     btst.b #4,(FRAME_COUNTER+1)
-;     bne.s .DrawRightWalk2
-;     bra.s .DrawRightWalk
-; .Down
-;     btst.b #4,(FRAME_COUNTER+1)
-;     bne.s .DrawLeftWalk2
-;     bra.s .DrawLeftWalk
-; .Left
-;     btst.b #4,(FRAME_COUNTER+1)
-;     bne.s .DrawLeftWalk2
-;     bra.s .DrawLeftWalk
-; .Right
-;     btst.b #4,(FRAME_COUNTER+1)
-;     bne.s .DrawRightWalk2
-;     bra.s .DrawRightWalk
-; .DrawLeftWalk
-;     move.w #OGRE_SPRITE_TILE_START,d1
-;     bra.s .AfterDirectionJump
-; .DrawLeftWalk2
-;     move.w #(OGRE_SPRITE_TILE_START+36),d1
-;     bra.s .AfterDirectionJump
-; .DrawRightWalk
-;     move.w #(OGRE_SPRITE_TILE_START+5*36),d1
-;     bra.s .AfterDirectionJump
-; .DrawRightWalk2
-;     move.w #(OGRE_SPRITE_TILE_START+6*36),d1
-;     bra.s .AfterDirectionJump
-; .AfterDirectionJump
     ; store palette in d5. If in hitstun, we'll be flickering the palette.
     clr.w d5
     move.w N_ENEMY_STATE(a2),d0
@@ -147,9 +185,9 @@ DrawOgreEnemy:
     move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
     move.w d0,LAST_LINK_WRITTEN
     move.w N_ENEMY_Y(a2),d3 ; y
-    sub.w N_ENEMY_HALF_H(a2),d3
+    sub.w #24,d3
     move.w N_ENEMY_X(a2),d4 ; x
-    sub.w N_ENEMY_HALF_W(a2),d4
+    sub.w #24,d4
     and.w #$F800,d5 ; clear tile data from d5
     or.w d1,d5 ; add tile data from d1 to d5
     move.w d3,vdp_data ; y
@@ -400,10 +438,35 @@ OgreIdleUpdate:
     bgt.s .NoTransition
     and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to startup
     or.b #OGRE_STATE_STARTUP,N_ENEMY_DATA1(a2)
+    ; GROSS: figure out a good way to do new state init in the state itself
+    move.w #OGRE_STARTUP_DURATION,N_ENEMY_STATE_FRAMES_LEFT(a2)
 .NoTransition
     rts
 
 OgreStartupUpdate:
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt.s .NoTransition
+    ; Transition to slashing
+    and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to slashing
+    or.b #OGRE_STATE_SLASHING,N_ENEMY_DATA1(a2)
+.NoTransition
+    rts
+
+OgreSlashingUpdate:
+    ; only slashing for one frame. Transition to recovery.
+    and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to recovery
+    or.b #OGRE_STATE_RECOVERY,N_ENEMY_DATA1(a2)
+    move.w #OGRE_RECOVERY_DURATION,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    rts
+
+OgreRecoveryUpdate:
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt.s .NoTransition
+    ; Transition to idle
+    and.b #%11111100,N_ENEMY_DATA1(a2)
+    or.b #OGRE_STATE_IDLE,N_ENEMY_DATA1(a2)
+    move.w #240,N_ENEMY_STATE_FRAMES_LEFT(a2)
+.NoTransition
     rts
 
 ; a2: ogre struct
@@ -418,14 +481,20 @@ OgreEnemyAliveUpdate:
     M_JumpTable #.StateJumpTable,a0,d0 ; new state still in d0
 .StateJumpTable dc.l .Idle,.Startup,.Slashing,.Recovery
 .Idle:
+    jsr OgreSetIdleHurtboxSize ; TODO: figure out how to not do this every frame
     jsr OgreIdleUpdate
     rts
 .Startup:
+    jsr OgreSetSlashStartupHurtboxSize ; TODO: figure out how to not do this every frame
     jsr OgreStartupUpdate
     rts
 .Slashing:
+    jsr OgreSetSlashingHurtboxSize ; TODO: figure out how to not do this every frame
+    jsr OgreSlashingUpdate
     rts
 .Recovery:
+    jsr OgreSetSlashingHurtboxSize ; TODO: figure out how to not do this every frame
+    jsr OgreRecoveryUpdate
     rts
 
 ; a2: ogre struct

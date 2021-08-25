@@ -702,6 +702,7 @@ UtilLoadEnemies:
     move.w #24,N_ENEMY_HALF_W(a1)
     move.w #24,N_ENEMY_HALF_H(a1)
     move.w #4,N_ENEMY_HP(a1)
+    move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a1)
     bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #N_ENEMY_SIZE,a1
@@ -777,7 +778,7 @@ UtilDrawEnemies:
 .HotDog:
     bra.s .AfterJumpTable
 .Ogre:
-    jsr NewDrawOgreEnemy
+    jsr DrawOgreEnemy
     bra.s .AfterJumpTable
 .AfterJumpTable
 .continue_loop
