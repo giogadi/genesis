@@ -455,8 +455,26 @@ OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+OgreSlashRightSpriteLoad:
+OGRE_SLASH_RIGHT_TILE_START: equ (OGRE_SPRITE_TILE_START+OGRE_SPRITE_TILE_SIZE)
+OGRE_SLASH_RIGHT_TILE_SIZE: equ (8*10)
+    move.w #(8*OGRE_SLASH_RIGHT_TILE_SIZE)-1,d0
+    move.l #OgreSlashRightSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+OgreSlashUpSpriteLoad:
+OGRE_SLASH_UP_TILE_START: equ (OGRE_SLASH_RIGHT_TILE_START+OGRE_SLASH_RIGHT_TILE_SIZE)
+OGRE_SLASH_UP_TILE_SIZE: equ (8*10)
+    move.w #(8*OGRE_SLASH_UP_TILE_SIZE)-1,d0
+    move.l #OgreSlashUpSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 DashBarSpriteLoad:
-DASH_BAR_SPRITE_TILE_START: equ (OGRE_SPRITE_TILE_START+OGRE_SPRITE_TILE_SIZE)
+DASH_BAR_SPRITE_TILE_START: equ (OGRE_SLASH_UP_TILE_START+OGRE_SLASH_UP_TILE_SIZE)
 DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
     move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
     move.l #DashBarSprite,a0
@@ -763,6 +781,8 @@ NoHitstop
     move.w #0,vdp_data
     move.w #0,vdp_data
 .AfterSlash
+
+    jsr UtilDrawEnemySlashes
 
     ; jsr DrawEnemies
     jsr UtilDrawEnemies

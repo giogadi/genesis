@@ -6,6 +6,12 @@ OGRE_HITSTUN_DURATION: equ 20 ; frames
 OGRE_STARTUP_DURATION: equ 30 ; frames
 OGRE_RECOVERY_DURATION: equ 60 ; frames
 
+; State:
+; ENEMY_DATA_1: 0000 00(next_state,2) 0000 00(state,2)
+; ENEMY_DATA_2: 0000 0000 0000 00(facing_direction,2)
+OGRE_STATE_MASK: equ %00000011
+OGRE_DIRECTION_MASK: equ %00000011
+
 OGRE_STATE_IDLE: equ 0
 OGRE_STATE_STARTUP: equ 1
 OGRE_STATE_SLASHING: equ 2
@@ -33,6 +39,11 @@ OGRE_UP_STARTUP_HALF_W: equ 10
 OGRE_UP_STARTUP_HALF_H: equ 22
 OGRE_UP_SLASHING_HALF_W: equ 13
 OGRE_UP_SLASHING_HALF_H: equ 21
+
+OGRE_VERT_SLASH_SPRITE_W: equ (10*8)
+OGRE_VERT_SLASH_SPRITE_H: equ (8*8)
+OGRE_HORIZ_SLASH_SPRITE_W: equ (8*8)
+OGRE_HORIZ_SLASH_SPRITE_H: equ (10*8)
 
 OgreGetIdleTileIndex:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
@@ -142,10 +153,6 @@ OgreSetSlashingHurtboxSize:
     move.w #OGRE_RIGHT_SLASHING_HALF_W,N_ENEMY_HALF_W(a2)
     move.w #OGRE_RIGHT_SLASHING_HALF_H,N_ENEMY_HALF_H(a2)
     rts
-
-; State:
-; ENEMY_DATA_1: 0000 00(next_state,2) 0000 00(state,2)
-; ENEMY_DATA_2: 0000 0000 0000 00(facing_direction,2)
 
 ; a2: enemy struct start
 ; d2: don't touch
@@ -515,4 +522,213 @@ OgreEnemyHitstunUpdate:
     move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a2)
 .StillDying
     ; TODO: dying animation?
+    rts
+
+; a2: ogre struct
+; d2: do not touch
+OgreMaybeDrawSlash:
+    move.b (N_ENEMY_DATA1+1)(a2),d0 ; load state
+    and.b #OGRE_STATE_MASK,d0
+    cmp.b #OGRE_STATE_SLASHING,d0
+    bne.s .end ; quit if ogre isn't slashing
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+.Up
+    jsr OgreDrawUpSlash
+    rts
+.Down
+    jsr OgreDrawDownSlash
+    rts
+.Left
+    jsr OgreDrawLeftSlash
+    rts
+.Right
+    jsr OgreDrawRightSlash
+    rts
+.end
+    rts
+
+OgreDrawUpSlash:
+    move.w #$0F00,d0 ; 4x4 (to be combined with link data)
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    move.w N_ENEMY_X(a2),d3
+    sub.w #(OGRE_VERT_SLASH_SPRITE_W/2),d3
+    move.w N_ENEMY_Y(a2),d4
+    sub.w #(24+OGRE_VERT_SLASH_SPRITE_H),d4
+    move.w #OGRE_SLASH_UP_TILE_START,d1
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    ; drawing 2x4 this time
+    move.w #$0700,d0
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    ; TODO: we're only drawing half of the slash right now because who cares
+    rts
+
+OgreDrawDownSlash:
+    move.w #$0F00,d0 ; 4x4 (to be combined with link data)
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    move.w N_ENEMY_X(a2),d3
+    sub.w #(OGRE_VERT_SLASH_SPRITE_W/2),d3
+    move.w N_ENEMY_Y(a2),d4
+    add.w #(24+OGRE_VERT_SLASH_SPRITE_H/2),d4
+    move.w #OGRE_SLASH_UP_TILE_START,d1
+    bset.l #12,d1 ; flip vertical
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    ; drawing 2x4 this time
+    move.w #$0700,d0
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    ; TODO only drawing half the slash.
+    rts
+
+OgreDrawRightSlash:
+    move.w #$0F00,d0 ; 4x4 (to be combined with link data)
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    move.w N_ENEMY_X(a2),d3
+    add.w #24,d3
+    move.w N_ENEMY_Y(a2),d4
+    sub.w #(OGRE_VERT_SLASH_SPRITE_H/2),d4
+    move.w #OGRE_SLASH_RIGHT_TILE_START,d1
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    sub.w #(4*8),d3 ; back to x start
+    add.w #(4*8),d4 ; next y position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    ; TODO missing bottom of slash
+    rts
+
+OgreDrawLeftSlash:
+    move.w #$0F00,d0 ; 4x4 (to be combined with link data)
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    move.w N_ENEMY_X(a2),d3
+    sub.w #(24+OGRE_VERT_SLASH_SPRITE_W/2),d3
+    move.w N_ENEMY_Y(a2),d4
+    sub.w #(OGRE_VERT_SLASH_SPRITE_H/2),d4
+    move.w #OGRE_SLASH_RIGHT_TILE_START,d1
+    bset.l #11,d1
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    sub.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    add.w #(4*8),d3 ; back to x start
+    add.w #(4*8),d4 ; next y position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    add.w #1,SPRITE_COUNTER
+    move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
+    move.w d0,LAST_LINK_WRITTEN
+    sub.w #(4*8),d3 ; next x position
+    add.w #(4*4),d1 ; next tile start
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d1,vdp_data ; tile (default palette)
+    move.w d3,vdp_data ; x
+
+    ; TODO missing bottom of slash
     rts

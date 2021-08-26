@@ -840,6 +840,30 @@ DrawEnemies:
     bra.w .loop
 .end
 
+UtilDrawEnemySlashes:
+    move.w #MAX_NUM_ENEMIES-1,d2
+    move.l #N_ENEMIES,a2
+    clr.l d0
+.loop
+    move.w N_ENEMY_STATE(a2),d0
+    beq.s .continue_loop ; if dead, skip to next enemy
+    move.w N_ENEMY_TYPE(a2),d0
+    M_JumpTable #.TypeJumpTable,a0,d0
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.Butt:
+    bra.s .AfterJumpTable
+.HotDog:
+    bra.s .AfterJumpTable
+.Ogre:
+    jsr OgreMaybeDrawSlash
+    bra.s .AfterJumpTable
+.AfterJumpTable
+.continue_loop
+    add.l #N_ENEMY_SIZE,a2
+    dbra d2,.loop
+.end_loop
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:
