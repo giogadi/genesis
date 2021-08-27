@@ -732,3 +732,53 @@ OgreDrawLeftSlash:
 
     ; TODO missing bottom of slash
     rts
+
+; a2: ogre struct
+; don't touch d2
+OgreMaybeHurtHero:
+    ; first we check the ogre's body box
+    move.w CURRENT_X,d0 ; hero_min_x
+    move.w N_ENEMY_X(a2),d1 ; enemy_center_x
+    move.w d1,d3
+    add.w N_ENEMY_HALF_W(a2),d3 ; enemy_max_x
+    move.w d0,d4
+    sub.w d3,d4 ; hero_min_x - enemy_max_x
+    bgt.s .end
+    ; d4 will hold the least overlap amount, d5 holds direction
+    move.w #FACING_RIGHT,d5
+    add.w #HERO_WIDTH,d0 ; hero_max_x
+    sub.w N_ENEMY_HALF_W(a2),d1 ; enemy_min_x
+    sub.w d0,d1 ; enemy_min_x - hero_max_x
+    bgt.s .end
+    cmp.w d4,d1
+    ble.s .NotLeastOverlap1
+    move.w d1,d4
+    move.w #FACING_LEFT,d5
+.NotLeastOverlap1
+    move.w CURRENT_Y,d0 ; hero_min_y
+    move.w N_ENEMY_Y(a2),d1 ; enemy_center_y
+    move.w d1,d3
+    add.w N_ENEMY_HALF_H(a2),d3 ; enemy_max_y
+    move.w d0,d6
+    sub.w d3,d6 ; hero_min_y - enemy_max_y
+    bgt.s .end
+    cmp.w d4,d6
+    ble.s .NotLeastOverlap2
+    move.w d6,d4
+    move.w #FACING_DOWN,d5
+.NotLeastOverlap2
+    add.w #HERO_HEIGHT,d0 ; hero_max_y
+    sub.w N_ENEMY_HALF_H(a2),d1 ; enemy_min_y
+    sub.w d0,d1 ; enemy_min_y - hero_max_y
+    bgt.s .end
+    cmp.w d4,d1
+    ble.s .NotLeastOverlap3
+    move.w d1,d4
+    move.w #FACING_UP,d5
+.NotLeastOverlap3
+    ; we have an overlap!
+    move.w #HERO_STATE_HURT,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    move.w d5,HURT_DIRECTION
+.end
+    rts

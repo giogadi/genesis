@@ -391,9 +391,33 @@ HeroStateSlashRecoveryUpdate
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
 
+; go hog wild on registers
+CheckIfHeroNewlyHurt:
+    move.w #MAX_NUM_ENEMIES-1,d2
+    move.l #N_ENEMIES,a2
+    clr.l d0
+.loop
+    ; if enemy is not alive, skip to next enemy
+    move.w N_ENEMY_STATE(a2),d0
+    beq.s .continue_loop
+    move.w N_ENEMY_TYPE(a2),d0
+    M_JumpTable #.TypeJumpTable,a0,d0
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.Butt:
+    bra.s .AfterJumpTable
+.HotDog:
+    bra.s .AfterJumpTable
+.Ogre:
+    jsr OgreMaybeHurtHero
+    bra.s .AfterJumpTable
+.AfterJumpTable
+.continue_loop
+    dbra d2,.loop
+    rts
+
 ; Updates HERO_STATE,HERO_NEW_STATE,HURT_DIRECTION.
 ; TODO: currently clobbers a bunch of registers.
-CheckIfHeroNewlyHurt:
+CheckIfHeroNewlyHurtOld:
     move.w #MAX_NUM_ENEMIES-1,d7
     move.w CURRENT_X,d2 ; hero_min_x
     move.w CURRENT_Y,d3 ; hero_min_y
@@ -454,7 +478,7 @@ CheckIfHeroNewlyHurt:
     move.w #FACING_DOWN,d0
     move.w d6,d1
 .CheckHurtNotLeastOverlap4
-    ; OK we have an overlap. update HURT_ON_THIS_FRAME etc and break out of loop
+    ; OK we have an overlap. update hero state and break out of loop
     move.w #HERO_STATE_HURT,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.w d0,HURT_DIRECTION
