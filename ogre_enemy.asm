@@ -47,6 +47,7 @@ OGRE_HORIZ_SLASH_SPRITE_H: equ (10*8)
 
 OgreGetIdleTileIndex:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
@@ -74,6 +75,7 @@ OgreGetIdleTileIndex:
 
 OgreGetStartupTileIndex:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
@@ -91,6 +93,7 @@ OgreGetStartupTileIndex:
 
 OgreGetSlashingTileIndex:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
@@ -114,6 +117,7 @@ OgreSetIdleHurtboxSize:
 
 OgreSetSlashStartupHurtboxSize:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
@@ -135,6 +139,7 @@ OgreSetSlashStartupHurtboxSize:
 
 OgreSetSlashingHurtboxSize:
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
@@ -482,7 +487,7 @@ OgreEnemyAliveUpdate:
     clr.l d0
     ; transition to "next state" by copying next state into current state.
     move.b N_ENEMY_DATA1(a2),d0
-    and.b #%00000011,d0
+    and.b #OGRE_STATE_MASK,d0
     and.b #%11111100,(N_ENEMY_DATA1+1)(a2)
     or.b d0,(N_ENEMY_DATA1+1)(a2)
     M_JumpTable #.StateJumpTable,a0,d0 ; new state still in d0
@@ -532,6 +537,7 @@ OgreMaybeDrawSlash:
     cmp.b #OGRE_STATE_SLASHING,d0
     bne.s .end ; quit if ogre isn't slashing
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up
@@ -733,52 +739,135 @@ OgreDrawLeftSlash:
     ; TODO missing bottom of slash
     rts
 
-; a2: ogre struct
-; don't touch d2
 OgreMaybeHurtHero:
-    ; first we check the ogre's body box
+    jsr OgreCheckBodyHurtHero
+    tst.b d0
+    bge.s .overlap
+    ; no body overlap, so now check slash
+    jsr OgreCheckSlashHurtHero
+    tst.b d0
+    bge.s .overlap
+    rts
+.overlap
+    move.w #HERO_STATE_HURT,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    move.b d0,(HURT_DIRECTION+1)
+    rts
+
+; sp + 4: aabb_center_x
+; sp + 6: aabb_half_w
+; sp + 8; aabb_center_y
+; sp + 10; aabb_half_h
+;
+; d0: returns -1 if no overlap, otherwise direction of minimum overlap
+MinAABBOverlapHero:
     move.w CURRENT_X,d0 ; hero_min_x
-    move.w N_ENEMY_X(a2),d1 ; enemy_center_x
+    move.w 4(sp),d1 ; aabb_center_x
     move.w d1,d3
-    add.w N_ENEMY_HALF_W(a2),d3 ; enemy_max_x
+    add.w 6(sp),d3 ; aabb_max_x
     move.w d0,d4
-    sub.w d3,d4 ; hero_min_x - enemy_max_x
-    bgt.s .end
+    sub.w d3,d4 ; hero_min_x - aabb_max_x
+    bgt.s .no_overlap
     ; d4 will hold the least overlap amount, d5 holds direction
-    move.w #FACING_RIGHT,d5
+    move.b #FACING_RIGHT,d5
     add.w #HERO_WIDTH,d0 ; hero_max_x
-    sub.w N_ENEMY_HALF_W(a2),d1 ; enemy_min_x
-    sub.w d0,d1 ; enemy_min_x - hero_max_x
-    bgt.s .end
+    sub.w 6(sp),d1 ; aabb_min_x
+    sub.w d0,d1 ; aabb_min_x - hero_max_x
+    bgt.s .no_overlap
     cmp.w d4,d1
     ble.s .NotLeastOverlap1
     move.w d1,d4
-    move.w #FACING_LEFT,d5
+    move.b #FACING_LEFT,d5
 .NotLeastOverlap1
     move.w CURRENT_Y,d0 ; hero_min_y
-    move.w N_ENEMY_Y(a2),d1 ; enemy_center_y
+    move.w 8(sp),d1 ; aabb_center_y
     move.w d1,d3
-    add.w N_ENEMY_HALF_H(a2),d3 ; enemy_max_y
+    add.w 10(sp),d3 ; aabb_max_y
     move.w d0,d6
-    sub.w d3,d6 ; hero_min_y - enemy_max_y
-    bgt.s .end
+    sub.w d3,d6 ; hero_min_y - aabb_max_y
+    bgt.s .no_overlap
     cmp.w d4,d6
     ble.s .NotLeastOverlap2
     move.w d6,d4
-    move.w #FACING_DOWN,d5
+    move.b #FACING_DOWN,d5
 .NotLeastOverlap2
     add.w #HERO_HEIGHT,d0 ; hero_max_y
-    sub.w N_ENEMY_HALF_H(a2),d1 ; enemy_min_y
-    sub.w d0,d1 ; enemy_min_y - hero_max_y
-    bgt.s .end
+    sub.w 10(sp),d1 ; aabb_min_y
+    sub.w d0,d1 ; aabb_min_y - hero_max_y
+    bgt.s .no_overlap
     cmp.w d4,d1
     ble.s .NotLeastOverlap3
     move.w d1,d4
-    move.w #FACING_UP,d5
+    move.b #FACING_UP,d5
 .NotLeastOverlap3
     ; we have an overlap!
-    move.w #HERO_STATE_HURT,HERO_STATE
-    move.w #1,HERO_NEW_STATE
-    move.w d5,HURT_DIRECTION
-.end
+    move.b d5,d0
+    rts
+.no_overlap
+    move.b #-1,d0
+    rts
+
+OgreCheckSlashHurtHero:
+    move.b (N_ENEMY_DATA1+1)(a2),d0 ; state
+    and.b #OGRE_STATE_MASK,d0
+    cmp.b #OGRE_STATE_SLASHING,d0 ; no overlap if not slashing
+    beq.s .slashing
+    move.b #-1,d0
+    rts
+.slashing
+    clr.l d0
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+.Up:
+    move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
+    move.w N_ENEMY_Y(a2),d0
+    sub.w #(24+OGRE_VERT_SLASH_SPRITE_H/2),d0
+    move.w d0,-(sp)
+    move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr MinAABBOverlapHero
+    bra.s .AfterJumpTable
+.Down:
+    move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
+    move.w N_ENEMY_Y(a2),d0
+    add.w #(24+OGRE_VERT_SLASH_SPRITE_H/2),d0
+    move.w d0,-(sp)
+    move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr MinAABBOverlapHero
+    bra.s .AfterJumpTable
+.Left:
+    move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
+    move.w N_ENEMY_X(a2),d0
+    sub.w #(24+OGRE_HORIZ_SLASH_SPRITE_W/2),d0
+    move.w d0,-(sp)
+    jsr MinAABBOverlapHero
+    bra.s .AfterJumpTable
+.Right
+    move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
+    move.w N_ENEMY_X(a2),d0
+    add.w #(24+OGRE_HORIZ_SLASH_SPRITE_W/2),d0
+    move.w d0,-(sp)
+    jsr MinAABBOverlapHero
+    bra.s .AfterJumpTable
+.AfterJumpTable
+    add.l #(4*2),sp
+    rts
+
+; a2: ogre struct
+; don't touch d2
+; d0: returns -1 if no overlap, or FACING_DIRECTION otherwise.
+OgreCheckBodyHurtHero:
+    move.w N_ENEMY_HALF_H(a2),-(sp)
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w N_ENEMY_HALF_W(a2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr MinAABBOverlapHero
+    add.l #(4*2),sp
     rts
