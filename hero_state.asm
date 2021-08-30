@@ -51,10 +51,10 @@ HeroStateIdleUpdate:
     beq.s HeroStateSlashStartup
 
     ; Dash Transition
-    jsr HeroStateMaybeStartDash
-    move.w HERO_STATE,d0
-    cmp.w #HERO_STATE_DASHING,d0
-    beq.s HeroStateDashing
+    ; jsr HeroStateMaybeStartDash
+    ; move.w HERO_STATE,d0
+    ; cmp.w #HERO_STATE_DASHING,d0
+    ; beq.s HeroStateDashing
 
     ; default to anim facing previous direction first.
     move.l #.DefaultAnimJumpTable,a0
@@ -395,11 +395,11 @@ HeroStateSlashRecoveryUpdate
 CheckIfHeroNewlyHurt:
     move.w #MAX_NUM_ENEMIES-1,d2
     move.l #N_ENEMIES,a2
-    clr.l d0
 .loop
     ; if enemy is not alive, skip to next enemy
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop
+    clr.l d0
     move.w N_ENEMY_TYPE(a2),d0
     M_JumpTable #.TypeJumpTable,a0,d0
 .TypeJumpTable dc.l .Butt,.HotDog,.Ogre

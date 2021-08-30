@@ -79,6 +79,22 @@ ClampMax:
 .ClampMaxDone:
     rts
 
+; \1: x, \2: min, output in \1. All words
+M_ClampMinL: macro
+    cmp.l \2,\1 ; x - min
+    bge.s .ClampMinDone\@
+    move.l \2,\1
+.ClampMinDone\@
+    endm
+
+; \1: x, \2: max, output in \1. all words
+M_ClampMaxL: macro
+    cmp.l \1,\2 ; max - x
+    bge.s .ClampMaxDone\@
+    move.l \2,\1
+.ClampMaxDone\@
+    endm
+
 ; d0: x, d1: min, d2: max. output in d0
 ; Clamp:
 ;     cmp.w d1,d0 ; x - min
@@ -468,8 +484,8 @@ UpdateEnemiesFromSlash:
 UtilUpdateEnemies:
     move.w #MAX_NUM_ENEMIES-1,d2
     move.l #N_ENEMIES,a2
-    clr.l d0
 .loop
+    clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop ; if dead, skip to next enemy
     move.w N_ENEMY_TYPE(a2),d0
@@ -675,9 +691,9 @@ UtilLoadEnemies:
     sub.w #1,d2
     blt.w .after_loop
     move.l #N_ENEMIES,a1
-    clr.l d3
 .loop
     move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a1)
+    clr.l d3
     move.w (a0)+,d3 ; enemy_type is in d3. Storing to use it later
     move.w d3,N_ENEMY_TYPE(a1)
     move.w (a0)+,d4 ; enemy_x
@@ -701,7 +717,7 @@ UtilLoadEnemies:
 .Ogre:
     move.w #24,N_ENEMY_HALF_W(a1)
     move.w #24,N_ENEMY_HALF_H(a1)
-    move.w #4,N_ENEMY_HP(a1)
+    move.w #OGRE_HP,N_ENEMY_HP(a1)
     move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a1)
     bra.s .AfterJumpTable
 .AfterJumpTable
@@ -809,6 +825,7 @@ DrawEnemies:
     move.l #ENEMY_DATA_2,a0
     move.w 0(a0,d3),-(sp)
     move.l #ENEMY_TYPE,a0
+    clr.l d0
     move.w 0(a0,d3),d0 ; enemy type in d0
     ; X and Y are 4 bytes, so multiply d3 by 2 again
     add.b d3,d3
@@ -843,8 +860,8 @@ DrawEnemies:
 UtilDrawEnemySlashes:
     move.w #MAX_NUM_ENEMIES-1,d2
     move.l #N_ENEMIES,a2
-    clr.l d0
 .loop
+    clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop ; if dead, skip to next enemy
     move.w N_ENEMY_TYPE(a2),d0

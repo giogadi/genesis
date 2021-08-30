@@ -6,6 +6,8 @@ OGRE_HITSTUN_DURATION: equ 20 ; frames
 OGRE_STARTUP_DURATION: equ 30 ; frames
 OGRE_RECOVERY_DURATION: equ 60 ; frames
 
+OGRE_HP: equ 10
+
 ; State:
 ; ENEMY_DATA_1: 0000 00(next_state,2) 0000 00(state,2)
 ; ENEMY_DATA_2: 0000 0000 0000 00(facing_direction,2)
@@ -46,6 +48,7 @@ OGRE_HORIZ_SLASH_SPRITE_W: equ (8*8)
 OGRE_HORIZ_SLASH_SPRITE_H: equ (10*8)
 
 OgreGetIdleTileIndex:
+    clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
@@ -74,6 +77,7 @@ OgreGetIdleTileIndex:
     bra.s .Up
 
 OgreGetStartupTileIndex:
+    clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
@@ -92,6 +96,7 @@ OgreGetStartupTileIndex:
     rts
 
 OgreGetSlashingTileIndex:
+    clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
@@ -116,6 +121,7 @@ OgreSetIdleHurtboxSize:
     rts
 
 OgreSetSlashStartupHurtboxSize:
+    clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
@@ -138,6 +144,7 @@ OgreSetSlashStartupHurtboxSize:
     rts
 
 OgreSetSlashingHurtboxSize:
+    clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
     M_JumpTable #.DirectionJumpTable,a0,d0
@@ -358,6 +365,7 @@ OgreCanBeHit:
 OgreUpdateFromSlash:
     ; skip if hero not slashing
     ; TODO: consider checking this just once to skip all slash updates
+    clr.l d0
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_ACTIVE,d0
     bne.s .end
@@ -409,6 +417,7 @@ OgreUpdateFromSlash:
 ; d2: not allowed
 OgreEnemyUpdate:
     jsr OgreUpdateFromSlash
+    clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     M_JumpTable #.StateJumpTable,a0,d0
 .StateJumpTable dc.l .Dead,.Alive,.Dying,.Hitstun
@@ -432,18 +441,34 @@ OgreIdleUpdate:
     sub.w N_ENEMY_X(a2),d0 ; target_x - ogre_x
     blt.s .MoveLeft
     ; move right
-    add.l #OGRE_WALK_SPEED,N_ENEMY_X(a2)
+    move.l N_ENEMY_X(a2),d0
+    add.l #OGRE_WALK_SPEED,d0
+    move.l #((MAX_DISPLAY_X-24)<<16),d3 ; max_x - half_ogre_width
+    M_ClampMaxL d0,d3
+    move.l d0,N_ENEMY_X(a2)
     bra.s .Next
 .MoveLeft
-    sub.l #OGRE_WALK_SPEED,N_ENEMY_X(a2)
+    move.l N_ENEMY_X(a2),d0
+    sub.l #OGRE_WALK_SPEED,d0
+    move.l #((MIN_DISPLAY_X+24)<<16),d3 ; min_x + half_ogre_width
+    M_ClampMinL d0,d3
+    move.l d0,N_ENEMY_X(a2)
 .Next
     sub.w N_ENEMY_Y(a2),d1 ; target_y - ogre_y
     blt.s .MoveUp
     ; move down
-    add.l #OGRE_WALK_SPEED,N_ENEMY_Y(a2)
+    move.l N_ENEMY_Y(a2),d0
+    add.l #OGRE_WALK_SPEED,d0
+    move.l #((MAX_DISPLAY_Y-24)<<16),d3 ; max_y - half_ogre_height
+    M_ClampMaxL d0,d3
+    move.l d0,N_ENEMY_Y(a2)
     bra.s .AfterWalk
 .MoveUp
-    sub.l #OGRE_WALK_SPEED,N_ENEMY_Y(a2)
+    move.l N_ENEMY_Y(a2),d0
+    sub.l #OGRE_WALK_SPEED,d0
+    move.l #((MIN_DISPLAY_Y+24)<<16),d3 ; min_y + half_ogre_height
+    M_ClampMinL d0,d3
+    move.l d0,N_ENEMY_Y(a2)
 .AfterWalk
     ; check if should switch to slash startup state. For now, it's on a timer.
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
@@ -532,6 +557,7 @@ OgreEnemyHitstunUpdate:
 ; a2: ogre struct
 ; d2: do not touch
 OgreMaybeDrawSlash:
+    clr.l d0
     move.b (N_ENEMY_DATA1+1)(a2),d0 ; load state
     and.b #OGRE_STATE_MASK,d0
     cmp.b #OGRE_STATE_SLASHING,d0
@@ -807,6 +833,18 @@ MinAABBOverlapHero:
     move.b #-1,d0
     rts
 
+; a2: ogre struct
+; don't touch d2
+; d0: returns -1 if no overlap, or FACING_DIRECTION otherwise.
+OgreCheckBodyHurtHero:
+    move.w N_ENEMY_HALF_H(a2),-(sp)
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w N_ENEMY_HALF_W(a2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr MinAABBOverlapHero
+    add.l #(4*2),sp
+    rts
+
 OgreCheckSlashHurtHero:
     move.b (N_ENEMY_DATA1+1)(a2),d0 ; state
     and.b #OGRE_STATE_MASK,d0
@@ -857,17 +895,5 @@ OgreCheckSlashHurtHero:
     jsr MinAABBOverlapHero
     bra.s .AfterJumpTable
 .AfterJumpTable
-    add.l #(4*2),sp
-    rts
-
-; a2: ogre struct
-; don't touch d2
-; d0: returns -1 if no overlap, or FACING_DIRECTION otherwise.
-OgreCheckBodyHurtHero:
-    move.w N_ENEMY_HALF_H(a2),-(sp)
-    move.w N_ENEMY_Y(a2),-(sp)
-    move.w N_ENEMY_HALF_W(a2),-(sp)
-    move.w N_ENEMY_X(a2),-(sp)
-    jsr MinAABBOverlapHero
     add.l #(4*2),sp
     rts

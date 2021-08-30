@@ -686,6 +686,7 @@ NoHitstop
 
 .skipPositionUpdate
 
+    clr.l d0
     move.w NEW_ANIM_STATE,d0 ; move new anim state to d0
     jsr UpdateAnimState
 
