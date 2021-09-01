@@ -793,7 +793,7 @@ OgreMaybeHurtHero:
 ; sp + 8; aabb_center_y
 ; sp + 10; aabb_half_h
 ;
-; d0: returns -1 if no overlap, otherwise direction of minimum overlap
+; d0.b: returns -1 if no overlap, otherwise direction of minimum overlap
 MinAABBOverlapHero:
     move.w CURRENT_X,d0 ; hero_min_x
     move.w 4(sp),d1 ; aabb_center_x
@@ -853,6 +853,11 @@ OgreCheckBodyHurtHero:
     add.l #(4*2),sp
     rts
 
+; TODO: change to not use MinAABBOverlapHero to save some cycles.
+;
+; a2: ogre struct
+; don't touch d2
+; d0: returns -1 if no overlap, or FACING_DIRECTION otherwise
 OgreCheckSlashHurtHero:
     move.b (N_ENEMY_DATA1+1)(a2),d0 ; state
     and.b #OGRE_STATE_MASK,d0
@@ -904,4 +909,10 @@ OgreCheckSlashHurtHero:
     bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #(4*2),sp
+    tst.b d0
+    blt.s .end
+    ; just use ogre's direction (ignore min overlap aabb)
+    move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
+    and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
+.end
     rts
