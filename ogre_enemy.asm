@@ -5,12 +5,13 @@ OGRE_WALK_SPEED: equ (65536/2) ; 1 pixel per frame
 OGRE_HITSTUN_DURATION: equ 20 ; frames
 OGRE_STARTUP_DURATION: equ 30 ; frames
 OGRE_RECOVERY_DURATION: equ 60 ; frames
+OGRE_HURT_FLICKER_DURATION: equ 30
 
 OGRE_HP: equ 10
 
 ; State:
 ; ENEMY_DATA_1: 0000 00(next_state,2) 0000 00(state,2)
-; ENEMY_DATA_2: 0000 0000 0000 00(facing_direction,2)
+; ENEMY_DATA_2: (hit-blink,8) 0000 00(facing_direction,2)
 OGRE_STATE_MASK: equ %00000011
 OGRE_DIRECTION_MASK: equ %00000011
 
@@ -190,9 +191,10 @@ DrawOgreEnemy:
 .AfterTileIndex
     ; store palette in d5. If in hitstun, we'll be flickering the palette.
     clr.w d5
-    move.w N_ENEMY_STATE(a2),d0
-    cmp.w #ENEMY_STATE_HITSTUN,d0
-    bne.s .NoFlicker
+    ; move.w N_ENEMY_STATE(a2),d0
+    ; cmp.w #ENEMY_STATE_HITSTUN,d0
+    tst.b N_ENEMY_DATA2(a2) ; check if we are flickering on hurt
+    ble.s .NoFlicker
     move.w N_ENEMY_STATE_FRAMES_LEFT(a2),d0
     btst.l #2,d0
     bne.s .NoFlicker
@@ -401,8 +403,9 @@ OgreUpdateFromSlash:
     sub.w #1,N_ENEMY_HP(a2)
     ble.s .KillEnemy
     ; enter hitstun
-    move.w #ENEMY_STATE_HITSTUN,N_ENEMY_STATE(a2)
-    move.w #OGRE_HITSTUN_DURATION,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    ; move.w #ENEMY_STATE_HITSTUN,N_ENEMY_STATE(a2)
+    ; move.w #OGRE_HITSTUN_DURATION,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    move.b #OGRE_HURT_FLICKER_DURATION,N_ENEMY_DATA2(a2)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     bra.s .end
 .KillEnemy
@@ -416,6 +419,11 @@ OgreUpdateFromSlash:
 ; a2: ogre struct
 ; d2: not allowed
 OgreEnemyUpdate:
+    ; update hurt flicker
+    tst.b N_ENEMY_DATA2(a2)
+    beq.s .DoneFlickering
+    sub.b #1,N_ENEMY_DATA2(a2)
+.DoneFlickering
     jsr OgreUpdateFromSlash
     clr.l d0
     move.w N_ENEMY_STATE(a2),d0
@@ -502,7 +510,7 @@ OgreRecoveryUpdate:
     ; Transition to idle
     and.b #%11111100,N_ENEMY_DATA1(a2)
     or.b #OGRE_STATE_IDLE,N_ENEMY_DATA1(a2)
-    move.w #240,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    move.w #60,N_ENEMY_STATE_FRAMES_LEFT(a2)
 .NoTransition
     rts
 
