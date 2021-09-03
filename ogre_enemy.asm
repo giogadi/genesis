@@ -4,7 +4,7 @@ OGRE_HEIGHT: equ 48 ; pixels
 OGRE_WALK_SPEED: equ (65536/2) ; 1 pixel per frame
 OGRE_HITSTUN_DURATION: equ 20 ; frames
 OGRE_STARTUP_DURATION: equ 30 ; frames
-OGRE_RECOVERY_DURATION: equ 60 ; frames
+OGRE_RECOVERY_DURATION: equ 15 ; frames
 OGRE_HURT_FLICKER_DURATION: equ 30
 
 OGRE_HP: equ 10
@@ -510,7 +510,7 @@ OgreRecoveryUpdate:
     ; Transition to idle
     and.b #%11111100,N_ENEMY_DATA1(a2)
     or.b #OGRE_STATE_IDLE,N_ENEMY_DATA1(a2)
-    move.w #60,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    move.w #30,N_ENEMY_STATE_FRAMES_LEFT(a2)
 .NoTransition
     rts
 

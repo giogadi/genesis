@@ -39,6 +39,10 @@ SetVsramAddr: macro
     SetXramAddr \1,\2,VSRAM_ADDR_CMD
     endm
 
+SetupVramForHScroll: macro
+    move.l #$50000003,vdp_control
+    endm
+
 ; uses \1 and \2 registers. updates CONTROLLER
 GetControls: macro
     move.b #$40,$A10003 ; prepare controller 1 for reading part 1

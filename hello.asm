@@ -267,7 +267,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 
     ; Mode register #3
     ; Disable external interrupt, VSCR full scroll, HSCR/LSCR full scroll
-    move.w  #VDPREG_MODE3|$00,vdp_control
+    move.w  #$8B00,vdp_control
 
     ; Mode register #4
     ; 40 horizontal cells (so resulting screen size in cells is 40x28)
@@ -302,8 +302,8 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w  #VDPREG_WINDOW|$34,vdp_control ; Window address
 
     ; H Scroll Data Table Base Address
-    ; VRAM address %1111 0100 0000 0000
-    move.w  #VDPREG_HSCROLL|$3D,vdp_control    ; HSCROLL address
+    H_SCROLL_TABLE_BASE_ADDR: equ $D000
+    move.w #$8D34,vdp_control
 
     ; Scroll Size
     ; V 32 cell, H 64 cell
@@ -569,8 +569,8 @@ FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
 
-;SLASH_STARTUP_ITERS: equ 20
-SLASH_STARTUP_ITERS: equ 2
+SLASH_STARTUP_ITERS: equ 20
+;SLASH_STARTUP_ITERS: equ 2
 ;SLASH_RECOVERY_ITERS: equ 20
 SLASH_RECOVERY_ITERS: equ 2
 
@@ -623,7 +623,20 @@ GLOBAL_PALETTE: so.w 1
 DASH_BUFFERED: so.w 1
     move.w #0,DASH_BUFFERED
 
-loop
+CURRENT_SCROLL_A: so.w 1
+    move.w #0,CURRENT_SCROLL_A
+
+MainGameLoop
+    ; SCROLLING
+    SetupVramForHScroll
+    move.w CURRENT_SCROLL_A,d0
+    move.w d0,vdp_data
+    btst.b #0,(FRAME_COUNTER+1)
+    beq.s .NoScrollIncrement
+    add.w #1,d0
+    move.w d0,CURRENT_SCROLL_A
+.NoScrollIncrement
+
     tst.w HITSTOP_FRAMES_LEFT
     beq.w NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
@@ -806,7 +819,7 @@ WaitNewFrame
     bne.s WaitNewFrame
     clr.b NEW_FRAME
     add.w #1,FRAME_COUNTER
-    jmp     loop
+    jmp     MainGameLoop
 
 ; EXCEPTION AND INTERRUPT HANDLERS
 ; ----------------------------------------------------------------------------
