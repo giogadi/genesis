@@ -286,6 +286,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 
     ; Pattern Name Table Base Address for Scroll B
     ; At VRAM address %1110 0000 0000 0000
+    SCROLL_B_BASE_ADDR: equ $E000
     move.w  #VDPREG_PLANEB|$07,vdp_control ; Plane B address
 
     ; Sprite Attribute Table Base Address
@@ -331,7 +332,6 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w  #VDPREG_HRATE|$FF,vdp_control    ; HBlank IRQ rate
 
 ; Zero out VRAM
-; TODO: can we set the autoincrement to 4 since we're writing 4 bytes at a time?
     move.l #VRAM_ADDR_CMD,(vdp_control)
     move.w #(VRAM_MAX_ADDR+1)/4-1,d0
 @vram_loop
@@ -482,6 +482,15 @@ DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+TitleTileLoad:
+TITLE_TILE_START: equ (DASH_BAR_SPRITE_TILE_START+DASH_BAR_SPRITE_TILE_SIZE)
+TITLE_TILE_SIZE: equ (40*17)
+    move.w #(8*TITLE_TILE_SIZE)-1,d0
+    move.l #TitleTiles,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w #TILE_SET_SIZE-1,d0
@@ -518,7 +527,7 @@ LoadTileMap:
 ; we need to start writing vram at SCROLL_A_BASE_ADDR. To do that, we must send 4 bytes of data
 ; to vdp_control:
 ; with SCROLL_A_BASE_ADDR = $C000 =  %1100 0000 0000 0000
-    move.w #SCROLL_A_BASE_ADDR,d0
+    move.w #SCROLL_B_BASE_ADDR,d0
     SetVramAddr d0,d1
 
     move.w #(64*32)-1,d0
@@ -626,15 +635,62 @@ DASH_BUFFERED: so.w 1
 CURRENT_SCROLL_A: so.w 1
     move.w #0,CURRENT_SCROLL_A
 
+CURRENT_SCROLL_B: so.w 1
+    move.w #0,CURRENT_SCROLL_B
+
+; Title screen
+; Dimensions of title sprite are 320x136 (40x17 tiles)
+; So every 40 tiles we will reset the vram addr to the next "row".
+; Each full scroll row is 64 tiles. Each tile is actually 1 word of data
+; ShowTitleScreen
+;     move.w #SCROLL_B_BASE_ADDR,d0
+;     SetVramAddr d0,d1
+;     ; hard code vram addr command.
+;     ; Scroll A base addr: $C000 = %1100 0000 0000 0000
+;     move.w #(32-1),d0
+; .outer_loop
+;     move.w #(64-1),d1
+; .inner_loop
+;     move.w #(TITLE_TILE_START+80),d2
+;     move.w d2,vdp_data
+;     dbra d1,.inner_loop
+;     dbra d0,.outer_loop
+
+
+;     move.w #TITLE_TILE_START,d0 ; tile numbers in ROM
+;     move.w #SCROLL_A_BASE_ADDR,d3 ; d3 is row start in VRAM
+;     move.w #(17-1),d2 ; row counter
+; .RowLoop
+;     SetVramAddr d3,d1
+;     move.w #(40-1),d4 ; cell counter within row
+; .CellLoop
+;     move.w d0,vdp_data
+;     add.w #1,d0
+;     dbra d4,.CellLoop
+;     ; End of row
+;     add.w #(2*64),d3
+;     dbra d2,.RowLoop
+
+
+;     SetVramAddr d0,d1
+;     move.w #(TITLE_TILE_SIZE-1),d0
+;     move.w #TITLE_TILE_START,d1
+; .loop
+;     move.w d1,vdp_data
+;     add.w #1,d1
+;     dbra d0,.loop
+
 MainGameLoop
     ; SCROLLING
     SetupVramForHScroll
     move.w CURRENT_SCROLL_A,d0
     move.w d0,vdp_data
-    btst.b #0,(FRAME_COUNTER+1)
-    beq.s .NoScrollIncrement
-    add.w #1,d0
-    move.w d0,CURRENT_SCROLL_A
+    move.w CURRENT_SCROLL_B,d0
+    move.w d0,vdp_data
+    ; btst.b #0,(FRAME_COUNTER+1)
+    ; beq.s .NoScrollIncrement
+    ; add.w #1,d0
+    ; move.w d0,CURRENT_SCROLL_B
 .NoScrollIncrement
 
     tst.w HITSTOP_FRAMES_LEFT
@@ -850,6 +906,9 @@ TileCollisions:
 
 TileMap:
     include art/tiles/map1_large.asm
+
+TitleTiles:
+    include art/title_320_136.asm
 
 SamuraiLeft1Sprite:
     include art/samurai/left1.asm
