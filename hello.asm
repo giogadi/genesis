@@ -294,8 +294,7 @@ Z80Reset:   equ $A11200  ; Z80 reset line
 
     ; Sprite Attribute Table Base Address
     ; VRAM address for H40 mode: %1111 0000 0000 0000
-    SPRITE_TABLE_BASE_ADDR: equ $F000
-    ;SPRITE_TABLE_BASE_ADDR: equ $D000
+    SPRITE_TABLE_BASE_ADDR: equ $D000
     move.w #SPRITE_TABLE_BASE_ADDR,d0
     rol.w #7,d0
     or.w #VDPREG_SPRITE,d0
@@ -310,13 +309,11 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w d0,vdp_control
 
     ; H Scroll Data Table Base Address
-    H_SCROLL_TABLE_BASE_ADDR: equ $D000
-    ;H_SCROLL_TABLE_BASE_ADDR: equ $D400
+    H_SCROLL_TABLE_BASE_ADDR: equ $D400
     move.w #H_SCROLL_TABLE_BASE_ADDR,d0
     rol.w #6,d0
     or.w #VDPREG_HSCROLL,d0
     move.w d0,vdp_control
-    ;move.w #$8D34,vdp_control
 
     ; Scroll Size
     ; V 32 cell, H 64 cell
