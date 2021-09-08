@@ -287,24 +287,36 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     ; Pattern Name Table Base Address for Scroll B
     ; At VRAM address %1110 0000 0000 0000
     SCROLL_B_BASE_ADDR: equ $E000
-    move.w  #VDPREG_PLANEB|$07,vdp_control ; Plane B address
+    move.w #SCROLL_B_BASE_ADDR,d0
+    rol.w #3,d0
+    or.w #VDPREG_PLANEB,d0
+    move.w d0,vdp_control
 
     ; Sprite Attribute Table Base Address
     ; VRAM address for H40 mode: %1111 0000 0000 0000
     SPRITE_TABLE_BASE_ADDR: equ $F000
+    ;SPRITE_TABLE_BASE_ADDR: equ $D000
     move.w #SPRITE_TABLE_BASE_ADDR,d0
     rol.w #7,d0
     or.w #VDPREG_SPRITE,d0
     move.w d0,vdp_control
-    ;move.w  #VDPREG_SPRITE|$78,vdp_control ; Sprite address
 
     ; Pattern Name Table Base Address for Window
     ; VRAM address for H40 mode: %1101 0000 0000 0000
-    move.w  #VDPREG_WINDOW|$34,vdp_control ; Window address
+    WINDOW_TABLE_BASE_ADDR: equ $D000
+    move.w #WINDOW_TABLE_BASE_ADDR,d0
+    rol.w #6,d0
+    or.w #VDPREG_WINDOW,d0
+    move.w d0,vdp_control
 
     ; H Scroll Data Table Base Address
     H_SCROLL_TABLE_BASE_ADDR: equ $D000
-    move.w #$8D34,vdp_control
+    ;H_SCROLL_TABLE_BASE_ADDR: equ $D400
+    move.w #H_SCROLL_TABLE_BASE_ADDR,d0
+    rol.w #6,d0
+    or.w #VDPREG_HSCROLL,d0
+    move.w d0,vdp_control
+    ;move.w #$8D34,vdp_control
 
     ; Scroll Size
     ; V 32 cell, H 64 cell
@@ -482,14 +494,14 @@ DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
-TitleTileLoad:
-TITLE_TILE_START: equ (DASH_BAR_SPRITE_TILE_START+DASH_BAR_SPRITE_TILE_SIZE)
-TITLE_TILE_SIZE: equ (40*17)
-    move.w #(8*TITLE_TILE_SIZE)-1,d0
-    move.l #TitleTiles,a0
-.loop
-    move.l (a0)+,vdp_data
-    dbra d0,.loop
+; TitleTileLoad:
+; TITLE_TILE_START: equ (DASH_BAR_SPRITE_TILE_START+DASH_BAR_SPRITE_TILE_SIZE)
+; TITLE_TILE_SIZE: equ (40*17)
+;     move.w #(8*TITLE_TILE_SIZE)-1,d0
+;     move.l #TitleTiles,a0
+; .loop
+;     move.l (a0)+,vdp_data
+;     dbra d0,.loop
 
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
@@ -682,15 +694,16 @@ CURRENT_SCROLL_B: so.w 1
 
 MainGameLoop
     ; SCROLLING
-    SetupVramForHScroll
+    move.w #H_SCROLL_TABLE_BASE_ADDR,d0
+    SetVramAddr d0,d1
     move.w CURRENT_SCROLL_A,d0
     move.w d0,vdp_data
     move.w CURRENT_SCROLL_B,d0
     move.w d0,vdp_data
-    ; btst.b #0,(FRAME_COUNTER+1)
-    ; beq.s .NoScrollIncrement
-    ; add.w #1,d0
-    ; move.w d0,CURRENT_SCROLL_B
+    btst.b #0,(FRAME_COUNTER+1)
+    beq.s .NoScrollIncrement
+    add.w #1,d0
+    move.w d0,CURRENT_SCROLL_B
 .NoScrollIncrement
 
     tst.w HITSTOP_FRAMES_LEFT
