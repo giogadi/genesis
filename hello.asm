@@ -202,6 +202,7 @@ SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
 
     include util.asm
+    include text.asm
     include hero_state.asm
     include butt_enemy.asm
     include hot_dog_enemy.asm
@@ -274,8 +275,6 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w  #VDPREG_MODE4|$81,vdp_control
 
     ; Pattern Name Table Base Address for Scroll A
-    ; At VRAM address %1100 0000 0000 0000
-    ; TODO: figure out how to use the def here for setting the reg
     SCROLL_A_BASE_ADDR: equ $C000
     move.w #SCROLL_A_BASE_ADDR,d0
     lsr.w #8,d0
@@ -293,7 +292,6 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w d0,vdp_control
 
     ; Sprite Attribute Table Base Address
-    ; VRAM address for H40 mode: %1111 0000 0000 0000
     SPRITE_TABLE_BASE_ADDR: equ $D000
     move.w #SPRITE_TABLE_BASE_ADDR,d0
     rol.w #7,d0
@@ -301,7 +299,6 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.w d0,vdp_control
 
     ; Pattern Name Table Base Address for Window
-    ; VRAM address for H40 mode: %1101 0000 0000 0000
     WINDOW_TABLE_BASE_ADDR: equ $D000
     move.w #WINDOW_TABLE_BASE_ADDR,d0
     rol.w #6,d0
@@ -455,47 +452,56 @@ HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
-OgreSpriteLoad:
-OGRE_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
-OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
-    move.w #(8*OGRE_SPRITE_TILE_SIZE)-1,d0
-    move.l #OgreSprite,a0
+TitleTileLoad:
+TITLE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+TITLE_TILE_SIZE: equ (40*17)
+    move.w #(8*TITLE_TILE_SIZE)-1,d0
+    move.l #TitleTiles,a0
 .loop
     move.l (a0)+,vdp_data
     dbra d0,.loop
+
+FontTileLoad:
+FONT_TILE_START: equ (TITLE_TILE_START+TITLE_TILE_SIZE)
+FONT_TILE_SIZE: equ 40
+    move.w #(8*FONT_TILE_SIZE)-1,d0
+    move.l #FontTiles,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+OgreSpriteLoad:
+OGRE_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
+;     move.w #(8*OGRE_SPRITE_TILE_SIZE)-1,d0
+;     move.l #OgreSprite,a0
+; .loop
+;     move.l (a0)+,vdp_data
+;     dbra d0,.loop
 
 OgreSlashRightSpriteLoad:
 OGRE_SLASH_RIGHT_TILE_START: equ (OGRE_SPRITE_TILE_START+OGRE_SPRITE_TILE_SIZE)
 OGRE_SLASH_RIGHT_TILE_SIZE: equ (8*10)
-    move.w #(8*OGRE_SLASH_RIGHT_TILE_SIZE)-1,d0
-    move.l #OgreSlashRightSprite,a0
-.loop
-    move.l (a0)+,vdp_data
-    dbra d0,.loop
+;     move.w #(8*OGRE_SLASH_RIGHT_TILE_SIZE)-1,d0
+;     move.l #OgreSlashRightSprite,a0
+; .loop
+;     move.l (a0)+,vdp_data
+;     dbra d0,.loop
 
 OgreSlashUpSpriteLoad:
 OGRE_SLASH_UP_TILE_START: equ (OGRE_SLASH_RIGHT_TILE_START+OGRE_SLASH_RIGHT_TILE_SIZE)
 OGRE_SLASH_UP_TILE_SIZE: equ (8*10)
-    move.w #(8*OGRE_SLASH_UP_TILE_SIZE)-1,d0
-    move.l #OgreSlashUpSprite,a0
-.loop
-    move.l (a0)+,vdp_data
-    dbra d0,.loop
+;     move.w #(8*OGRE_SLASH_UP_TILE_SIZE)-1,d0
+;     move.l #OgreSlashUpSprite,a0
+; .loop
+;     move.l (a0)+,vdp_data
+;     dbra d0,.loop
 
 DashBarSpriteLoad:
 DASH_BAR_SPRITE_TILE_START: equ (OGRE_SLASH_UP_TILE_START+OGRE_SLASH_UP_TILE_SIZE)
 DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
-    move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
-    move.l #DashBarSprite,a0
-.loop
-    move.l (a0)+,vdp_data
-    dbra d0,.loop
-
-; TitleTileLoad:
-; TITLE_TILE_START: equ (DASH_BAR_SPRITE_TILE_START+DASH_BAR_SPRITE_TILE_SIZE)
-; TITLE_TILE_SIZE: equ (40*17)
-;     move.w #(8*TITLE_TILE_SIZE)-1,d0
-;     move.l #TitleTiles,a0
+;     move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
+;     move.l #DashBarSprite,a0
 ; .loop
 ;     move.l (a0)+,vdp_data
 ;     dbra d0,.loop
@@ -651,43 +657,54 @@ CURRENT_SCROLL_B: so.w 1
 ; Dimensions of title sprite are 320x136 (40x17 tiles)
 ; So every 40 tiles we will reset the vram addr to the next "row".
 ; Each full scroll row is 64 tiles. Each tile is actually 1 word of data
-; ShowTitleScreen
-;     move.w #SCROLL_B_BASE_ADDR,d0
-;     SetVramAddr d0,d1
-;     ; hard code vram addr command.
-;     ; Scroll A base addr: $C000 = %1100 0000 0000 0000
-;     move.w #(32-1),d0
-; .outer_loop
-;     move.w #(64-1),d1
-; .inner_loop
-;     move.w #(TITLE_TILE_START+80),d2
-;     move.w d2,vdp_data
-;     dbra d1,.inner_loop
-;     dbra d0,.outer_loop
+ShowTitleImage
+    move.w #TITLE_TILE_START,d0 ; tile numbers in ROM
+    move.w #SCROLL_A_BASE_ADDR,d3 ; d3 is row start in VRAM
+    move.w #(17-1),d2 ; row counter
+.RowLoop
+    move.w d3,d4
+    SetVramAddr d4,d1
+    move.w #(40-1),d4 ; cell counter within row
+.CellLoop
+    move.w d0,vdp_data
+    add.w #1,d0
+    dbra d4,.CellLoop
+    ; End of row
+    add.w #(2*64),d3
+    dbra d2,.RowLoop
 
+ShowP1Start
+    ; set vram write to start at tile index (32,20)
+    move.w #16,d0
+    move.w #20,d1
+    jsr UtilSetScrollAWriteAt
+    bra.s .afterString
+.string
+    dc.w TEXT_P,TEXT_1,TEXT_SPACE,TEXT_S,TEXT_T,TEXT_A,TEXT_R,TEXT_T,TEXT_TERMINATE
+.afterString 
+    move.l #.string,a0
+    jsr TextWriteString
 
-;     move.w #TITLE_TILE_START,d0 ; tile numbers in ROM
-;     move.w #SCROLL_A_BASE_ADDR,d3 ; d3 is row start in VRAM
-;     move.w #(17-1),d2 ; row counter
-; .RowLoop
-;     SetVramAddr d3,d1
-;     move.w #(40-1),d4 ; cell counter within row
-; .CellLoop
-;     move.w d0,vdp_data
-;     add.w #1,d0
-;     dbra d4,.CellLoop
-;     ; End of row
-;     add.w #(2*64),d3
-;     dbra d2,.RowLoop
-
-
-;     SetVramAddr d0,d1
-;     move.w #(TITLE_TILE_SIZE-1),d0
-;     move.w #TITLE_TILE_START,d1
-; .loop
-;     move.w d1,vdp_data
-;     add.w #1,d1
-;     dbra d0,.loop
+TitleGameLoop:
+    ; SCROLLING
+    move.w #H_SCROLL_TABLE_BASE_ADDR,d0
+    SetVramAddr d0,d1
+    move.w CURRENT_SCROLL_A,d0
+    move.w d0,vdp_data
+    move.w CURRENT_SCROLL_B,d0
+    move.w d0,vdp_data
+    btst.b #0,(FRAME_COUNTER+1)
+    beq.s .NoScrollIncrement
+    add.w #1,d0
+    move.w d0,CURRENT_SCROLL_B
+    ; TODO: input, etc
+.NoScrollIncrement
+.TitleWaitNewFrame:
+    cmp.b #1,NEW_FRAME
+    bne.s .TitleWaitNewFrame
+    clr.b NEW_FRAME
+    add.w #1,FRAME_COUNTER
+    jmp TitleGameLoop
 
 MainGameLoop
     ; SCROLLING
@@ -919,6 +936,9 @@ TileMap:
 
 TitleTiles:
     include art/title_320_136.asm
+
+FontTiles:
+    include art/font.asm
 
 SamuraiLeft1Sprite:
     include art/samurai/left1.asm

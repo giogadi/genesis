@@ -39,6 +39,17 @@ SetVsramAddr: macro
     SetXramAddr \1,\2,VSRAM_ADDR_CMD
     endm
 
+; d0: x
+; d1: y
+; both are gonna get clobbered.
+UtilSetScrollAWriteAt:
+    lsl.w #6,d1 ; 64 * y
+    add.w d0,d1 ; x + 64 * y
+    add.w d1,d1 ; go from tiles to bytes
+    add.w #SCROLL_A_BASE_ADDR,d1
+    SetVramAddr d1,d0
+    rts
+
 ; uses \1 and \2 registers. updates CONTROLLER
 GetControls: macro
     move.b #$40,$A10003 ; prepare controller 1 for reading part 1
