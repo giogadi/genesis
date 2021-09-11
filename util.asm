@@ -892,6 +892,58 @@ UtilDrawEnemySlashes:
 .end_loop
     rts
 
+UtilLoadEnemySprites:
+    ; set VRAM WRITE address to the start of the title tiles
+    move.w #((TITLE_TILE_START+TITLE_TILE_SIZE)*TILE_SIZE),d0
+    SetVramAddr d0,d1
+OgreSpriteLoad:
+OGRE_SPRITE_TILE_START: equ (TITLE_TILE_START+TITLE_TILE_SIZE)
+OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
+    move.w #(8*OGRE_SPRITE_TILE_SIZE)-1,d0
+    move.l #OgreSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+OgreSlashRightSpriteLoad:
+OGRE_SLASH_RIGHT_TILE_START: equ (OGRE_SPRITE_TILE_START+OGRE_SPRITE_TILE_SIZE)
+OGRE_SLASH_RIGHT_TILE_SIZE: equ (8*10)
+    move.w #(8*OGRE_SLASH_RIGHT_TILE_SIZE)-1,d0
+    move.l #OgreSlashRightSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+OgreSlashUpSpriteLoad:
+OGRE_SLASH_UP_TILE_START: equ (OGRE_SLASH_RIGHT_TILE_START+OGRE_SLASH_RIGHT_TILE_SIZE)
+OGRE_SLASH_UP_TILE_SIZE: equ (8*10)
+    move.w #(8*OGRE_SLASH_UP_TILE_SIZE)-1,d0
+    move.l #OgreSlashUpSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+DashBarSpriteLoad:
+DASH_BAR_SPRITE_TILE_START: equ (OGRE_SLASH_UP_TILE_START+OGRE_SLASH_UP_TILE_SIZE)
+DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
+    move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
+    move.l #DashBarSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
+rts
+
+UtilClearScrollA:
+    move.w #SCROLL_A_BASE_ADDR,d0
+    SetVramAddr d0,d1
+    move.w #(SCROLL_TILE_W*SCROLL_TILE_H-1),d0
+    move.w #0,d1
+.loop
+    move.w d1,vdp_data
+    dbra d0,.loop
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:

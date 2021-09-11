@@ -150,6 +150,7 @@ NEW_FRAME: so.w 1
 FRAME_COUNTER: so.w 1
 
 ; SACBRLDU
+; all data is in upper byte (exactly at CONTROLLER)
 CONTROLLER: so.w 1
 UP_BIT: equ 0
 DOWN_BIT: equ 1
@@ -200,6 +201,9 @@ N_ENEMIES: so.b (MAX_NUM_ENEMIES*N_ENEMY_SIZE)
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
+
+SCROLL_TILE_W: equ 64
+SCROLL_TILE_H: equ 32
 
     include util.asm
     include text.asm
@@ -452,17 +456,8 @@ HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
-TitleTileLoad:
-TITLE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
-TITLE_TILE_SIZE: equ (40*17)
-    move.w #(8*TITLE_TILE_SIZE)-1,d0
-    move.l #TitleTiles,a0
-.loop
-    move.l (a0)+,vdp_data
-    dbra d0,.loop
-
 FontTileLoad:
-FONT_TILE_START: equ (TITLE_TILE_START+TITLE_TILE_SIZE)
+FONT_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
 FONT_TILE_SIZE: equ 40
     move.w #(8*FONT_TILE_SIZE)-1,d0
     move.l #FontTiles,a0
@@ -470,41 +465,14 @@ FONT_TILE_SIZE: equ 40
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
-OgreSpriteLoad:
-OGRE_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
-OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
-;     move.w #(8*OGRE_SPRITE_TILE_SIZE)-1,d0
-;     move.l #OgreSprite,a0
-; .loop
-;     move.l (a0)+,vdp_data
-;     dbra d0,.loop
-
-OgreSlashRightSpriteLoad:
-OGRE_SLASH_RIGHT_TILE_START: equ (OGRE_SPRITE_TILE_START+OGRE_SPRITE_TILE_SIZE)
-OGRE_SLASH_RIGHT_TILE_SIZE: equ (8*10)
-;     move.w #(8*OGRE_SLASH_RIGHT_TILE_SIZE)-1,d0
-;     move.l #OgreSlashRightSprite,a0
-; .loop
-;     move.l (a0)+,vdp_data
-;     dbra d0,.loop
-
-OgreSlashUpSpriteLoad:
-OGRE_SLASH_UP_TILE_START: equ (OGRE_SLASH_RIGHT_TILE_START+OGRE_SLASH_RIGHT_TILE_SIZE)
-OGRE_SLASH_UP_TILE_SIZE: equ (8*10)
-;     move.w #(8*OGRE_SLASH_UP_TILE_SIZE)-1,d0
-;     move.l #OgreSlashUpSprite,a0
-; .loop
-;     move.l (a0)+,vdp_data
-;     dbra d0,.loop
-
-DashBarSpriteLoad:
-DASH_BAR_SPRITE_TILE_START: equ (OGRE_SLASH_UP_TILE_START+OGRE_SLASH_UP_TILE_SIZE)
-DASH_BAR_SPRITE_TILE_SIZE: equ (2*8)
-;     move.w #(8*DASH_BAR_SPRITE_TILE_SIZE)-1,d0
-;     move.l #DashBarSprite,a0
-; .loop
-;     move.l (a0)+,vdp_data
-;     dbra d0,.loop
+TitleTileLoad:
+TITLE_TILE_START: equ (FONT_TILE_START+FONT_TILE_SIZE)
+TITLE_TILE_SIZE: equ (40*17)
+    move.w #(8*TITLE_TILE_SIZE)-1,d0
+    move.l #TitleTiles,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
 
 ; Now we load the collision data of the above tileset in RAM
 TILE_COLLISIONS: so.w TILE_SET_SIZE
@@ -697,14 +665,30 @@ TitleGameLoop:
     beq.s .NoScrollIncrement
     add.w #1,d0
     move.w d0,CURRENT_SCROLL_B
-    ; TODO: input, etc
 .NoScrollIncrement
+    GetControls d0,d1
+    move.b CONTROLLER,d0
+    btst.l #START_BIT,d0
+    bne.s .TitleEnd
+
 .TitleWaitNewFrame:
     cmp.b #1,NEW_FRAME
     bne.s .TitleWaitNewFrame
     clr.b NEW_FRAME
     add.w #1,FRAME_COUNTER
     jmp TitleGameLoop
+.TitleEnd
+
+; Reset HScroll
+    move.w #0,CURRENT_SCROLL_A
+    move.w #H_SCROLL_TABLE_BASE_ADDR,d0
+    SetVramAddr d0,d1
+    move.w CURRENT_SCROLL_A,d0
+    move.w d0,vdp_data
+
+    jsr UtilClearScrollA
+
+    jsr UtilLoadEnemySprites
 
 MainGameLoop
     ; SCROLLING
