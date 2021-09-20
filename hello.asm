@@ -381,6 +381,7 @@ NUM_SAMURAI_TILES: equ (3*2*9) ; 3x2 sprite with 9 frames
     dbra d0,@samurai_sprite_load_loop
 
 TILE_SET_SIZE: equ 30
+;TILE_SET_SIZE: equ 86
 TILE_SET_START_INDEX: equ (SAMURAI_SPRITE_TILE_START+NUM_SAMURAI_TILES)
     move.w #(8*TILE_SET_SIZE)-1,d0
     move.l #TileSet,a0
@@ -655,8 +656,10 @@ ShowP1Start
 
 TitleGameLoop:
     ; SCROLLING
-    move.w #H_SCROLL_TABLE_BASE_ADDR,d0
-    SetVramAddr d0,d1
+    ; move.w #H_SCROLL_TABLE_BASE_ADDR,d0  ; horizontal scrolling
+    ; SetVramAddr d0,d1
+    move.w #0,d0  ; vertical scrolling
+    SetVsramAddr d0,d1
     move.w CURRENT_SCROLL_A,d0
     move.w d0,vdp_data
     move.w CURRENT_SCROLL_B,d0
@@ -691,19 +694,6 @@ TitleGameLoop:
     jsr UtilLoadEnemySprites
 
 MainGameLoop
-    ; SCROLLING
-    move.w #H_SCROLL_TABLE_BASE_ADDR,d0
-    SetVramAddr d0,d1
-    move.w CURRENT_SCROLL_A,d0
-    move.w d0,vdp_data
-    move.w CURRENT_SCROLL_B,d0
-    move.w d0,vdp_data
-    btst.b #0,(FRAME_COUNTER+1)
-    beq.s .NoScrollIncrement
-    add.w #1,d0
-    move.w d0,CURRENT_SCROLL_B
-.NoScrollIncrement
-
     tst.w HITSTOP_FRAMES_LEFT
     beq.w NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
@@ -910,6 +900,7 @@ InversePalette:
     include art/inverse_palette.asm
 
 TileSet:
+    ;include art/tiles/bridge2_tileset.asm
     include art/tileset.asm
 
 TileCollisions:

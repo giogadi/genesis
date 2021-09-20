@@ -894,10 +894,10 @@ UtilDrawEnemySlashes:
 
 UtilLoadEnemySprites:
     ; set VRAM WRITE address to the start of the title tiles
-    move.w #((TITLE_TILE_START+TITLE_TILE_SIZE)*TILE_SIZE),d0
+    move.w #(TITLE_TILE_START*TILE_SIZE),d0
     SetVramAddr d0,d1
 OgreSpriteLoad:
-OGRE_SPRITE_TILE_START: equ (TITLE_TILE_START+TITLE_TILE_SIZE)
+OGRE_SPRITE_TILE_START: equ TITLE_TILE_START
 OGRE_SPRITE_TILE_SIZE: equ (16*6*6)
     move.w #(8*OGRE_SPRITE_TILE_SIZE)-1,d0
     move.l #OgreSprite,a0
