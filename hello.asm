@@ -380,8 +380,7 @@ NUM_SAMURAI_TILES: equ (3*2*9) ; 3x2 sprite with 9 frames
     move.l (a0)+,vdp_data
     dbra d0,@samurai_sprite_load_loop
 
-TILE_SET_SIZE: equ 30
-;TILE_SET_SIZE: equ 86
+TILE_SET_SIZE: equ 150
 TILE_SET_START_INDEX: equ (SAMURAI_SPRITE_TILE_START+NUM_SAMURAI_TILES)
     move.w #(8*TILE_SET_SIZE)-1,d0
     move.l #TileSet,a0
@@ -484,21 +483,6 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w (a0)+,(a1)+
     dbra d0,.tile_collisions_load_loop
 
-; Dump the tilemap into RAM for easy access, like for collision data.
-; TODO: maybe figure out how to dedup this with the vram load below.
-; TODO: Do we even need to do this? Should we just keep it in ROM and access it directly?
-; Is that faster/slower?
-TILEMAP_WIDTH: equ 64
-TILEMAP_HEIGHT: equ 32
-TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
-TILEMAP_RAM: so.w TILEMAP_SIZE
-    move.w #TILEMAP_SIZE-1,d0
-    move.l #TileMap,a0
-    move.l #TILEMAP_RAM,a1
-@tilemap_ram_load_loop
-    move.w (a0)+,(a1)+
-    dbra d0,@tilemap_ram_load_loop
-
 LoadTileMap:
 ; Now let's set the entire scroll table to be one tile
 ; We start placing stuff in SCROLL_A_BASE_ADDR. Scroll A is currently set to 
@@ -521,6 +505,21 @@ LoadTileMap:
     add.w #TILE_SET_START_INDEX,d1
     move.w d1,vdp_data
     dbra d0,.loop
+
+; Dump the tilemap into RAM for easy access, like for collision data.
+; TODO: maybe figure out how to dedup this with the vram load below.
+; TODO: Do we even need to do this? Should we just keep it in ROM and access it directly?
+; Is that faster/slower?
+TILEMAP_WIDTH: equ 64
+TILEMAP_HEIGHT: equ 56
+TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
+TILEMAP_RAM: so.w TILEMAP_SIZE
+    move.w #TILEMAP_SIZE-1,d0
+    move.l #TileMap,a0
+    move.l #TILEMAP_RAM,a1
+@tilemap_ram_load_loop
+    move.w (a0)+,(a1)+
+    dbra d0,@tilemap_ram_load_loop
 
     ; jsr LoadEnemies
     jsr UtilLoadEnemies
@@ -900,14 +899,13 @@ InversePalette:
     include art/inverse_palette.asm
 
 TileSet:
-    ;include art/tiles/bridge2_tileset.asm
-    include art/tileset.asm
+    include art/tiles/bridge2_tileset.asm
 
 TileCollisions:
     include art/tile_collisions.asm
 
 TileMap:
-    include art/tiles/map1_large.asm
+    include art/tiles/map3.asm
 
 TitleTiles:
     include art/title_320_136.asm
