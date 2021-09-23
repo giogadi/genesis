@@ -558,27 +558,27 @@
  </tile>
  <tile id="111">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="112">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="113">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="114">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="115">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="116">
@@ -608,27 +608,27 @@
  </tile>
  <tile id="121">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="122">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="123">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="124">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="125">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="126">
@@ -663,27 +663,27 @@
  </tile>
  <tile id="132">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="133">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="134">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="135">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="136">
   <properties>
-   <property name="palette" type="int" value="1"/>
+   <property name="palette" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="137">
@@ -728,27 +728,27 @@
  </tile>
  <tile id="145">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="146">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="147">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="148">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="149">
   <properties>
-   <property name="palette" type="int" value="0"/>
+   <property name="palette" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="150">

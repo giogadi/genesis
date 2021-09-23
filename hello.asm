@@ -483,21 +483,12 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w (a0)+,(a1)+
     dbra d0,.tile_collisions_load_loop
 
-LoadTileMap:
-; Now let's set the entire scroll table to be one tile
-; We start placing stuff in SCROLL_A_BASE_ADDR. Scroll A is currently set to 
-; 64H x 32V. Scroll is laid out in row-major order, where each cell is 2 bytes. These
-; 2 bytes are the "scroll pattern name" of the cell, which is as follows:
-; pri,cp1,cp0,vf,hf,pt10,pt9,pt8
-; pt7,pt6,pt5,pt4,pt3,pt2,pt1,pt0
-; where pri is priority (TODO figure that out)
-; cp is the color palette, vf/hf reverse the layout, and pt is the "pattern number" (tile index)
-; we need to start writing vram at SCROLL_A_BASE_ADDR. To do that, we must send 4 bytes of data
-; to vdp_control:
-; with SCROLL_A_BASE_ADDR = $C000 =  %1100 0000 0000 0000
+TILEMAP_WIDTH: equ 64
+TILEMAP_HEIGHT: equ 56
+
+LoadTileMapB:
     move.w #SCROLL_B_BASE_ADDR,d0
     SetVramAddr d0,d1
-
     move.w #(64*32)-1,d0
     move.l #TileMap,a0
 .loop
@@ -506,12 +497,16 @@ LoadTileMap:
     move.w d1,vdp_data
     dbra d0,.loop
 
+    ; Enemies are at the end of the tilemap file. Enemies come after
+    ; 2 layers of width*height words
+    move.l #(TileMap+2*TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    ; jsr LoadEnemies
+    jsr UtilLoadEnemies
+
 ; Dump the tilemap into RAM for easy access, like for collision data.
 ; TODO: maybe figure out how to dedup this with the vram load below.
 ; TODO: Do we even need to do this? Should we just keep it in ROM and access it directly?
 ; Is that faster/slower?
-TILEMAP_WIDTH: equ 64
-TILEMAP_HEIGHT: equ 56
 TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
 TILEMAP_RAM: so.w TILEMAP_SIZE
     move.w #TILEMAP_SIZE-1,d0
@@ -520,9 +515,6 @@ TILEMAP_RAM: so.w TILEMAP_SIZE
 @tilemap_ram_load_loop
     move.w (a0)+,(a1)+
     dbra d0,@tilemap_ram_load_loop
-
-    ; jsr LoadEnemies
-    jsr UtilLoadEnemies
 
 ; start with default/idle animation
     jsr SetLeftIdleAnim
@@ -691,6 +683,17 @@ TitleGameLoop:
     jsr UtilClearScrollA
 
     jsr UtilLoadEnemySprites
+
+LoadTileMapA:
+    move.w #SCROLL_A_BASE_ADDR,d0
+    SetVramAddr d0,d1
+    move.w #(64*32)-1,d0
+    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+.loop
+    move.w (a0)+,d1
+    add.w #TILE_SET_START_INDEX,d1
+    move.w d1,vdp_data
+    dbra d0,.loop
 
 MainGameLoop
     tst.w HITSTOP_FRAMES_LEFT
@@ -897,6 +900,9 @@ SimplePalette:
 
 InversePalette:
     include art/inverse_palette.asm
+
+AllPalettes:
+    include art/all_palettes.asm
 
 TileSet:
     include art/tiles/bridge2_tileset.asm

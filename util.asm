@@ -619,12 +619,13 @@ LengthSqr:
     rts
 
 LoadPalettes:
-    jsr LoadNormalPaletteIntoFirst
-    move #(16-1),d0
-    move.l #InversePalette,a0
-.inverse_palette_loop
+    clr.w d0
+    SetCramAddr d0,d1
+    move #(16*4-1),d0
+    move.l #AllPalettes,a0
+.loop
     move.w (a0)+,vdp_data
-    dbra d0,.inverse_palette_loop
+    dbra d0,.loop
     rts
 
 LoadInversePaletteIntoFirst:

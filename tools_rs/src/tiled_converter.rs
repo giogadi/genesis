@@ -32,20 +32,34 @@ fn convert_with_xmltree() {
     let filename = args[1].clone();
     let tileset_filename = args[2].clone();
     let contents = std::fs::read_to_string(filename).unwrap();
-    let tiled_map = Element::parse(contents.as_bytes()).unwrap();
+    let mut tiled_map = Element::parse(contents.as_bytes()).unwrap();
     // let tileset_filename = tiled_map.get_child("tileset").unwrap().attributes.get("source").unwrap();
     let tile_palettes = get_tile_palettes(&tileset_filename);
-    let layer = tiled_map.get_child("layer").unwrap();
-    let tile_map_data = layer.get_child("data").unwrap().get_text().unwrap();
-    for t in tile_map_data.split(|c: char| c == ',' || c.is_whitespace()) {
-        if t == "" {
-            continue;
+    loop {
+        let maybe_layer = tiled_map.take_child("layer");
+        if maybe_layer.is_none() {
+            break;
         }
-        let t = t.parse::<usize>().expect(&format!("parse error: {}", t)) - 1;
-        let palette = tile_palettes[t];
-        let tile_data = (t as u16) | (palette as u16).rotate_right(3);
-        println!("\tdc.w ${:X}", tile_data);
+        let layer = maybe_layer.unwrap();
+        println!("; layer: {}", layer.attributes.get("name").unwrap());
+        let tile_map_data = layer.get_child("data").unwrap().get_text().unwrap();
+        for t in tile_map_data.split(|c: char| c == ',' || c.is_whitespace()) {
+            if t == "" {
+                continue;
+            }
+            let mut t = t.parse::<usize>().expect(&format!("parse error: {}", t));
+            if t > 0 {
+                // Tiled is 1-indexed for tiles, EXCEPT that Tiled uses the 0
+                // index for "no tile", which for us is the same as our actual
+                // 0-th tile, the transparent one.
+                t = t - 1;
+            }
+            let palette = tile_palettes[t];
+            let tile_data = (t as u16) | (palette as u16).rotate_right(3);
+            println!("\tdc.w ${:X}", tile_data);
+        }
     }
+    
     println!("; Enemies");
     let object_group = tiled_map.get_child("objectgroup");
     if object_group.is_none() {
