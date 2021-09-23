@@ -2,16 +2,21 @@ use std::env;
 
 use xmltree::Element;
 
-fn get_tile_palettes(tileset_filename: &str) -> Vec<u32> {
+struct TileData {
+    palette: u8,
+    priority: bool
+}
+fn get_tile_data(tileset_filename: &str) -> Vec<TileData> {
     let tileset_contents = std::fs::read_to_string(tileset_filename).unwrap();
     let tileset= Element::parse(tileset_contents.as_bytes()).unwrap();
-    let mut tile_palettes = Vec::<u32>::new();
+    let mut tile_palettes = Vec::<TileData>::new();
     for c in &tileset.children {
         let c_e = c.as_element().unwrap();
         if c_e.name != "tile" {
             continue;
         }
         let mut palette = 0;
+        let mut priority = false;
         for p in &c_e.get_child("properties").unwrap().children {
             let p_e = p.as_element().unwrap();
             assert!(p_e.name == "property");
@@ -19,10 +24,16 @@ fn get_tile_palettes(tileset_filename: &str) -> Vec<u32> {
             if name_attr == "palette" {
                 let value_attr = p_e.attributes.get("value").unwrap();
                 palette =
-                    value_attr.parse::<u32>().expect(&format!("palette parse error: {}", value_attr));
+                    value_attr.parse::<u8>().expect(&format!("palette parse error: {}", value_attr));
+            } else if name_attr == "priority" {
+                let value_attr = p_e.attributes.get("value").unwrap().to_lowercase();
+                if value_attr == "true" {
+                    priority = true;
+                }
             }
         }
-        tile_palettes.push(palette);
+
+        tile_palettes.push(TileData { palette: palette, priority: priority});
     }
     return tile_palettes;
 }
@@ -34,7 +45,7 @@ fn convert_with_xmltree() {
     let contents = std::fs::read_to_string(filename).unwrap();
     let mut tiled_map = Element::parse(contents.as_bytes()).unwrap();
     // let tileset_filename = tiled_map.get_child("tileset").unwrap().attributes.get("source").unwrap();
-    let tile_palettes = get_tile_palettes(&tileset_filename);
+    let tile_data = get_tile_data(&tileset_filename);
     loop {
         let maybe_layer = tiled_map.take_child("layer");
         if maybe_layer.is_none() {
@@ -54,8 +65,9 @@ fn convert_with_xmltree() {
                 // 0-th tile, the transparent one.
                 t = t - 1;
             }
-            let palette = tile_palettes[t];
-            let tile_data = (t as u16) | (palette as u16).rotate_right(3);
+            let palette = tile_data[t].palette;
+            let priority = tile_data[t].priority as u16;
+            let tile_data = (t as u16) | (palette as u16).rotate_right(3) | priority.rotate_right(1);
             println!("\tdc.w ${:X}", tile_data);
         }
     }

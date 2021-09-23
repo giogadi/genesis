@@ -3592,30 +3592,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2091
-	dc.w $2044
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2041
+	dc.w $A091
+	dc.w $A044
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A041
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -3656,30 +3656,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2042
-	dc.w $2045
-	dc.w $2046
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2043
+	dc.w $A042
+	dc.w $A045
+	dc.w $A046
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A043
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -3721,28 +3721,28 @@
 	dc.w $0
 	dc.w $0
 	dc.w $40
-	dc.w $2069
-	dc.w $2047
-	dc.w $2048
-	dc.w $2049
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $206D
-	dc.w $2059
-	dc.w $206E
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2058
-	dc.w $2059
-	dc.w $2066
-	dc.w $2067
+	dc.w $A069
+	dc.w $A047
+	dc.w $A048
+	dc.w $A049
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A06D
+	dc.w $A059
+	dc.w $A06E
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A058
+	dc.w $A059
+	dc.w $A066
+	dc.w $A067
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -3785,28 +3785,28 @@
 	dc.w $0
 	dc.w $0
 	dc.w $40
-	dc.w $206A
-	dc.w $206B
-	dc.w $2094
-	dc.w $2065
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $205A
-	dc.w $2059
-	dc.w $205B
-	dc.w $2068
+	dc.w $A06A
+	dc.w $A06B
+	dc.w $A094
+	dc.w $A065
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A05A
+	dc.w $A059
+	dc.w $A05B
+	dc.w $A068
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -3850,9 +3850,9 @@
 	dc.w $76
 	dc.w $77
 	dc.w $40
-	dc.w $204C
-	dc.w $204D
-	dc.w $204E
+	dc.w $A04C
+	dc.w $A04D
+	dc.w $A04E
 	dc.w $40
 	dc.w $73
 	dc.w $40
@@ -3867,9 +3867,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $205C
-	dc.w $205D
-	dc.w $205E
+	dc.w $A05C
+	dc.w $A05D
+	dc.w $A05E
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -3914,9 +3914,9 @@
 	dc.w $74
 	dc.w $74
 	dc.w $40
-	dc.w $204F
-	dc.w $2050
-	dc.w $2051
+	dc.w $A04F
+	dc.w $A050
+	dc.w $A051
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -3931,9 +3931,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $204A
-	dc.w $205F
-	dc.w $2060
+	dc.w $A04A
+	dc.w $A05F
+	dc.w $A060
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -3978,9 +3978,9 @@
 	dc.w $0
 	dc.w $40
 	dc.w $40
-	dc.w $2052
-	dc.w $2053
-	dc.w $2054
+	dc.w $A052
+	dc.w $A053
+	dc.w $A054
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -3995,9 +3995,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $2061
-	dc.w $2094
-	dc.w $204B
+	dc.w $A061
+	dc.w $A094
+	dc.w $A04B
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -4042,9 +4042,9 @@
 	dc.w $0
 	dc.w $40
 	dc.w $40
-	dc.w $2055
-	dc.w $2056
-	dc.w $2057
+	dc.w $A055
+	dc.w $A056
+	dc.w $A057
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -4059,9 +4059,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $2062
-	dc.w $2063
-	dc.w $2064
+	dc.w $A062
+	dc.w $A063
+	dc.w $A064
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -4295,8 +4295,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $207B
-	dc.w $207C
+	dc.w $A07B
+	dc.w $A07C
 	dc.w $0
 	dc.w $71
 	dc.w $72
@@ -4359,8 +4359,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2082
-	dc.w $207E
+	dc.w $A082
+	dc.w $A07E
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -4423,11 +4423,11 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $207D
-	dc.w $2080
+	dc.w $A07D
+	dc.w $A080
 	dc.w $0
-	dc.w $207B
-	dc.w $207C
+	dc.w $A07B
+	dc.w $A07C
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -4487,11 +4487,11 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $207F
-	dc.w $2083
+	dc.w $A07F
+	dc.w $A083
 	dc.w $0
-	dc.w $2082
-	dc.w $207E
+	dc.w $A082
+	dc.w $A07E
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -4551,11 +4551,11 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2079
-	dc.w $207A
+	dc.w $A079
+	dc.w $A07A
 	dc.w $0
-	dc.w $207D
-	dc.w $2080
+	dc.w $A07D
+	dc.w $A080
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -4615,11 +4615,11 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2081
+	dc.w $A081
 	dc.w $40
 	dc.w $0
-	dc.w $207F
-	dc.w $2083
+	dc.w $A07F
+	dc.w $A083
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -4682,8 +4682,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2079
-	dc.w $207A
+	dc.w $A079
+	dc.w $A07A
 	dc.w $0
 	dc.w $0
 	dc.w $73
@@ -4746,7 +4746,7 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2081
+	dc.w $A081
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -4936,30 +4936,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2091
-	dc.w $2044
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2041
+	dc.w $A091
+	dc.w $A044
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A041
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -5000,30 +5000,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2042
-	dc.w $2045
-	dc.w $2046
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2043
+	dc.w $A042
+	dc.w $A045
+	dc.w $A046
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A043
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -5065,92 +5065,28 @@
 	dc.w $0
 	dc.w $0
 	dc.w $40
-	dc.w $2069
-	dc.w $2047
-	dc.w $2048
-	dc.w $2049
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $206D
-	dc.w $2059
-	dc.w $206E
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2058
-	dc.w $2059
-	dc.w $2066
-	dc.w $2067
-	dc.w $40
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $40
-	dc.w $206A
-	dc.w $206B
-	dc.w $2094
-	dc.w $2065
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $205A
-	dc.w $2059
-	dc.w $205B
-	dc.w $2068
+	dc.w $A069
+	dc.w $A047
+	dc.w $A048
+	dc.w $A049
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A06D
+	dc.w $A059
+	dc.w $A06E
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A058
+	dc.w $A059
+	dc.w $A066
+	dc.w $A067
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -5193,28 +5129,28 @@
 	dc.w $0
 	dc.w $0
 	dc.w $40
-	dc.w $40
-	dc.w $204C
-	dc.w $204D
-	dc.w $204E
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $40
-	dc.w $205C
-	dc.w $205D
-	dc.w $205E
-	dc.w $40
+	dc.w $A06A
+	dc.w $A06B
+	dc.w $A094
+	dc.w $A065
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A05A
+	dc.w $A059
+	dc.w $A05B
+	dc.w $A068
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -5258,9 +5194,9 @@
 	dc.w $0
 	dc.w $40
 	dc.w $40
-	dc.w $204F
-	dc.w $2050
-	dc.w $2051
+	dc.w $A04C
+	dc.w $A04D
+	dc.w $A04E
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -5275,9 +5211,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $204A
-	dc.w $205F
-	dc.w $2060
+	dc.w $A05C
+	dc.w $A05D
+	dc.w $A05E
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -5322,9 +5258,73 @@
 	dc.w $0
 	dc.w $40
 	dc.w $40
-	dc.w $2052
-	dc.w $2053
-	dc.w $2054
+	dc.w $A04F
+	dc.w $A050
+	dc.w $A051
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $40
+	dc.w $A04A
+	dc.w $A05F
+	dc.w $A060
+	dc.w $40
+	dc.w $40
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $40
+	dc.w $40
+	dc.w $A052
+	dc.w $A053
+	dc.w $A054
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -5339,9 +5339,9 @@
 	dc.w $75
 	dc.w $40
 	dc.w $40
-	dc.w $2061
-	dc.w $2094
-	dc.w $204B
+	dc.w $A061
+	dc.w $A094
+	dc.w $A04B
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -5386,9 +5386,9 @@
 	dc.w $0
 	dc.w $40
 	dc.w $40
-	dc.w $2055
-	dc.w $2056
-	dc.w $2057
+	dc.w $A055
+	dc.w $A056
+	dc.w $A057
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -5403,9 +5403,9 @@
 	dc.w $74
 	dc.w $76
 	dc.w $40
-	dc.w $2062
-	dc.w $2063
-	dc.w $2064
+	dc.w $A062
+	dc.w $A063
+	dc.w $A064
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -6046,8 +6046,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $207B
-	dc.w $207C
+	dc.w $A07B
+	dc.w $A07C
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6110,8 +6110,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2082
-	dc.w $207E
+	dc.w $A082
+	dc.w $A07E
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6174,8 +6174,8 @@
 	dc.w $75
 	dc.w $0
 	dc.w $0
-	dc.w $207D
-	dc.w $2080
+	dc.w $A07D
+	dc.w $A080
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6238,8 +6238,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $207F
-	dc.w $2083
+	dc.w $A07F
+	dc.w $A083
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6302,8 +6302,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2079
-	dc.w $207A
+	dc.w $A079
+	dc.w $A07A
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6366,7 +6366,7 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2081
+	dc.w $A081
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -6600,30 +6600,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2091
-	dc.w $2044
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2092
-	dc.w $2041
+	dc.w $A091
+	dc.w $A044
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A092
+	dc.w $A041
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6664,30 +6664,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $2042
-	dc.w $2045
-	dc.w $2046
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2093
-	dc.w $2043
+	dc.w $A042
+	dc.w $A045
+	dc.w $A046
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A093
+	dc.w $A043
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -6729,92 +6729,28 @@
 	dc.w $0
 	dc.w $0
 	dc.w $40
-	dc.w $2069
-	dc.w $2047
-	dc.w $2048
-	dc.w $2049
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $206D
-	dc.w $2059
-	dc.w $206E
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2095
-	dc.w $2058
-	dc.w $2059
-	dc.w $2066
-	dc.w $2067
-	dc.w $40
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $40
-	dc.w $206A
-	dc.w $206B
-	dc.w $2094
-	dc.w $2065
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $206C
-	dc.w $205A
-	dc.w $2059
-	dc.w $205B
-	dc.w $2068
+	dc.w $A069
+	dc.w $A047
+	dc.w $A048
+	dc.w $A049
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A06D
+	dc.w $A059
+	dc.w $A06E
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A095
+	dc.w $A058
+	dc.w $A059
+	dc.w $A066
+	dc.w $A067
 	dc.w $40
 	dc.w $0
 	dc.w $0
@@ -6857,10 +6793,74 @@
 	dc.w $0
 	dc.w $0
 	dc.w $40
+	dc.w $A06A
+	dc.w $A06B
+	dc.w $A094
+	dc.w $A065
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A06C
+	dc.w $A05A
+	dc.w $A059
+	dc.w $A05B
+	dc.w $A068
 	dc.w $40
-	dc.w $204C
-	dc.w $204D
-	dc.w $204E
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $40
+	dc.w $40
+	dc.w $A04C
+	dc.w $A04D
+	dc.w $A04E
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -6875,9 +6875,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $205C
-	dc.w $205D
-	dc.w $205E
+	dc.w $A05C
+	dc.w $A05D
+	dc.w $A05E
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -6922,9 +6922,9 @@
 	dc.w $6F
 	dc.w $70
 	dc.w $40
-	dc.w $204F
-	dc.w $2050
-	dc.w $2051
+	dc.w $A04F
+	dc.w $A050
+	dc.w $A051
 	dc.w $40
 	dc.w $76
 	dc.w $40
@@ -6939,9 +6939,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $204A
-	dc.w $205F
-	dc.w $2060
+	dc.w $A04A
+	dc.w $A05F
+	dc.w $A060
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -6986,9 +6986,9 @@
 	dc.w $71
 	dc.w $72
 	dc.w $40
-	dc.w $2052
-	dc.w $2053
-	dc.w $2054
+	dc.w $A052
+	dc.w $A053
+	dc.w $A054
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -7003,9 +7003,9 @@
 	dc.w $40
 	dc.w $40
 	dc.w $40
-	dc.w $2061
-	dc.w $2094
-	dc.w $204B
+	dc.w $A061
+	dc.w $A094
+	dc.w $A04B
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -7050,9 +7050,9 @@
 	dc.w $0
 	dc.w $40
 	dc.w $40
-	dc.w $2055
-	dc.w $2056
-	dc.w $2057
+	dc.w $A055
+	dc.w $A056
+	dc.w $A057
 	dc.w $40
 	dc.w $40
 	dc.w $40
@@ -7067,9 +7067,9 @@
 	dc.w $40
 	dc.w $75
 	dc.w $40
-	dc.w $2062
-	dc.w $2063
-	dc.w $2064
+	dc.w $A062
+	dc.w $A063
+	dc.w $A064
 	dc.w $40
 	dc.w $40
 	dc.w $0
@@ -7169,8 +7169,4 @@
 	dc.w $0
 	dc.w $0
 ; Enemies
-;	dc.w 0
-	dc.w 3
-	dc.w 2,160,112
-	dc.w 1,112,64
-	dc.w 0,168,48
+	dc.w 0
