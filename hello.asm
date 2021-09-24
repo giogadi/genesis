@@ -485,6 +485,7 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
 
 TILEMAP_WIDTH: equ 64
 TILEMAP_HEIGHT: equ 56
+TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
 
 LoadTileMapB:
     move.w #SCROLL_B_BASE_ADDR,d0
@@ -502,19 +503,6 @@ LoadTileMapB:
     move.l #(TileMap+2*TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
     ; jsr LoadEnemies
     jsr UtilLoadEnemies
-
-; Dump the tilemap into RAM for easy access, like for collision data.
-; TODO: maybe figure out how to dedup this with the vram load below.
-; TODO: Do we even need to do this? Should we just keep it in ROM and access it directly?
-; Is that faster/slower?
-TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
-TILEMAP_RAM: so.w TILEMAP_SIZE
-    move.w #TILEMAP_SIZE-1,d0
-    move.l #TileMap,a0
-    move.l #TILEMAP_RAM,a1
-@tilemap_ram_load_loop
-    move.w (a0)+,(a1)+
-    dbra d0,@tilemap_ram_load_loop
 
 ; start with default/idle animation
     jsr SetLeftIdleAnim
@@ -745,6 +733,10 @@ NoHitstop
     ; check collisions
     move.w d4,d0
     move.w d5,d1
+    ; clear out top words of each register, since CheckCollisions assumes we could potentially
+    ; use the entire register for a tile index and we're only using words above.
+    and.l #$0000FFFF,d0
+    and.l #$0000FFFF,d1
     jsr CheckCollisions
     ; clr.w d0 ; disable collision result (debug)
     tst.w d0
@@ -908,7 +900,7 @@ TileSet:
     include art/tiles/bridge2_tileset.asm
 
 TileCollisions:
-    include art/tile_collisions.asm
+    include art/tiles/bridge2_tileset_collisions.asm
 
 TileMap:
     include art/tiles/map3.asm

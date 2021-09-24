@@ -160,38 +160,62 @@ fm_test_wait_loop
     rts
 
 ; tile idx in d0
+; checks both layers of tiles.
 DoesTileCollide:
-    move.l #TILEMAP_RAM,a0
+    ; push original ix on stack for use later
+    move.w d0,-(sp)
+    move.l #TileMap,a0
     ; need to move d0 words forward, which is the same as 2*d0 bytes.
-    lsl.w #1,d0
-    add.w d0,a0
+    add.l d0,d0
+    add.l d0,a0
     move.w (a0),d0
+    and.l #$000007FF,d0 ; only keep the tile index part
     ; now d0 holds the index into TileCollisions we need to check.
     move.l #TILE_COLLISIONS,a0
     ; need to move d0 words forward, which is the same as 2*d0 bytes.
-    lsl.w #1,d0
+    add.l d0,d0
     add.w d0,a0
     ; now load in the collision info to d0
     move.w (a0),d0
+    bne.s .end  ; if we found a collision, exit here
+    ; Now look for a collision in the other layer
+    clr.l d0
+    move.w (sp),d0 ; move tile ix back into d0
+    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    ; need to move d0 words forward, which is the same as 2*d0 bytes.
+    add.l d0,d0
+    add.l d0,a0
+    move.w (a0),d0
+    and.l #$000007FF,d0 ; only keep the tile index part
+    ; now d0 holds the index into TileCollisions we need to check.
+    move.l #TILE_COLLISIONS,a0
+    ; need to move d0 words forward, which is the same as 2*d0 bytes.
+    add.l d0,d0
+    add.w d0,a0
+    ; now load in the collision info to d0
+    move.w (a0),d0
+.end
+    add.l #2,sp
     rts
 
 ; x in d0, y in d1. outputs result in d0. 0 if collision-free, 1 if collision
+; Assume that x and y can be longs.
 CheckCollisions:
     ; get the tile that CURRENT_X,CURRENT_Y corresponds to.
     ; first we have translate such that (0,0) corresponds to top-left of tilemap.
-    sub.w #MIN_DISPLAY_X,d0
-    sub.w #MIN_DISPLAY_Y,d1
+    sub.l #MIN_DISPLAY_X,d0
+    sub.l #MIN_DISPLAY_Y,d1
     ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
-    lsr.w #3,d0 ; divide by 8 (tile width)
-    lsr.w #3,d1
+    lsr.l #3,d0 ; divide by 8 (tile width)
+    lsr.l #3,d1
     ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index. Oh lord,
     ; this means querying the tilemap at this location to get the tileset value, and then querying
     ; the collision data for that tileset value. omg
     ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
     ;mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
-    lsl.w #6,d1 ; 64 tiles per row, so multiply by 64 by left-shifting 6 times
-    add.w d1,d0
-    move.w d0,d1
+    lsl.l #6,d1 ; 64 tiles per row, so multiply by 64 by left-shifting 6 times
+    add.l d1,d0
+    move.l d0,d1
     ; d0 and d1 now both hold our tile index. We gotta check this tile and the neighboring tiles that the hero
     ; is also touching. Because the hero position is on the top-left corner of the sprite, we only
     ; need to check right and down. So we should *always* check 6 cells in the 2x3 area of the sprite.
@@ -199,43 +223,43 @@ CheckCollisions:
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0 ; put tile index back in d0
-    add.w #1,d0 ; (1,0)
+    move.l d1,d0 ; put tile index back in d0
+    add.l #1,d0 ; (1,0)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #2,d0 ; (2,0)
+    move.l d1,d0
+    add.l #2,d0 ; (2,0)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #TILEMAP_WIDTH,d0 ; (0,1)
+    move.l d1,d0
+    add.l #TILEMAP_WIDTH,d0 ; (0,1)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #(TILEMAP_WIDTH+1),d0 ; (1,1)
+    move.l d1,d0
+    add.l #(TILEMAP_WIDTH+1),d0 ; (1,1)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #(TILEMAP_WIDTH+2),d0 ; (2,1)
+    move.l d1,d0
+    add.l #(TILEMAP_WIDTH+2),d0 ; (2,1)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #(2*TILEMAP_WIDTH),d0 ; (0,2)
+    move.l d1,d0
+    add.l #(2*TILEMAP_WIDTH),d0 ; (0,2)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #(2*TILEMAP_WIDTH+1),d0 ; (1,2)
+    move.l d1,d0
+    add.l #(2*TILEMAP_WIDTH+1),d0 ; (1,2)
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.w d1,d0
-    add.w #(2*TILEMAP_WIDTH+2),d0 ; (2,2)
+    move.l d1,d0
+    add.l #(2*TILEMAP_WIDTH+2),d0 ; (2,2)
     jsr DoesTileCollide
     tst.w d0
     ;bne.s .CheckCollisionsDone
