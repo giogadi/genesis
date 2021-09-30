@@ -198,6 +198,7 @@ DoesTileCollide:
     add.l #2,sp
     rts
 
+; NOTE: THIS ASSUMES THAT TILEMAP_WIDTH == 64!!!!
 ; x in d0, y in d1. outputs result in d0. 0 if collision-free, 1 if collision
 ; Assume that x and y can be longs.
 CheckCollisions:
@@ -219,50 +220,24 @@ CheckCollisions:
     ; d0 and d1 now both hold our tile index. We gotta check this tile and the neighboring tiles that the hero
     ; is also touching. Because the hero position is on the top-left corner of the sprite, we only
     ; need to check right and down. So we should *always* check 6 cells in the 2x3 area of the sprite.
-    ; we'll also check the next column/row over for offset within the top-left cell.
+    ; we'll also check the next column/row over for offset within the top-left cell, so that makes it
+    ; 3x4.
+    move.w #(HERO_WIDTH_IN_TILES+1-1),d2
+    move.w #(HERO_HEIGHT_IN_TILES+1-1),d3
+.row_loop
+.column_loop
     jsr DoesTileCollide
     tst.w d0
     bne.s .CheckCollisionsDone
-    move.l d1,d0 ; put tile index back in d0
-    add.l #1,d0 ; (1,0)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
+    add.l #1,d1
     move.l d1,d0
-    add.l #2,d0 ; (2,0)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
+    dbra d2,.column_loop
+    move.w #(HERO_WIDTH_IN_TILES+1-1),d2
+    add.l #(TILEMAP_WIDTH-(HERO_WIDTH_IN_TILES+1)),d1
     move.l d1,d0
-    add.l #TILEMAP_WIDTH,d0 ; (0,1)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
-    move.l d1,d0
-    add.l #(TILEMAP_WIDTH+1),d0 ; (1,1)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
-    move.l d1,d0
-    add.l #(TILEMAP_WIDTH+2),d0 ; (2,1)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
-    move.l d1,d0
-    add.l #(2*TILEMAP_WIDTH),d0 ; (0,2)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
-    move.l d1,d0
-    add.l #(2*TILEMAP_WIDTH+1),d0 ; (1,2)
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
-    move.l d1,d0
-    add.l #(2*TILEMAP_WIDTH+2),d0 ; (2,2)
-    jsr DoesTileCollide
-    tst.w d0
-    ;bne.s .CheckCollisionsDone
+    dbra d3,.row_loop
+    ; After the loop, if no collisions then clear d0
+    clr.b d0
 .CheckCollisionsDone:
     rts
 

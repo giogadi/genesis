@@ -165,8 +165,10 @@ CURRENT_X: so.l 1
 CURRENT_Y: so.l 1
 NEW_X: so.l 1
 NEW_Y: so.l 1
-HERO_WIDTH: equ 16
-HERO_HEIGHT: equ 24
+HERO_WIDTH_IN_TILES: equ 2
+HERO_HEIGHT_IN_TILES: equ 3
+HERO_WIDTH: equ HERO_WIDTH_IN_TILES*8
+HERO_HEIGHT: equ HERO_HEIGHT_IN_TILES*8
 
 MIN_DISPLAY_X: equ 128
 MAX_DISPLAY_X: equ 447
@@ -738,8 +740,8 @@ NoHitstop
     and.l #$0000FFFF,d0
     and.l #$0000FFFF,d1
     jsr CheckCollisions
-    ; clr.w d0 ; disable collision result (debug)
-    tst.w d0
+    ; clr.b d0 ; disable collision result (debug)
+    tst.b d0
     bne.s .skipPositionUpdate
 
     ; update sprite position
