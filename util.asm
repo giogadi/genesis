@@ -944,6 +944,106 @@ UtilClearScrollA:
     dbra d0,.loop
     rts
 
+UtilUpdateCamera:
+; move camera, update scroll vars, and do tile fill-in
+    ; get previous tile position of camera
+    move.w CAMERA_TOP_Y,d0
+    move.w d0,d1 ; copy to d1
+    ; update camera position, then check if new position requires tile fill-in
+    ; add.w #1,d1
+    ; add.w #1,CAMERA_TOP_Y
+    ; ; TODO: should we wrap these?
+    ; add.w #1,CURRENT_VSCROLL_A
+    ; add.w #1,CURRENT_VSCROLL_B
+    sub.w #1,d1
+    sub.w #1,CAMERA_TOP_Y
+    ; TODO: should we wrap these?
+    sub.w #1,CURRENT_VSCROLL_A
+    sub.w #1,CURRENT_VSCROLL_B
+    lsr.w #3,d0 ; d0: previous camera world row in tiles
+    lsr.w #3,d1 ; d1: new camera world row in tiles
+    cmp.w d0,d1
+    beq .AfterTileScroll
+    bgt .TileScrollDown
+    ; Tile Scroll Up
+    ; Get TileMap offset and put it in d3. two rows up from prev pos
+    move.w d0,d3 ; row ix
+    and.l #$0000FFFF,d3
+    sub.w #2,d3 ; HOWDY
+    lsl.w #7,d3 ; multiply by 64*2 to get tile offset in bytes
+    move.w #SCROLL_B_BASE_ADDR,d0
+    add.w NEXT_UP_SCROLL_VRAM_OFFSET,d0 ; HOWDY
+    SetVramAddr d0,d1
+    move.w #(64-1),d0
+    move.l #TileMap,a0
+    add.l d3,a0
+.UpScrollBLoop
+    move.w (a0)+,d1
+    add.w #TILE_SET_START_INDEX,d1
+    move.w d1,vdp_data
+    dbra d0,.UpScrollBLoop
+    ; Now prepare A scroll
+    move.w #SCROLL_A_BASE_ADDR,d0
+    add.w NEXT_UP_SCROLL_VRAM_OFFSET,d0 ; HOWDY
+    SetVramAddr d0,d1
+    move.w #(64-1),d0
+    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    add.l d3,a0
+.UpScrollALoop
+    move.w (a0)+,d1
+    add.w #TILE_SET_START_INDEX,d1
+    move.w d1,vdp_data
+    dbra d0,.UpScrollALoop
+    ; Update next VRAM offsets, wrapping as necessary.
+    sub.w #(64*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
+    and.w #$0FFF,NEXT_DOWN_SCROLL_VRAM_OFFSET
+    sub.w #(64*2),NEXT_UP_SCROLL_VRAM_OFFSET
+    and.w #$0FFF,NEXT_UP_SCROLL_VRAM_OFFSET
+    bra .AfterTileScroll
+
+.TileScrollDown
+    ; Get TileMap offset and put it in d3. one scroll field down from prev cam top
+    move.w d0,d3 ; row ix
+    and.l #$0000FFFF,d3
+    add.w #29,d3 ; one visible playfield plus 2 (bottom edge of scroll from current camera top)
+    lsl.w #7,d3 ; multiply by 64*2 to get tile offset in bytes
+    move.w #SCROLL_B_BASE_ADDR,d0
+    add.w NEXT_DOWN_SCROLL_VRAM_OFFSET,d0
+    SetVramAddr d0,d1
+    move.w #(64-1),d0
+    move.l #TileMap,a0
+    add.l d3,a0
+.DownScrollBLoop
+    move.w (a0)+,d1
+    add.w #TILE_SET_START_INDEX,d1
+    move.w d1,vdp_data
+    dbra d0,.DownScrollBLoop
+    move.w #SCROLL_A_BASE_ADDR,d0
+    add.w NEXT_DOWN_SCROLL_VRAM_OFFSET,d0
+    SetVramAddr d0,d1
+    move.w #(64-1),d0
+    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    add.l d3,a0
+.DownScrollALoop
+    move.w (a0)+,d1
+    add.w #TILE_SET_START_INDEX,d1
+    move.w d1,vdp_data
+    dbra d0,.DownScrollALoop
+    ; Update next VRAM offsets, wrapping as necessary.
+    add.w #(64*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
+    and.w #$0FFF,NEXT_DOWN_SCROLL_VRAM_OFFSET
+    add.w #(64*2),NEXT_UP_SCROLL_VRAM_OFFSET
+    and.w #$0FFF,NEXT_UP_SCROLL_VRAM_OFFSET
+.AfterTileScroll
+    ; actually do vscroll
+    move.w #0,d0
+    SetVsramAddr d0,d1
+    move.w CURRENT_VSCROLL_A,d0
+    move.w d0,vdp_data
+    move.w CURRENT_VSCROLL_B,d0
+    move.w d0,vdp_data
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:
