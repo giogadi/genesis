@@ -948,18 +948,30 @@ UtilUpdateCamera:
 ; move camera, update scroll vars, and do tile fill-in
     ; get previous tile position of camera
     move.w CAMERA_TOP_Y,d0
-    move.w d0,d1 ; copy to d1
-    ; update camera position, then check if new position requires tile fill-in
-    ; add.w #1,d1
-    ; add.w #1,CAMERA_TOP_Y
-    ; ; TODO: should we wrap these?
-    ; add.w #1,CURRENT_VSCROLL_A
-    ; add.w #1,CURRENT_VSCROLL_B
-    sub.w #1,d1
-    sub.w #1,CAMERA_TOP_Y
+    ; populate new camera direction, then decide whether to accept it
+    ; sp-1 is cameraMotionX
+    ; d7-2 is cameraMotionY
+    move.w #0,-(sp)
+    move.w #-1,-(sp)
+    move.w (sp)+,d7
+    move.w (sp)+,d6
+    ; cameraMotionX/Y in d6/d7
+    move.w d0,d1 ; copy current camera-top-y to d1
+    add.w d7,d1 ; new camera position in d0
+    ; check if we want to move in that direction
+    cmp.w #(2*8),d1 ; if new position is above top of map (with 2 rows of padding), return
+    bge.s .AfterTopCheck
+    rts
+.AfterTopCheck
+    cmp.w #((TILEMAP_HEIGHT-28)*8),d1 ; if camera-bottom goes below tilemap bottom, return
+    ble.s .AfterBottomCheck
+    rts
+.AfterBottomCheck
+    add.w d7,CAMERA_TOP_Y
     ; TODO: should we wrap these?
-    sub.w #1,CURRENT_VSCROLL_A
-    sub.w #1,CURRENT_VSCROLL_B
+    add.w d7,CURRENT_VSCROLL_A
+    add.w d7,CURRENT_VSCROLL_B
+
     lsr.w #3,d0 ; d0: previous camera world row in tiles
     lsr.w #3,d1 ; d1: new camera world row in tiles
     cmp.w d0,d1

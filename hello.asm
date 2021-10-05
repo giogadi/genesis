@@ -486,7 +486,7 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
     dbra d0,.tile_collisions_load_loop
 
 TILEMAP_WIDTH: equ 64
-TILEMAP_HEIGHT: equ 56
+TILEMAP_HEIGHT: equ 58
 TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
 
 LoadTileMapB:
@@ -698,8 +698,8 @@ TitleGameLoop:
     jsr UtilLoadEnemySprites
 
 CAMERA_TOP_Y: so.w 1
-    move.w #20*8,CAMERA_TOP_Y
-    ;move.w #0*8,CAMERA_TOP_Y
+    ;move.w #2*8,CAMERA_TOP_Y
+    move.w #30*8,CAMERA_TOP_Y
 NEXT_DOWN_SCROLL_VRAM_OFFSET: so.w 1
     move.w #31*64*2,NEXT_DOWN_SCROLL_VRAM_OFFSET
 NEXT_UP_SCROLL_VRAM_OFFSET: so.w 1 
