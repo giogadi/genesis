@@ -204,6 +204,8 @@ N_ENEMIES: so.b (MAX_NUM_ENEMIES*N_ENEMY_SIZE)
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
 
+VISIBLE_TILE_W: equ 40
+VISIBLE_TILE_H: equ 28
 SCROLL_TILE_W: equ 64
 SCROLL_TILE_H: equ 32
 
@@ -747,8 +749,6 @@ MainGameLoop
     move.w CURRENT_HSCROLL_B,d0
     move.w d0,vdp_data
 
-    jsr UtilUpdateCamera
-
     tst.w HITSTOP_FRAMES_LEFT
     beq.w NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
@@ -771,7 +771,6 @@ NoHitstop
     sub.w #1,HERO_DASH_COOLDOWN_FRAMES_LEFT
 .AfterCooldownUpdate
 
-
     jsr HeroStateUpdate
 
 .CheckNewPosition ; new position is in NEW_X,NEW_Y
@@ -789,9 +788,9 @@ NoHitstop
 
     ; ; clamp sprite y
     move.w d5,d0
-    move.w #MIN_DISPLAY_Y,d1
+    move.w #0,d1
     jsr ClampMin
-    move.w #MAX_DISPLAY_Y-24,d1 ; -24 is to account for sprite's origin being at top-left
+    move.w #(TILEMAP_HEIGHT*8-HERO_HEIGHT),d1
     jsr ClampMax
     move.w d0,d5
 
@@ -803,7 +802,7 @@ NoHitstop
     and.l #$0000FFFF,d0
     and.l #$0000FFFF,d1
     jsr CheckCollisions
-    ; clr.b d0 ; disable collision result (debug)
+    clr.b d0 ; disable collision result (debug)
     tst.b d0
     bne.s .skipPositionUpdate
 
@@ -814,6 +813,8 @@ NoHitstop
     ; move.l NEW_Y,CURRENT_Y
 
 .skipPositionUpdate
+
+    jsr UtilUpdateCamera
 
     clr.l d0
     move.w NEW_ANIM_STATE,d0 ; move new anim state to d0

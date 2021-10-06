@@ -393,7 +393,10 @@ DrawHero:
     beq.s .DoDraw
     rts
 .DoDraw
-    move.w CURRENT_Y,vdp_data
+    move.w CURRENT_Y,d0
+    sub.w CAMERA_TOP_Y,d0
+    add.w #MIN_DISPLAY_Y,d0
+    move.w d0,vdp_data
     move.w #$0600,d0 ; 2x3
     add.w #1,SPRITE_COUNTER
     or.w SPRITE_COUNTER,d0
@@ -944,18 +947,40 @@ UtilClearScrollA:
     dbra d0,.loop
     rts
 
+; 4(sp): cameraMotionX out-param
+; 6(sp): cameraMotionY out-param
+UtilGetCameraMotion:
+    ; Constantly trying to position camera to center on hero.
+    move.w CAMERA_TOP_Y,d0
+    add.w #(VISIBLE_TILE_H*8/2),d0 ; camera center
+    move.w CURRENT_Y,d1
+    add.w #(HERO_HEIGHT/2),d1 ; hero center
+    sub.w d0,d1 ; d1 = hero - camera
+    beq .end
+    blt .Less
+    move.w #1,d1
+    bra .end
+.Less
+    move.w #-1,d1
+.end
+    move.w #0,4(sp)
+    move.w d1,6(sp)
+    rts
+
 UtilUpdateCamera:
 ; move camera, update scroll vars, and do tile fill-in
+    ; populate new camera direction, then decide whether to accept it
+    ; sp-2 is cameraMotionX
+    ; sp-4 is cameraMotionY
+    sub.l #4,sp ; push 2 words onto stack for out-params
+    jsr UtilGetCameraMotion
+    ; move.w #0,-(sp)
+    ; move.w #0,-(sp)
+    move.w (sp)+,d6
+    move.w (sp)+,d7
+    ; cameraMotionX/Y in d6/d7
     ; get previous tile position of camera
     move.w CAMERA_TOP_Y,d0
-    ; populate new camera direction, then decide whether to accept it
-    ; sp-1 is cameraMotionX
-    ; d7-2 is cameraMotionY
-    move.w #0,-(sp)
-    move.w #-1,-(sp)
-    move.w (sp)+,d7
-    move.w (sp)+,d6
-    ; cameraMotionX/Y in d6/d7
     move.w d0,d1 ; copy current camera-top-y to d1
     add.w d7,d1 ; new camera position in d0
     ; check if we want to move in that direction
