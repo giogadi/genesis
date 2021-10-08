@@ -488,7 +488,7 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
     dbra d0,.tile_collisions_load_loop
 
 TILEMAP_WIDTH: equ 64
-TILEMAP_HEIGHT: equ 58
+TILEMAP_HEIGHT: equ 89
 TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
 
 LoadTileMapB:
@@ -521,7 +521,7 @@ __main
     ;jsr @test_psg
 
     move.w #(20*8),CURRENT_X
-    move.w #(TILEMAP_HEIGHT*8/2),CURRENT_Y
+    move.w #(85*8),CURRENT_Y
 
 LEFT_IDLE_STATE: equ 0
 RIGHT_IDLE_STATE: equ 1
@@ -701,7 +701,7 @@ TitleGameLoop:
 
 CAMERA_TOP_Y: so.w 1
     ;move.w #2*8,CAMERA_TOP_Y
-    move.w #30*8,CAMERA_TOP_Y
+    move.w #((TILEMAP_HEIGHT-VISIBLE_TILE_H)*8),CAMERA_TOP_Y
 NEXT_DOWN_SCROLL_VRAM_OFFSET: so.w 1
     move.w #31*64*2,NEXT_DOWN_SCROLL_VRAM_OFFSET
 NEXT_UP_SCROLL_VRAM_OFFSET: so.w 1 

@@ -704,12 +704,14 @@
  </tile>
  <tile id="121">
   <properties>
+   <property name="collision" type="bool" value="true"/>
    <property name="palette" type="int" value="1"/>
    <property name="priority" type="bool" value="true"/>
   </properties>
  </tile>
  <tile id="122">
   <properties>
+   <property name="collision" type="bool" value="true"/>
    <property name="palette" type="int" value="1"/>
    <property name="priority" type="bool" value="true"/>
   </properties>
