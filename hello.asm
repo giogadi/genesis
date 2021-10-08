@@ -520,8 +520,8 @@ __main
 ; PSG test.
     ;jsr @test_psg
 
-    move.w #287,CURRENT_X
-    move.w #310,CURRENT_Y
+    move.w #(20*8),CURRENT_X
+    move.w #(TILEMAP_HEIGHT*8/2),CURRENT_Y
 
 LEFT_IDLE_STATE: equ 0
 RIGHT_IDLE_STATE: equ 1
@@ -780,9 +780,9 @@ NoHitstop
     ; TODO: we should probably clamp the subpixel part of position as well
     ; clamp sprite x
     move.w d4,d0
-    move.w #MIN_DISPLAY_X,d1
+    move.w #0,d1
     jsr ClampMin
-    move.w #MAX_DISPLAY_X,d1
+    move.w #(TILEMAP_WIDTH*8-HERO_WIDTH),d1
     jsr ClampMax
     move.w d0,d4
 
@@ -802,7 +802,7 @@ NoHitstop
     and.l #$0000FFFF,d0
     and.l #$0000FFFF,d1
     jsr CheckCollisions
-    clr.b d0 ; disable collision result (debug)
+    ;clr.b d0 ; disable collision result (debug)
     tst.b d0
     bne.s .skipPositionUpdate
 

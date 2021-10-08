@@ -203,9 +203,6 @@ DoesTileCollide:
 ; Assume that x and y can be longs.
 CheckCollisions:
     ; get the tile that CURRENT_X,CURRENT_Y corresponds to.
-    ; first we have translate such that (0,0) corresponds to top-left of tilemap.
-    sub.l #MIN_DISPLAY_X,d0
-    sub.l #MIN_DISPLAY_Y,d1
     ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
     lsr.l #3,d0 ; divide by 8 (tile width)
     lsr.l #3,d1
@@ -408,7 +405,9 @@ DrawHero:
     ror.w #3,d1 ; put palette in position
     or.w d1,d0 ; add palette to d0
     move.w d0,vdp_data
-    move.w CURRENT_X,vdp_data
+    move.w CURRENT_X,d0
+    add.w #MIN_DISPLAY_X,d0
+    move.w d0,vdp_data
     rts
 
 DrawDashBar:
