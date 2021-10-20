@@ -181,6 +181,76 @@ ButtEnemyCooldownUpdate:
     add.l #5000,(a4)
     rts
 
+; a2: enemy struct start
+; d2: don't touch
+ButtDrawEnemy:
+    move.w N_ENEMY_STATE(a2),d0
+    cmp.w #ENEMY_STATE_DYING,d0
+    beq.s .DrawDying
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d0 ; 2x2
+    or.w SPRITE_COUNTER,d0 ; link to next sprite
+    move.w N_ENEMY_Y(a2),d1
+    sub.w CAMERA_TOP_Y,d1
+    add.w #MIN_DISPLAY_Y,d1
+    move.w d1,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d0,LAST_LINK_WRITTEN
+    move.w #BUTT_SPRITE_TILE_START,vdp_data
+    move.w N_ENEMY_X(a2),d1
+    add.w #MIN_DISPLAY_X,d1
+    move.w d1,vdp_data ; x
+    bra.w .End
+.DrawDying
+    ; only draw every other frame for a blinking effect
+    move.w N_ENEMY_STATE_FRAMES_LEFT(a2),d0
+    btst.l #0,d0
+    bne .End
+    ; gonna scale slice anim by dying frames left.
+    move.w #ENEMY_DYING_FRAMES,d1
+    sub.w d0,d1 ; number of frames since enemy started dying in d1
+    ; left slice first. offset a few pixels down-left
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d0 ; 2x2
+    or.w SPRITE_COUNTER,d0
+    move.w N_ENEMY_Y(a2),d3 ; y
+    sub.w CAMERA_TOP_Y,d3
+    add.w #MIN_DISPLAY_Y,d3
+    add.w d1,d3 ; y +=
+    move.w d3,vdp_data
+    move.w d0,vdp_data
+    move.w d0,LAST_LINK_WRITTEN
+    move.w #BUTT_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
+    move.w N_ENEMY_X(a2),d3 ; x
+    add.w #MIN_DISPLAY_X,d3
+    sub.w d1,d3 ; x -=
+    move.w d3,vdp_data
+    ; right slice next. offset up-right
+    add.w #1,SPRITE_COUNTER
+    move.w #$0500,d0 ; 2x2
+    or.w SPRITE_COUNTER,d0
+    move.w N_ENEMY_Y(a2),d3 ; y
+    sub.w CAMERA_TOP_Y,d3
+    add.w #MIN_DISPLAY_Y,d3
+    sub.w d1,d3 ; y -=
+    move.w d3,vdp_data
+    move.w d0,vdp_data
+    move.w d0,LAST_LINK_WRITTEN
+    move.w #BUTT_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
+    move.w N_ENEMY_X(a2),d3 ; x
+    add.w #MIN_DISPLAY_X,d3
+    add.w d1,d3 ; x +=
+    move.w d3,vdp_data
+.End
+    rts
+
+; sp: return address
+; sp+4: ENEMY_Y (long)
+; sp+8: ENEMY_X (long)
+; sp+12: ENEMY_DATA_2 (word)
+; sp+14: ENEMY_DATA_1 (word)
+; sp+16: ENEMY_DYING_FRAMES_LEFT (word)
+; sp+18: ENEMY_STATE (word)
 DrawButtEnemy:
     move.w 18(sp),d0
     cmp.w #ENEMY_STATE_DYING,d0

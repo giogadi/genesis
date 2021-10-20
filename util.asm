@@ -719,6 +719,7 @@ UtilLoadEnemies:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
     move.w #1,N_ENEMY_HP(a1)
+    move.w #ENEMY_STATE_DYING,N_ENEMY_STATE(a1)
     bra.s .AfterJumpTable
 .HotDog:
     move.w #8,N_ENEMY_HALF_W(a1)
@@ -801,6 +802,7 @@ UtilDrawEnemies:
     M_JumpTable #.TypeJumpTable,a0,d0
 .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
+    jsr ButtDrawEnemy
     bra.s .AfterJumpTable
 .HotDog:
     bra.s .AfterJumpTable
