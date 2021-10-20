@@ -699,6 +699,8 @@ TitleGameLoop:
 
     jsr UtilLoadEnemySprites
 
+CAMERA_LEFT_X: so.w 1
+    move.w #0,CAMERA_LEFT_X
 CAMERA_TOP_Y: so.w 1
     ;move.w #2*8,CAMERA_TOP_Y
     move.w #((TILEMAP_HEIGHT-VISIBLE_TILE_H)*8),CAMERA_TOP_Y
@@ -845,7 +847,7 @@ NoHitstop
     SetVramAddr d0,d1
     move.w #0,SPRITE_COUNTER
 
-    jsr DrawDashBar
+    ; jsr DrawDashBar
 
     jsr DrawHero
 
@@ -857,7 +859,11 @@ NoHitstop
     bne.w .NoSlash
     ; figure out position/orientation/image of slash sprite
     move.w CURRENT_X,d0
+    sub.w CAMERA_LEFT_X,d0
+    add.w #MIN_DISPLAY_X,d0
     move.w CURRENT_Y,d1
+    sub.w CAMERA_TOP_Y,d1
+    add.w #MIN_DISPLAY_Y,d1
     move.l #.SlashDirectionJumpTable,a0
     clr.l d3
     move.w FACING_DIRECTION,d3 ; offset in longs into jump table

@@ -101,6 +101,8 @@ fn convert_with_xmltree(
                 enemy_type_num = 0;
             } else if type_attr == "hot_dog" {
                 enemy_type_num = 1;
+            } else if type_attr == "ogre" {
+                enemy_type_num = 2;
             }
             enemy_strings.push(format!("\tdc.w {},{},{}", enemy_type_num, x, y));
         }

@@ -4,7 +4,7 @@ OGRE_HEIGHT: equ 48 ; pixels
 OGRE_WALK_SPEED: equ (65536/2) ; 1 pixel per frame
 OGRE_HITSTUN_DURATION: equ 20 ; frames
 OGRE_STARTUP_DURATION: equ 30 ; frames
-OGRE_RECOVERY_DURATION: equ 15 ; frames
+OGRE_RECOVERY_DURATION: equ 30 ; frames
 OGRE_HURT_FLICKER_DURATION: equ 30
 
 OGRE_HP: equ 10
@@ -207,8 +207,11 @@ DrawOgreEnemy:
     move.w d0,LAST_LINK_WRITTEN
     move.w N_ENEMY_Y(a2),d3 ; y
     sub.w #24,d3
+    sub.w CAMERA_TOP_Y,d3
+    add.w #MIN_DISPLAY_Y,d3
     move.w N_ENEMY_X(a2),d4 ; x
     sub.w #24,d4
+    add.w #MIN_DISPLAY_X,d4
     and.w #$F800,d5 ; clear tile data from d5
     or.w d1,d5 ; add tile data from d1 to d5
     move.w d3,vdp_data ; y
@@ -451,15 +454,15 @@ OgreIdleUpdate:
     ; move right
     move.l N_ENEMY_X(a2),d0
     add.l #OGRE_WALK_SPEED,d0
-    move.l #((MAX_DISPLAY_X-24)<<16),d3 ; max_x - half_ogre_width
-    M_ClampMaxL d0,d3
+    ; move.l #((MAX_DISPLAY_X-24)<<16),d3 ; max_x - half_ogre_width
+    ; M_ClampMaxL d0,d3
     move.l d0,N_ENEMY_X(a2)
     bra.s .Next
 .MoveLeft
     move.l N_ENEMY_X(a2),d0
     sub.l #OGRE_WALK_SPEED,d0
-    move.l #((MIN_DISPLAY_X+24)<<16),d3 ; min_x + half_ogre_width
-    M_ClampMinL d0,d3
+    ; move.l #((MIN_DISPLAY_X+24)<<16),d3 ; min_x + half_ogre_width
+    ; M_ClampMinL d0,d3
     move.l d0,N_ENEMY_X(a2)
 .Next
     sub.w N_ENEMY_Y(a2),d1 ; target_y - ogre_y
@@ -467,15 +470,15 @@ OgreIdleUpdate:
     ; move down
     move.l N_ENEMY_Y(a2),d0
     add.l #OGRE_WALK_SPEED,d0
-    move.l #((MAX_DISPLAY_Y-24)<<16),d3 ; max_y - half_ogre_height
-    M_ClampMaxL d0,d3
+    ; move.l #((MAX_DISPLAY_Y-24)<<16),d3 ; max_y - half_ogre_height
+    ; M_ClampMaxL d0,d3
     move.l d0,N_ENEMY_Y(a2)
     bra.s .AfterWalk
 .MoveUp
     move.l N_ENEMY_Y(a2),d0
     sub.l #OGRE_WALK_SPEED,d0
-    move.l #((MIN_DISPLAY_Y+24)<<16),d3 ; min_y + half_ogre_height
-    M_ClampMinL d0,d3
+    ; move.l #((MIN_DISPLAY_Y+24)<<16),d3 ; min_y + half_ogre_height
+    ; M_ClampMinL d0,d3
     move.l d0,N_ENEMY_Y(a2)
 .AfterWalk
     ; check if should switch to slash startup state. For now, it's on a timer.
@@ -596,8 +599,11 @@ OgreDrawUpSlash:
     move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
     move.w d0,LAST_LINK_WRITTEN
     move.w N_ENEMY_X(a2),d3
+    add.w #MIN_DISPLAY_X,d3
     sub.w #(OGRE_VERT_SLASH_SPRITE_W/2),d3
     move.w N_ENEMY_Y(a2),d4
+    sub.w CAMERA_TOP_Y,d4
+    add.w #MIN_DISPLAY_Y,d4
     sub.w #(24+OGRE_VERT_SLASH_SPRITE_H),d4
     move.w #OGRE_SLASH_UP_TILE_START,d1
     move.w d4,vdp_data ; y
@@ -637,8 +643,11 @@ OgreDrawDownSlash:
     move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
     move.w d0,LAST_LINK_WRITTEN
     move.w N_ENEMY_X(a2),d3
+    add.w #MIN_DISPLAY_X,d3
     sub.w #(OGRE_VERT_SLASH_SPRITE_W/2),d3
     move.w N_ENEMY_Y(a2),d4
+    sub.w CAMERA_TOP_Y,d4
+    add.w #MIN_DISPLAY_Y,d4
     add.w #(24+OGRE_VERT_SLASH_SPRITE_H/2),d4
     move.w #OGRE_SLASH_UP_TILE_START,d1
     bset.l #12,d1 ; flip vertical
@@ -679,8 +688,11 @@ OgreDrawRightSlash:
     move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
     move.w d0,LAST_LINK_WRITTEN
     move.w N_ENEMY_X(a2),d3
+    add.w #MIN_DISPLAY_X,d3
     add.w #24,d3
     move.w N_ENEMY_Y(a2),d4
+    sub.w CAMERA_TOP_Y,d4
+    add.w #MIN_DISPLAY_Y,d4
     sub.w #(OGRE_VERT_SLASH_SPRITE_H/2),d4
     move.w #OGRE_SLASH_RIGHT_TILE_START,d1
     move.w d4,vdp_data ; y
@@ -729,8 +741,11 @@ OgreDrawLeftSlash:
     move.b (SPRITE_COUNTER+1),d0 ; link to next sprite
     move.w d0,LAST_LINK_WRITTEN
     move.w N_ENEMY_X(a2),d3
+    add.w #MIN_DISPLAY_X,d3
     sub.w #(24+OGRE_VERT_SLASH_SPRITE_W/2),d3
     move.w N_ENEMY_Y(a2),d4
+    sub.w CAMERA_TOP_Y,d4
+    add.w #MIN_DISPLAY_Y,d4
     sub.w #(OGRE_VERT_SLASH_SPRITE_H/2),d4
     move.w #OGRE_SLASH_RIGHT_TILE_START,d1
     bset.l #11,d1

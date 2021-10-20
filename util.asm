@@ -710,10 +710,8 @@ UtilLoadEnemies:
     move.w (a0)+,d3 ; enemy_type is in d3. Storing to use it later
     move.w d3,N_ENEMY_TYPE(a1)
     move.w (a0)+,d4 ; enemy_x
-    add.w #MIN_DISPLAY_X,d4
     move.w d4,N_ENEMY_X(a1)
     move.w (a0)+,d4 ; enemy_y
-    add.w #MIN_DISPLAY_Y,d4
     move.w d4,N_ENEMY_Y(a1)
     M_JumpTable #.EnemyTypeJumpTable,a2,d3
 .EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre
