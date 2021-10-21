@@ -504,6 +504,7 @@ UtilUpdateEnemies:
     M_JumpTable #.TypeJumpTable,a0,d0
 .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
+    jsr ButtUpdateEnemy
     bra.s .AfterJumpTable
 .HotDog:
     bra.s .AfterJumpTable
@@ -719,7 +720,6 @@ UtilLoadEnemies:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
     move.w #1,N_ENEMY_HP(a1)
-    move.w #ENEMY_STATE_DYING,N_ENEMY_STATE(a1)
     bra.s .AfterJumpTable
 .HotDog:
     move.w #8,N_ENEMY_HALF_W(a1)
@@ -816,59 +816,59 @@ UtilDrawEnemies:
 .end_loop
     rts
 
-DrawEnemies:
-    clr.l d2
-    move.b #0,d2
-.loop
-    cmp.b #MAX_NUM_ENEMIES,d2
-    bge.w .end
-    move.l #ENEMY_STATE,a0
-    clr.w d3
-    move.b d2,d3
-    add.b d3,d3
-    move.w 0(a0,d3),d0
-    ; if dead, skip to next enemy
-    beq.s .loop_continue
-    ; push everything we need onto the stack: state, dying_frames, data1, data2, x, y
-    move.w d0,-(sp) ; state
-    move.l #ENEMY_DYING_FRAMES_LEFT,a0
-    move.w 0(a0,d3),-(sp)
-    move.l #ENEMY_DATA_1,a0
-    move.w 0(a0,d3),-(sp)
-    move.l #ENEMY_DATA_2,a0
-    move.w 0(a0,d3),-(sp)
-    move.l #ENEMY_TYPE,a0
-    clr.l d0
-    move.w 0(a0,d3),d0 ; enemy type in d0
-    ; X and Y are 4 bytes, so multiply d3 by 2 again
-    add.b d3,d3
-    move.l #ENEMY_X,a0
-    move.l (0,a0,d3),-(sp)
-    move.l #ENEMY_Y,a0
-    move.l (0,a0,d3),-(sp)
-    ; now jump to draw function appropriate to this enemy type
-    move.l #.TypeJumpTable,a0
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
-    jmp (a0)
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-.Butt:
-    jsr DrawButtEnemy
-    bra.s .AfterJumpTable
-.HotDog:
-    jsr DrawHotDogEnemy
-    bra.s .AfterJumpTable
-.Ogre:
-    ;jsr DrawOgreEnemy
-    bra.s .AfterJumpTable
-.AfterJumpTable
-    add.l #(2+2+4+4+2+2),sp
-.loop_continue
-    add.b #1,d2
-    bra.w .loop
-.end
+; DrawEnemies:
+;     clr.l d2
+;     move.b #0,d2
+; .loop
+;     cmp.b #MAX_NUM_ENEMIES,d2
+;     bge.w .end
+;     move.l #ENEMY_STATE,a0
+;     clr.w d3
+;     move.b d2,d3
+;     add.b d3,d3
+;     move.w 0(a0,d3),d0
+;     ; if dead, skip to next enemy
+;     beq.s .loop_continue
+;     ; push everything we need onto the stack: state, dying_frames, data1, data2, x, y
+;     move.w d0,-(sp) ; state
+;     move.l #ENEMY_DYING_FRAMES_LEFT,a0
+;     move.w 0(a0,d3),-(sp)
+;     move.l #ENEMY_DATA_1,a0
+;     move.w 0(a0,d3),-(sp)
+;     move.l #ENEMY_DATA_2,a0
+;     move.w 0(a0,d3),-(sp)
+;     move.l #ENEMY_TYPE,a0
+;     clr.l d0
+;     move.w 0(a0,d3),d0 ; enemy type in d0
+;     ; X and Y are 4 bytes, so multiply d3 by 2 again
+;     add.b d3,d3
+;     move.l #ENEMY_X,a0
+;     move.l (0,a0,d3),-(sp)
+;     move.l #ENEMY_Y,a0
+;     move.l (0,a0,d3),-(sp)
+;     ; now jump to draw function appropriate to this enemy type
+;     move.l #.TypeJumpTable,a0
+;     lsl.l #2,d0 ; translate longs into bytes
+;     add.l d0,a0
+;     ; dereference jump table to get address to jump to
+;     move.l (a0),a0
+;     jmp (a0)
+; .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+; .Butt:
+;     jsr DrawButtEnemy
+;     bra.s .AfterJumpTable
+; .HotDog:
+;     jsr DrawHotDogEnemy
+;     bra.s .AfterJumpTable
+; .Ogre:
+;     ;jsr DrawOgreEnemy
+;     bra.s .AfterJumpTable
+; .AfterJumpTable
+;     add.l #(2+2+4+4+2+2),sp
+; .loop_continue
+;     add.b #1,d2
+;     bra.w .loop
+; .end
 
 UtilDrawEnemySlashes:
     move.w #MAX_NUM_ENEMIES-1,d2
