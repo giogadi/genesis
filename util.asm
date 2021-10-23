@@ -518,45 +518,6 @@ UtilUpdateEnemies:
 .end_loop
     rts
 
-UpdateEnemies:
-    move.w #0,d2
-    move.l #ENEMY_STATE,a2
-    move.l #ENEMY_X,a3
-    move.l #ENEMY_Y,a4
-    move.l #ENEMY_DATA_1,a5
-    move.l #ENEMY_DATA_2,a6
-.EnemyUpdateLoop
-    move (a2),d3 ; alive
-    cmp.w #ENEMY_STATE_ALIVE,d3
-    bne.s .EnemyUpdateLoopContinue
-    ; get enemy type
-    clr.l d0
-    move.w d2,d0 ; get enemy index
-    add.w d0,d0 ; multiply index by 2 to get address offset in bytes
-    move.l #ENEMY_TYPE,a0 ; get start of enemy_type array
-    move.w (a0,d0),d0 ; move enemy type into d0
-    M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-.Butt:
-    jsr UpdateButtEnemy
-    bra.s .EnemyUpdateLoopContinue
-.HotDog:
-    jsr UpdateHotDogEnemy
-    bra.s .EnemyUpdateLoopContinue
-.Ogre:
-    ;jsr UpdateOgreEnemy
-    bra.s .EnemyUpdateLoopContinue
-.EnemyUpdateLoopContinue
-    add.w #2,a2
-    add.w #4,a3
-    add.w #4,a4
-    add.w #2,a5
-    add.w #2,a6
-    add.w #1,d2
-    cmp.w #MAX_NUM_ENEMIES,d2
-    blt.s .EnemyUpdateLoop
-    rts
-
 ; d0 is sin(x)*256, where sin() does a full cycle every 256 units. a0 used
 Sin:
     move.l #SineLookupTable,a0
@@ -738,59 +699,6 @@ UtilLoadEnemies:
 .after_loop
     rts
 
-LoadEnemies:
-    move.w (a0)+,d0 ; enemy count is in d0
-    sub.w #1,d0
-    blt.s .after_loop
-    move.l #ENEMY_STATE,a1
-    move.l #ENEMY_X,a2
-    move.l #ENEMY_Y,a3
-    move.l #ENEMY_DATA_1,a4
-    move.l #ENEMY_TYPE,a5
-    move.l #ENEMY_SIZE,a6
-    clr.l d3
-.loop
-    move.w #ENEMY_STATE_ALIVE,(a1)+
-    ; push a1 onto the stack so we can reuse it for this jump table
-    move.l a1,-(sp)
-
-    move.l #.EnemyTypeJumpTable,a1
-    move.w (a0),d3 ; Enemy type is in a0 right now.
-    lsl.l #2,d3 ; translate longs into bytes
-    add.l d3,a1
-    ; dereference jump table to get address to jump to
-    move.l (a1),a1
-    jmp (a1)
-    ; TODO: consider making the entries into actual branch instructions.
-    ; Can be 2 cycles faster apparently?
-.EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre
-.Butt:
-    move.w #$1010,(a6)+
-    bra.s .AfterJumpTable
-.HotDog:
-    move.w #$1010,(a6)+
-    bra.s .AfterJumpTable
-.Ogre:
-    move.w #$3030,(a6)+
-    bra.s .AfterJumpTable
-.AfterJumpTable
-
-    move.l (sp)+,a1
-
-    move.w (a0)+,(a5)+ ; enemy type
-    move.w (a0)+,d1 ; enemy x
-    add.w #MIN_DISPLAY_X,d1 ; add min display offset TODO: do this properly
-    move.w d1,(a2)
-    add.l #4,a2
-    move.w (a0)+,d1 ; enemy y
-    add.w #MIN_DISPLAY_Y,d1
-    move.w d1,(a3)
-    add.l #4,a3
-    move.w #0,(a4)+ ; enemy_data_1
-    dbra d0,.loop
-.after_loop
-    rts
-
 UtilDrawEnemies:
     move.w #MAX_NUM_ENEMIES-1,d2
     move.l #N_ENEMIES,a2
@@ -815,60 +723,6 @@ UtilDrawEnemies:
     dbra d2,.loop
 .end_loop
     rts
-
-; DrawEnemies:
-;     clr.l d2
-;     move.b #0,d2
-; .loop
-;     cmp.b #MAX_NUM_ENEMIES,d2
-;     bge.w .end
-;     move.l #ENEMY_STATE,a0
-;     clr.w d3
-;     move.b d2,d3
-;     add.b d3,d3
-;     move.w 0(a0,d3),d0
-;     ; if dead, skip to next enemy
-;     beq.s .loop_continue
-;     ; push everything we need onto the stack: state, dying_frames, data1, data2, x, y
-;     move.w d0,-(sp) ; state
-;     move.l #ENEMY_DYING_FRAMES_LEFT,a0
-;     move.w 0(a0,d3),-(sp)
-;     move.l #ENEMY_DATA_1,a0
-;     move.w 0(a0,d3),-(sp)
-;     move.l #ENEMY_DATA_2,a0
-;     move.w 0(a0,d3),-(sp)
-;     move.l #ENEMY_TYPE,a0
-;     clr.l d0
-;     move.w 0(a0,d3),d0 ; enemy type in d0
-;     ; X and Y are 4 bytes, so multiply d3 by 2 again
-;     add.b d3,d3
-;     move.l #ENEMY_X,a0
-;     move.l (0,a0,d3),-(sp)
-;     move.l #ENEMY_Y,a0
-;     move.l (0,a0,d3),-(sp)
-;     ; now jump to draw function appropriate to this enemy type
-;     move.l #.TypeJumpTable,a0
-;     lsl.l #2,d0 ; translate longs into bytes
-;     add.l d0,a0
-;     ; dereference jump table to get address to jump to
-;     move.l (a0),a0
-;     jmp (a0)
-; .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-; .Butt:
-;     jsr DrawButtEnemy
-;     bra.s .AfterJumpTable
-; .HotDog:
-;     jsr DrawHotDogEnemy
-;     bra.s .AfterJumpTable
-; .Ogre:
-;     ;jsr DrawOgreEnemy
-;     bra.s .AfterJumpTable
-; .AfterJumpTable
-;     add.l #(2+2+4+4+2+2),sp
-; .loop_continue
-;     add.b #1,d2
-;     bra.w .loop
-; .end
 
 UtilDrawEnemySlashes:
     move.w #MAX_NUM_ENEMIES-1,d2
