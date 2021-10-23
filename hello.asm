@@ -835,11 +835,7 @@ NoHitstop
     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
 .AfterAnimFrameIncrement:
 
-    ; update enemies' alive states
-    ; jsr UpdateEnemiesFromSlash
-
     ; update alive enemies' behavior
-    ;jsr UpdateEnemies
     jsr UtilUpdateEnemies
 
     ; SPRITE DRAWING!

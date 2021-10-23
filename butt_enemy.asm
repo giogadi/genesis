@@ -8,7 +8,26 @@ BUTT_ENEMY_COOLDOWN: equ 3
 
 ; a2: butt struct
 ; d2: not allowed
-ButtUpdateEnemy:
+ButtUpdate:
+    ; TODO: try to make this only run in alive update
+    jsr ButtUpdateFromSlash
+    clr.l d0
+    move.w N_ENEMY_STATE(a2),d0
+    M_JumpTable #.StateJumpTable,a0,d0
+.StateJumpTable dc.l .Dead,.Alive,.Dying
+.Dead:
+    ; shouldn't happen
+    rts
+.Alive:
+    jsr ButtAliveUpdate
+    rts
+.Dying:
+    jsr ButtDyingUpdate
+    rts
+
+; a2: butt struct
+; d2: not allowed
+ButtAliveUpdate:
     clr.l d0
     move.b N_ENEMY_DATA1(a2),d0 ; get upper byte. lowest 2 bits are motion_state
     and.b #$03,d0
@@ -25,6 +44,31 @@ ButtUpdateEnemy:
     rts
 .Cooldown:
     jsr ButtCooldownUpdate
+    rts
+
+ButtDyingUpdate:
+    ; If this is a new state, set the frame counter
+    btst.b #7,(N_ENEMY_DATA1+1)(a2)
+    beq .AfterNewState
+    bclr.b #7,(N_ENEMY_DATA1+1)(a2) ; not a new state anymore
+    move.w #(ENEMY_DYING_FRAMES+1),N_ENEMY_STATE_FRAMES_LEFT(a2)
+.AfterNewState
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .AfterStateTransition
+    ; We're dead now
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+.AfterStateTransition
+    rts
+
+; d0.b : returns 0 if no slash
+ButtUpdateFromSlash:
+    jsr UtilIsEnemyHitBySlash
+    beq .Done
+    ; Enemy is hit! switch to dying and activate hitstop.
+    move.w #ENEMY_STATE_DYING,N_ENEMY_STATE(a2)
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+    bset.b #7,(N_ENEMY_DATA1+1)(a2) ; set NEW_STATE
+.Done
     rts
 
 ; a2: butt struct
@@ -194,10 +238,10 @@ ButtDrawEnemy:
     move.w d1,vdp_data ; x
     bra.w .End
 .DrawDying
-    ; only draw every other frame for a blinking effect
+    ; only draw every few frames for a blinking effect
     move.w N_ENEMY_STATE_FRAMES_LEFT(a2),d0
-    btst.l #0,d0
-    bne .End
+    btst.l #1,d0
+    beq .End
     ; gonna scale slice anim by dying frames left.
     move.w #ENEMY_DYING_FRAMES,d1
     sub.w d0,d1 ; number of frames since enemy started dying in d1

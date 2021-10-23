@@ -365,6 +365,7 @@ OgreCanBeHit:
     move.b #1,d1
     rts
 
+; TODO: refactor to use UtilIsEnemyHitBySlash
 ; a2: ogre struct
 ; d2: not allowed
 OgreUpdateFromSlash:

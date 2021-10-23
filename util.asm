@@ -440,57 +440,43 @@ DrawDashBar:
 .End
     rts
 
-UpdateEnemiesFromSlash:
-    move.w #MAX_NUM_ENEMIES-1,d7
-    move.l #ENEMY_STATE,a6
-    move.l #ENEMY_X,a1
-    move.l #ENEMY_Y,a2
-    move.l #ENEMY_DYING_FRAMES_LEFT,a3
-    move.l #ENEMY_DATA_1,a4
-    move.l #ENEMY_DATA_2,a5
-    move.w SLASH_MIN_X,d1
-    move.w SLASH_MAX_X,d2
-    move.w SLASH_MIN_Y,d3
-    move.w SLASH_MAX_Y,d4
-.EnemyUpdateSlashLoop
-    move.w (a6),d5 ; alive (don't increment pointer because we may update it below)
-    beq.w .EnemyUpdateSlashLoopContinue
-    cmp.w #ENEMY_STATE_ALIVE,d5
-    beq.s .CheckSlashEnemy
-    ; otherwise, enemy is dying (TODO use a jump table idiot)
-    sub.w #1,(a3)
-    bne.w .EnemyUpdateSlashLoopContinue ; not dead yet, go to next enemy
-    move.w #ENEMY_STATE_DEAD,(a6)
-    bra.w .EnemyUpdateSlashLoopContinue
-.CheckSlashEnemy
+; a2: enemy struct
+; d2: do not touch
+; d0.b: return value
+UtilIsEnemyHitBySlash:
+    ; skip if hero not slashing
+    ; TODO: consider checking this just once to skip all slash updates
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_SLASH_ACTIVE,d0
+    bne .end
     ; check slash AABB against enemy's AABB
-    move.w HERO_STATE,d5
-    cmp.w #HERO_STATE_SLASH_ACTIVE,d5
-    bne.s .EnemyUpdateSlashLoopContinue
-    move.w (a1),d5 ; min_enemy_x
-    move.w (a2),d6 ; min_enemy_y
-    cmp.w d2,d5 ; slash_max_x < min_enemy_x?
-    bgt.s .EnemyUpdateSlashLoopContinue
-    cmp.w d4,d6 ; slash_max_y < min_enemy_y?
-    bgt.s .EnemyUpdateSlashLoopContinue
-    add.w #2*8,d5 ; max_enemy_x (2x2 enemy)
-    cmp.w d5,d1 ; max_enemy_x < slash_min_x?
-    bgt.s .EnemyUpdateSlashLoopContinue
-    add.w #2*8,d6 ; max_enemy_y
-    cmp.w d6,d3 ; max_enemy_y < slash_min_y?
-    bgt.s .EnemyUpdateSlashLoopContinue
-    ; we have an overlap! put enemy in "dying" state and activate hitstop
-    move.w #2,(a6)
-    move.w #ENEMY_DYING_FRAMES,(a3)
-    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
-.EnemyUpdateSlashLoopContinue
-    add.w #2,a6 ; move alive pointer to next entry
-    add.w #4,a1
-    add.w #4,a2
-    add.w #2,a3
-    add.w #2,a4
-    add.w #2,a5
-    dbra d7,.EnemyUpdateSlashLoop
+    move.w SLASH_MAX_X,d0
+    move.w N_ENEMY_X(a2),d1
+    move.w N_ENEMY_HALF_W(a2),d3
+    sub.w d3,d1 ; enemy_min_x
+    cmp.w d0,d1 ; enemy_min_x - slash_max_x
+    bgt.s .end
+    add.w d3,d1
+    add.w d3,d1 ; enemy_max_x
+    move.w SLASH_MIN_X,d0
+    cmp.w d1,d0 ; slash_min_x - enemy_max_x
+    bgt.s .end
+    move.w SLASH_MAX_Y,d0
+    move.w N_ENEMY_Y(a2),d1
+    move.w N_ENEMY_HALF_H(a2),d3
+    sub.w d3,d1 ; enemy_min_y
+    cmp.w d0,d1 ; enemy_min_y - slash_max_y
+    bgt.s .end
+    add.w d3,d1
+    add.w d3,d1 ; enemy_max_y
+    move.w SLASH_MIN_Y,d0
+    cmp.w d1,d0 ; slash_min_y - enemy_max_y
+    bgt.s .end
+    ; we have an overlap! return 1
+    moveq #1,d0
+    rts
+.end
+    clr.b d0
     rts
 
 UtilUpdateEnemies:
@@ -504,7 +490,7 @@ UtilUpdateEnemies:
     M_JumpTable #.TypeJumpTable,a0,d0
 .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
-    jsr ButtUpdateEnemy
+    jsr ButtUpdate
     bra.s .AfterJumpTable
 .HotDog:
     bra.s .AfterJumpTable
