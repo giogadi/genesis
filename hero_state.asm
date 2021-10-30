@@ -404,6 +404,7 @@ CheckIfHeroNewlyHurt:
     M_JumpTable #.TypeJumpTable,a0,d0
 .TypeJumpTable dc.l .Butt,.HotDog,.Ogre
 .Butt:
+    jsr ButtMaybeHurtHero
     bra.s .AfterJumpTable
 .HotDog:
     bra.s .AfterJumpTable

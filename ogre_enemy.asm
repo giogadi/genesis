@@ -804,59 +804,6 @@ OgreMaybeHurtHero:
     move.b d0,(HURT_DIRECTION+1)
     rts
 
-; sp + 4: aabb_center_x
-; sp + 6: aabb_half_w
-; sp + 8; aabb_center_y
-; sp + 10; aabb_half_h
-;
-; d0.b: returns -1 if no overlap, otherwise direction of minimum overlap
-MinAABBOverlapHero:
-    move.w CURRENT_X,d0 ; hero_min_x
-    move.w 4(sp),d1 ; aabb_center_x
-    move.w d1,d3
-    add.w 6(sp),d3 ; aabb_max_x
-    move.w d0,d4
-    sub.w d3,d4 ; hero_min_x - aabb_max_x
-    bgt.s .no_overlap
-    ; d4 will hold the least overlap amount, d5 holds direction
-    move.b #FACING_RIGHT,d5
-    add.w #HERO_WIDTH,d0 ; hero_max_x
-    sub.w 6(sp),d1 ; aabb_min_x
-    sub.w d0,d1 ; aabb_min_x - hero_max_x
-    bgt.s .no_overlap
-    cmp.w d4,d1
-    ble.s .NotLeastOverlap1
-    move.w d1,d4
-    move.b #FACING_LEFT,d5
-.NotLeastOverlap1
-    move.w CURRENT_Y,d0 ; hero_min_y
-    move.w 8(sp),d1 ; aabb_center_y
-    move.w d1,d3
-    add.w 10(sp),d3 ; aabb_max_y
-    move.w d0,d6
-    sub.w d3,d6 ; hero_min_y - aabb_max_y
-    bgt.s .no_overlap
-    cmp.w d4,d6
-    ble.s .NotLeastOverlap2
-    move.w d6,d4
-    move.b #FACING_DOWN,d5
-.NotLeastOverlap2
-    add.w #HERO_HEIGHT,d0 ; hero_max_y
-    sub.w 10(sp),d1 ; aabb_min_y
-    sub.w d0,d1 ; aabb_min_y - hero_max_y
-    bgt.s .no_overlap
-    cmp.w d4,d1
-    ble.s .NotLeastOverlap3
-    move.w d1,d4
-    move.b #FACING_UP,d5
-.NotLeastOverlap3
-    ; we have an overlap!
-    move.b d5,d0
-    rts
-.no_overlap
-    move.b #-1,d0
-    rts
-
 ; a2: ogre struct
 ; don't touch d2
 ; d0: returns -1 if no overlap, or FACING_DIRECTION otherwise.
@@ -865,11 +812,11 @@ OgreCheckBodyHurtHero:
     move.w N_ENEMY_Y(a2),-(sp)
     move.w N_ENEMY_HALF_W(a2),-(sp)
     move.w N_ENEMY_X(a2),-(sp)
-    jsr MinAABBOverlapHero
+    jsr UtilMinAABBOverlapHero
     add.l #(4*2),sp
     rts
 
-; TODO: change to not use MinAABBOverlapHero to save some cycles.
+; TODO: change to not use UtilMinAABBOverlapHero to save some cycles.
 ;
 ; a2: ogre struct
 ; don't touch d2
@@ -894,7 +841,7 @@ OgreCheckSlashHurtHero:
     move.w d0,-(sp)
     move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
     move.w N_ENEMY_X(a2),-(sp)
-    jsr MinAABBOverlapHero
+    jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .Down:
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
@@ -903,7 +850,7 @@ OgreCheckSlashHurtHero:
     move.w d0,-(sp)
     move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
     move.w N_ENEMY_X(a2),-(sp)
-    jsr MinAABBOverlapHero
+    jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .Left:
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
@@ -912,7 +859,7 @@ OgreCheckSlashHurtHero:
     move.w N_ENEMY_X(a2),d0
     sub.w #(24+OGRE_HORIZ_SLASH_SPRITE_W/2),d0
     move.w d0,-(sp)
-    jsr MinAABBOverlapHero
+    jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .Right
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
@@ -921,7 +868,7 @@ OgreCheckSlashHurtHero:
     move.w N_ENEMY_X(a2),d0
     add.w #(24+OGRE_HORIZ_SLASH_SPRITE_W/2),d0
     move.w d0,-(sp)
-    jsr MinAABBOverlapHero
+    jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #(4*2),sp

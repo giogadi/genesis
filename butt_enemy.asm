@@ -227,6 +227,7 @@ ButtDrawEnemy:
     move.w #$0500,d0 ; 2x2
     or.w SPRITE_COUNTER,d0 ; link to next sprite
     move.w N_ENEMY_Y(a2),d1
+    sub.w N_ENEMY_HALF_H(a2),d1
     sub.w CAMERA_TOP_Y,d1
     add.w #MIN_DISPLAY_Y,d1
     move.w d1,vdp_data ; y
@@ -234,6 +235,7 @@ ButtDrawEnemy:
     move.w d0,LAST_LINK_WRITTEN
     move.w #BUTT_SPRITE_TILE_START,vdp_data
     move.w N_ENEMY_X(a2),d1
+    sub.w N_ENEMY_HALF_W(a2),d1
     add.w #MIN_DISPLAY_X,d1
     move.w d1,vdp_data ; x
     bra.w .End
@@ -250,6 +252,7 @@ ButtDrawEnemy:
     move.w #$0500,d0 ; 2x2
     or.w SPRITE_COUNTER,d0
     move.w N_ENEMY_Y(a2),d3 ; y
+    sub.w N_ENEMY_HALF_H(a2),d3
     sub.w CAMERA_TOP_Y,d3
     add.w #MIN_DISPLAY_Y,d3
     add.w d1,d3 ; y +=
@@ -258,6 +261,7 @@ ButtDrawEnemy:
     move.w d0,LAST_LINK_WRITTEN
     move.w #BUTT_SLASHED_LEFT_SPRITE_TILE_START,vdp_data
     move.w N_ENEMY_X(a2),d3 ; x
+    sub.w N_ENEMY_HALF_W(a2),d3
     add.w #MIN_DISPLAY_X,d3
     sub.w d1,d3 ; x -=
     move.w d3,vdp_data
@@ -266,6 +270,7 @@ ButtDrawEnemy:
     move.w #$0500,d0 ; 2x2
     or.w SPRITE_COUNTER,d0
     move.w N_ENEMY_Y(a2),d3 ; y
+    sub.w N_ENEMY_HALF_H(a2),d3
     sub.w CAMERA_TOP_Y,d3
     add.w #MIN_DISPLAY_Y,d3
     sub.w d1,d3 ; y -=
@@ -274,8 +279,25 @@ ButtDrawEnemy:
     move.w d0,LAST_LINK_WRITTEN
     move.w #BUTT_SLASHED_RIGHT_SPRITE_TILE_START,vdp_data
     move.w N_ENEMY_X(a2),d3 ; x
+    sub.w N_ENEMY_HALF_W(a2),d3
     add.w #MIN_DISPLAY_X,d3
     add.w d1,d3 ; x +=
     move.w d3,vdp_data
 .End
+    rts
+
+ButtMaybeHurtHero:
+    move.w N_ENEMY_HALF_H(a2),-(sp)
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w N_ENEMY_HALF_W(a2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr UtilMinAABBOverlapHero
+    add.l #(4*2),sp
+    tst.b d0
+    blt.b .end
+    ; overlap
+    move.w #HERO_STATE_HURT,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    move.b d0,(HURT_DIRECTION+1)
+.end
     rts

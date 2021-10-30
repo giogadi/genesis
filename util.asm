@@ -920,6 +920,59 @@ UtilUpdateCamera:
     move.w d0,vdp_data
     rts
 
+; sp + 4: aabb_center_x
+; sp + 6: aabb_half_w
+; sp + 8; aabb_center_y
+; sp + 10; aabb_half_h
+;
+; d0.b: returns -1 if no overlap, otherwise direction of minimum overlap
+UtilMinAABBOverlapHero:
+    move.w CURRENT_X,d0 ; hero_min_x
+    move.w 4(sp),d1 ; aabb_center_x
+    move.w d1,d3
+    add.w 6(sp),d3 ; aabb_max_x
+    move.w d0,d4
+    sub.w d3,d4 ; hero_min_x - aabb_max_x
+    bgt.s .no_overlap
+    ; d4 will hold the least overlap amount, d5 holds direction
+    move.b #FACING_RIGHT,d5
+    add.w #HERO_WIDTH,d0 ; hero_max_x
+    sub.w 6(sp),d1 ; aabb_min_x
+    sub.w d0,d1 ; aabb_min_x - hero_max_x
+    bgt.s .no_overlap
+    cmp.w d4,d1
+    ble.s .NotLeastOverlap1
+    move.w d1,d4
+    move.b #FACING_LEFT,d5
+.NotLeastOverlap1
+    move.w CURRENT_Y,d0 ; hero_min_y
+    move.w 8(sp),d1 ; aabb_center_y
+    move.w d1,d3
+    add.w 10(sp),d3 ; aabb_max_y
+    move.w d0,d6
+    sub.w d3,d6 ; hero_min_y - aabb_max_y
+    bgt.s .no_overlap
+    cmp.w d4,d6
+    ble.s .NotLeastOverlap2
+    move.w d6,d4
+    move.b #FACING_DOWN,d5
+.NotLeastOverlap2
+    add.w #HERO_HEIGHT,d0 ; hero_max_y
+    sub.w 10(sp),d1 ; aabb_min_y
+    sub.w d0,d1 ; aabb_min_y - hero_max_y
+    bgt.s .no_overlap
+    cmp.w d4,d1
+    ble.s .NotLeastOverlap3
+    move.w d1,d4
+    move.b #FACING_UP,d5
+.NotLeastOverlap3
+    ; we have an overlap!
+    move.b d5,d0
+    rts
+.no_overlap
+    move.b #-1,d0
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:
