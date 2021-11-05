@@ -488,7 +488,7 @@ UtilUpdateEnemies:
     beq.s .continue_loop ; if dead, skip to next enemy
     move.w N_ENEMY_TYPE(a2),d0
     M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
 .Butt:
     jsr ButtUpdate
     bra.s .AfterJumpTable
@@ -496,6 +496,9 @@ UtilUpdateEnemies:
     bra.s .AfterJumpTable
 .Ogre:
     jsr OgreEnemyUpdate
+    bra.s .AfterJumpTable
+.RedSeal:
+    jsr RedSealUpdate
     bra.s .AfterJumpTable
 .AfterJumpTable
 .continue_loop
@@ -662,7 +665,7 @@ UtilLoadEnemies:
     move.w (a0)+,d4 ; enemy_y
     move.w d4,N_ENEMY_Y(a1)
     M_JumpTable #.EnemyTypeJumpTable,a2,d3
-.EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
 .Butt:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
@@ -679,6 +682,11 @@ UtilLoadEnemies:
     move.w #OGRE_HP,N_ENEMY_HP(a1)
     move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a1)
     bra.s .AfterJumpTable
+.RedSeal:
+    move.w #16,N_ENEMY_HALF_W(a1)
+    move.w #12,N_ENEMY_HALF_H(a2)
+    move.w #1,N_ENEMY_HP(a1)
+    bra.s .AfterJumpTable
 .AfterJumpTable
     add.l #N_ENEMY_SIZE,a1
     dbra d2,.loop
@@ -694,7 +702,7 @@ UtilDrawEnemies:
     beq.s .continue_loop ; if dead, skip to next enemy
     move.w N_ENEMY_TYPE(a2),d0
     M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
 .Butt:
     jsr ButtDrawEnemy
     bra.s .AfterJumpTable
@@ -702,6 +710,9 @@ UtilDrawEnemies:
     bra.s .AfterJumpTable
 .Ogre:
     jsr DrawOgreEnemy
+    bra.s .AfterJumpTable
+.RedSeal:
+    jsr RedSealDraw
     bra.s .AfterJumpTable
 .AfterJumpTable
 .continue_loop
@@ -719,13 +730,15 @@ UtilDrawEnemySlashes:
     beq.s .continue_loop ; if dead, skip to next enemy
     move.w N_ENEMY_TYPE(a2),d0
     M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
+.TypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
 .Butt:
     bra.s .AfterJumpTable
 .HotDog:
     bra.s .AfterJumpTable
 .Ogre:
     jsr OgreMaybeDrawSlash
+    bra.s .AfterJumpTable
+.RedSeal
     bra.s .AfterJumpTable
 .AfterJumpTable
 .continue_loop

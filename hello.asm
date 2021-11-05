@@ -215,6 +215,7 @@ SCROLL_TILE_H: equ 32
     include butt_enemy.asm
     include hot_dog_enemy.asm
     include ogre_enemy.asm
+    include red_seal.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------
@@ -460,8 +461,17 @@ HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE: equ (2*2)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+RedSealSpriteLoad:
+RED_SEAL_SPRITE_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+RED_SEAL_SPRITE_TILE_SIZE: equ (3*4)
+    move.w #(8*RED_SEAL_SPRITE_TILE_SIZE)-1,d0
+    move.l #RedSealSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 FontTileLoad:
-FONT_TILE_START: equ (HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_START+HOT_DOG_SLASHED_RIGHT_SPRITE_TILE_SIZE)
+FONT_TILE_START: equ (RED_SEAL_SPRITE_TILE_START+RED_SEAL_SPRITE_TILE_SIZE)
 FONT_TILE_SIZE: equ 40
     move.w #(8*FONT_TILE_SIZE)-1,d0
     move.l #FontTiles,a0
@@ -1034,6 +1044,9 @@ OgreSlashRightSprite:
     include art/ogre_slash_sprite.asm
 OgreSlashUpSprite:
     include art/ogre_slash_vertical.asm
+
+RedSealSprite:
+    include art/red_seal.asm
 
 DashBarSprite:
     include art/ui/dash_bar.asm

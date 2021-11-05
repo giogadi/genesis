@@ -8464,15 +8464,15 @@
 	dc.w $8F
 	dc.w $90
 	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
+	dc.w $9
+	dc.w $9
+	dc.w $18
+	dc.w $B
+	dc.w $C
+	dc.w $C
+	dc.w $A
+	dc.w $1C
+	dc.w $16
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -8481,6 +8481,8 @@
 	dc.w $A081
 	dc.w $40
 	dc.w $0
+	dc.w $15
+	dc.w $9
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -8520,21 +8522,30 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
+	dc.w $D
+	dc.w $8
+	dc.w $D
+	dc.w $18
+	dc.w $C
+	dc.w $A
+	dc.w $6
+	dc.w $D
 	dc.w $0
 	dc.w $76
 	dc.w $0
 	dc.w $0
 	dc.w $0
+	dc.w $16
+	dc.w $6
+	dc.w $16
+	dc.w $C
+	dc.w $18
+	dc.w $0
+	dc.w $0
+	dc.w $0
+	dc.w $1A
+	dc.w $6
+	dc.w $C
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -8570,23 +8581,12 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $75
+	dc.w $C
+	dc.w $9
+	dc.w $18
+	dc.w $1D
+	dc.w $1C
+	dc.w $1C
 	dc.w $76
 	dc.w $0
 	dc.w $0
@@ -8603,11 +8603,11 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
-	dc.w $0
+	dc.w $1C
+	dc.w $7
+	dc.w $1D
+	dc.w $C
+	dc.w $1C
 	dc.w $0
 	dc.w $0
 	dc.w $0
@@ -11393,5 +11393,6 @@
 	dc.w $0
 	dc.w $0
 ; Enemies
-	dc.w 1
+	dc.w 2
 	dc.w 2,160,560
+	dc.w 3,160,480

@@ -103,6 +103,8 @@ fn convert_with_xmltree(
                 enemy_type_num = 1;
             } else if type_attr == "ogre" {
                 enemy_type_num = 2;
+            } else if type_attr == "red_seal" {
+                enemy_type_num = 3;
             }
             enemy_strings.push(format!("\tdc.w {},{},{}", enemy_type_num, x, y));
         }
