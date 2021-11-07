@@ -48,6 +48,12 @@ OGRE_VERT_SLASH_SPRITE_H: equ (8*8)
 OGRE_HORIZ_SLASH_SPRITE_W: equ (8*8)
 OGRE_HORIZ_SLASH_SPRITE_H: equ (10*8)
 
+OgreVTable:
+    dc.l OgreEnemyUpdate
+    dc.l OgreMaybeHurtHero
+    dc.l OgreMaybeDrawSlash
+    dc.l DrawOgreEnemy
+
 OgreGetIdleTileIndex:
     clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction

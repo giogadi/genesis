@@ -1,3 +1,9 @@
+HotDogVTable:
+    dc.l UtilEmptyFn
+    dc.l UtilEmptyFn
+    dc.l UtilEmptyFn
+    dc.l UtilEmptyFn
+
 HOT_DOG_SLASHING: equ 0
 HOT_DOG_RECOVERY: equ 1
 

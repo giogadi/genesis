@@ -1,3 +1,9 @@
+RedSealVTable:
+    dc.l RedSealUpdate
+    dc.l UtilEmptyFn
+    dc.l UtilEmptyFn
+    dc.l RedSealDraw
+
 ; a2: enemy struct start
 ; d2: don't touch
 RedSealDraw:

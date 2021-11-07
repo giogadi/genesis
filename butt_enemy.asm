@@ -1,3 +1,9 @@
+ButtVTable:
+    dc.l ButtUpdate
+    dc.l ButtMaybeHurtHero
+    dc.l UtilEmptyFn
+    dc.l ButtDrawEnemy
+
 BUTT_ENEMY_STEPPING: equ 0
 BUTT_ENEMY_CHARGING: equ 1
 BUTT_ENEMY_ZOOMING: equ 2

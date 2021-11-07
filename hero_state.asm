@@ -399,19 +399,7 @@ CheckIfHeroNewlyHurt:
     ; if enemy is not alive, skip to next enemy
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop
-    clr.l d0
-    move.w N_ENEMY_TYPE(a2),d0
-    M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre
-.Butt:
-    jsr ButtMaybeHurtHero
-    bra.s .AfterJumpTable
-.HotDog:
-    bra.s .AfterJumpTable
-.Ogre:
-    jsr OgreMaybeHurtHero
-    bra.s .AfterJumpTable
-.AfterJumpTable
+    jsr UtilEnemyHurtVirtual
 .continue_loop
     dbra d2,.loop
     rts

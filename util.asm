@@ -14,6 +14,56 @@ M_JumpTable: macro
     jmp (\2)
     endm
 
+UtilEmptyFn:
+    rts
+
+ENEMY_UPDATE_FN_IX: equ 0
+ENEMY_HURT_FN_IX: equ 1
+ENEMY_OVER_DRAW_FN_IX: equ 2
+ENEMY_DRAW_FN_IX: equ 3
+
+; \1 is vtable function index
+; Update,Hurt,OverDraw,Draw
+; a2 is enemy struct
+; CURRENTLY LIMITED TO 64 VIRTUAL FUNCTIONS lmao
+M_UtilEnemyVTable: macro
+    move.l \1,a0
+    add.l a0,a0 ; multiply by 4 to convert function index into vtable address offset (longs to bytes)
+    add.l a0,a0
+    clr.l d1
+    move.w N_ENEMY_TYPE(a2),d1
+    M_JumpTable #.EnemyJumpTable,a1,d1
+.EnemyJumpTable: dc.l .Butt,.HotDog,.Ogre,.RedSeal
+.Butt
+    add.l #ButtVTable,a0
+    bra .AfterJump
+.HotDog
+    add.l #HotDogVTable,a0
+    bra .AfterJump
+.Ogre
+    add.l #OgreVTable,a0
+    bra .AfterJump
+.RedSeal
+    add.l #RedSealVTable,a0
+    bra .AfterJump
+.AfterJump
+    move.l (a0),a0
+    jsr (a0)
+endm
+
+UtilEnemyUpdateVirtual:
+    M_UtilEnemyVTable #ENEMY_UPDATE_FN_IX
+    rts
+UtilEnemyHurtVirtual:
+    M_UtilEnemyVTable #ENEMY_HURT_FN_IX
+    rts
+UtilEnemyOverDrawVirtual:
+    M_UtilEnemyVTable #ENEMY_OVER_DRAW_FN_IX
+    rts
+UtilEnemyDrawVirtual:
+    M_UtilEnemyVTable #ENEMY_DRAW_FN_IX
+    rts
+
 ; \1: address, \2: aux register, \3: ram id code
 SetXramAddr: macro
     move.w \1,\2
@@ -486,21 +536,7 @@ UtilUpdateEnemies:
     clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop ; if dead, skip to next enemy
-    move.w N_ENEMY_TYPE(a2),d0
-    M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
-.Butt:
-    jsr ButtUpdate
-    bra.s .AfterJumpTable
-.HotDog:
-    bra.s .AfterJumpTable
-.Ogre:
-    jsr OgreEnemyUpdate
-    bra.s .AfterJumpTable
-.RedSeal:
-    jsr RedSealUpdate
-    bra.s .AfterJumpTable
-.AfterJumpTable
+    jsr UtilEnemyUpdateVirtual
 .continue_loop
     add.l #N_ENEMY_SIZE,a2
     dbra d2,.loop
@@ -670,23 +706,23 @@ UtilLoadEnemies:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
     move.w #1,N_ENEMY_HP(a1)
-    bra.s .AfterJumpTable
+    bra .AfterJumpTable
 .HotDog:
     move.w #8,N_ENEMY_HALF_W(a1)
     move.w #8,N_ENEMY_HALF_H(a1)
     move.w #1,N_ENEMY_HP(a1)
-    bra.s .AfterJumpTable
+    bra .AfterJumpTable
 .Ogre:
     move.w #24,N_ENEMY_HALF_W(a1)
     move.w #24,N_ENEMY_HALF_H(a1)
     move.w #OGRE_HP,N_ENEMY_HP(a1)
     move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a1)
-    bra.s .AfterJumpTable
+    bra .AfterJumpTable
 .RedSeal:
     move.w #16,N_ENEMY_HALF_W(a1)
     move.w #12,N_ENEMY_HALF_H(a2)
     move.w #1,N_ENEMY_HP(a1)
-    bra.s .AfterJumpTable
+    bra .AfterJumpTable
 .AfterJumpTable
     add.l #N_ENEMY_SIZE,a1
     dbra d2,.loop
@@ -700,21 +736,7 @@ UtilDrawEnemies:
 .loop
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop ; if dead, skip to next enemy
-    move.w N_ENEMY_TYPE(a2),d0
-    M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
-.Butt:
-    jsr ButtDrawEnemy
-    bra.s .AfterJumpTable
-.HotDog:
-    bra.s .AfterJumpTable
-.Ogre:
-    jsr DrawOgreEnemy
-    bra.s .AfterJumpTable
-.RedSeal:
-    jsr RedSealDraw
-    bra.s .AfterJumpTable
-.AfterJumpTable
+    jsr UtilEnemyDrawVirtual
 .continue_loop
     add.l #N_ENEMY_SIZE,a2
     dbra d2,.loop
@@ -728,19 +750,7 @@ UtilDrawEnemySlashes:
     clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     beq.s .continue_loop ; if dead, skip to next enemy
-    move.w N_ENEMY_TYPE(a2),d0
-    M_JumpTable #.TypeJumpTable,a0,d0
-.TypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
-.Butt:
-    bra.s .AfterJumpTable
-.HotDog:
-    bra.s .AfterJumpTable
-.Ogre:
-    jsr OgreMaybeDrawSlash
-    bra.s .AfterJumpTable
-.RedSeal
-    bra.s .AfterJumpTable
-.AfterJumpTable
+    jsr UtilEnemyOverDrawVirtual
 .continue_loop
     add.l #N_ENEMY_SIZE,a2
     dbra d2,.loop
