@@ -3,6 +3,7 @@ ButtVTable:
     dc.l ButtMaybeHurtHero
     dc.l UtilEmptyFn
     dc.l ButtDrawEnemy
+    dc.l ButtBlockHero
 
 BUTT_ENEMY_STEPPING: equ 0
 BUTT_ENEMY_CHARGING: equ 1
@@ -293,12 +294,14 @@ ButtDrawEnemy:
     rts
 
 ButtMaybeHurtHero:
+    move.w CURRENT_Y,-(sp)
+    move.w CURRENT_X,-(sp)
     move.w N_ENEMY_HALF_H(a2),-(sp)
     move.w N_ENEMY_Y(a2),-(sp)
     move.w N_ENEMY_HALF_W(a2),-(sp)
     move.w N_ENEMY_X(a2),-(sp)
     jsr UtilMinAABBOverlapHero
-    add.l #(4*2),sp
+    add.l #(6*2),sp
     tst.b d0
     blt.b .end
     ; overlap
@@ -306,4 +309,8 @@ ButtMaybeHurtHero:
     move.w #1,HERO_NEW_STATE
     move.b d0,(HURT_DIRECTION+1)
 .end
+    rts
+
+ButtBlockHero
+    move.b #0,d0
     rts

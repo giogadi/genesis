@@ -53,6 +53,7 @@ OgreVTable:
     dc.l OgreMaybeHurtHero
     dc.l OgreMaybeDrawSlash
     dc.l DrawOgreEnemy
+    dc.l OgreBlockHero
 
 OgreGetIdleTileIndex:
     clr.l d0
@@ -814,12 +815,14 @@ OgreMaybeHurtHero:
 ; don't touch d2
 ; d0: returns -1 if no overlap, or FACING_DIRECTION otherwise.
 OgreCheckBodyHurtHero:
+    move.w CURRENT_Y,-(sp)
+    move.w CURRENT_X,-(sp)
     move.w N_ENEMY_HALF_H(a2),-(sp)
     move.w N_ENEMY_Y(a2),-(sp)
     move.w N_ENEMY_HALF_W(a2),-(sp)
     move.w N_ENEMY_X(a2),-(sp)
     jsr UtilMinAABBOverlapHero
-    add.l #(4*2),sp
+    add.l #(6*2),sp
     rts
 
 ; TODO: change to not use UtilMinAABBOverlapHero to save some cycles.
@@ -841,6 +844,8 @@ OgreCheckSlashHurtHero:
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
 .Up:
+    move.w CURRENT_Y,-(sp)
+    move.w CURRENT_X,-(sp)
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
     move.w N_ENEMY_Y(a2),d0
     sub.w #(24+OGRE_VERT_SLASH_SPRITE_H/2),d0
@@ -850,6 +855,8 @@ OgreCheckSlashHurtHero:
     jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .Down:
+    move.w CURRENT_Y,-(sp)
+    move.w CURRENT_X,-(sp)
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
     move.w N_ENEMY_Y(a2),d0
     add.w #(24+OGRE_VERT_SLASH_SPRITE_H/2),d0
@@ -859,6 +866,8 @@ OgreCheckSlashHurtHero:
     jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .Left:
+    move.w CURRENT_Y,-(sp)
+    move.w CURRENT_X,-(sp)
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
     move.w N_ENEMY_Y(a2),-(sp)
     move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
@@ -868,6 +877,8 @@ OgreCheckSlashHurtHero:
     jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .Right
+    move.w CURRENT_Y,-(sp)
+    move.w CURRENT_X,-(sp)
     move.w #(OGRE_VERT_SLASH_SPRITE_H/2),-(sp)
     move.w N_ENEMY_Y(a2),-(sp)
     move.w #(OGRE_HORIZ_SLASH_SPRITE_W/2),-(sp)
@@ -877,11 +888,15 @@ OgreCheckSlashHurtHero:
     jsr UtilMinAABBOverlapHero
     bra.s .AfterJumpTable
 .AfterJumpTable
-    add.l #(4*2),sp
+    add.l #(6*2),sp
     tst.b d0
     blt.s .end
     ; just use ogre's direction (ignore min overlap aabb)
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; load direction
     and.b #OGRE_DIRECTION_MASK,d0 ; mask out direction (in case we add more data later)
 .end
+    rts
+
+OgreBlockHero:
+    move.b #0,d0
     rts

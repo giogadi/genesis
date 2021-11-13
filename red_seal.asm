@@ -3,6 +3,7 @@ RedSealVTable:
     dc.l UtilEmptyFn
     dc.l UtilEmptyFn
     dc.l RedSealDraw
+    dc.l RedSealBlockHero
 
 ; a2: enemy struct start
 ; d2: don't touch
@@ -31,4 +32,22 @@ RedSealDraw:
     rts
 
 RedSealUpdate:
+    rts
+
+RedSealBlockHero:
+    move.w NEW_Y,-(sp)
+    move.w NEW_X,-(sp)
+    move.w N_ENEMY_HALF_H(a2),-(sp)
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w N_ENEMY_HALF_W(a2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr UtilMinAABBOverlapHero
+    add.l #(6*2),sp
+    tst.b d0
+    blt.b .no_overlap
+    ; overlap
+    move.b #1,d0
+    rts
+.no_overlap
+    move.b #0,d0
     rts

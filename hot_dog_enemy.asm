@@ -3,6 +3,7 @@ HotDogVTable:
     dc.l UtilEmptyFn
     dc.l UtilEmptyFn
     dc.l UtilEmptyFn
+    dc.l HotDogBlockHero
 
 HOT_DOG_SLASHING: equ 0
 HOT_DOG_RECOVERY: equ 1
@@ -190,4 +191,8 @@ DrawHotDogEnemy:
     add.w d1,d3 ; x +=
     move.w d3,vdp_data
 .End
+    rts
+
+HotDogBlockHero:
+    move.b #0,d0
     rts

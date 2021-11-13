@@ -21,6 +21,7 @@ ENEMY_UPDATE_FN_IX: equ 0
 ENEMY_HURT_FN_IX: equ 1
 ENEMY_OVER_DRAW_FN_IX: equ 2
 ENEMY_DRAW_FN_IX: equ 3
+ENEMY_BLOCK_HERO_FN_IX: equ 4
 
 ; \1 is vtable function index
 ; Update,Hurt,OverDraw,Draw
@@ -62,6 +63,14 @@ UtilEnemyOverDrawVirtual:
     rts
 UtilEnemyDrawVirtual:
     M_UtilEnemyVTable #ENEMY_DRAW_FN_IX
+    rts
+
+; new x,y in NEW_X,NEW_Y
+; enemy struct in a2
+; DO NOT TOUCH d2
+; return 1 in d0 if hero can't occupy new position, 0 if hero can
+UtilEnemyBlockHeroVirtual:
+    M_UtilEnemyVTable #ENEMY_BLOCK_HERO_FN_IX
     rts
 
 ; \1: address, \2: aux register, \3: ram id code
@@ -720,7 +729,7 @@ UtilLoadEnemies:
     bra .AfterJumpTable
 .RedSeal:
     move.w #16,N_ENEMY_HALF_W(a1)
-    move.w #12,N_ENEMY_HALF_H(a2)
+    move.w #12,N_ENEMY_HALF_H(a1)
     move.w #1,N_ENEMY_HP(a1)
     bra .AfterJumpTable
 .AfterJumpTable
@@ -947,10 +956,13 @@ UtilUpdateCamera:
 ; sp + 6: aabb_half_w
 ; sp + 8; aabb_center_y
 ; sp + 10; aabb_half_h
+; sp + 12; hero_min_x
+; sp + 14; hero_min_y
 ;
 ; d0.b: returns -1 if no overlap, otherwise direction of minimum overlap
+; doesn't touch d2
 UtilMinAABBOverlapHero:
-    move.w CURRENT_X,d0 ; hero_min_x
+    move.w 12(sp),d0 ; hero_min_x
     move.w 4(sp),d1 ; aabb_center_x
     move.w d1,d3
     add.w 6(sp),d3 ; aabb_max_x
@@ -968,7 +980,7 @@ UtilMinAABBOverlapHero:
     move.w d1,d4
     move.b #FACING_LEFT,d5
 .NotLeastOverlap1
-    move.w CURRENT_Y,d0 ; hero_min_y
+    move.w 14(sp),d0 ; hero_min_y
     move.w 8(sp),d1 ; aabb_center_y
     move.w d1,d3
     add.w 10(sp),d3 ; aabb_max_y

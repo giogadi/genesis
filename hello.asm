@@ -807,7 +807,10 @@ NoHitstop
     jsr ClampMax
     move.w d0,d5
 
-    ; check collisions
+    move.w d4,NEW_X
+    move.w d5,NEW_Y
+
+    ; check tile collisions
     move.w d4,d0
     move.w d5,d1
     ; clear out top words of each register, since CheckCollisions assumes we could potentially
@@ -819,11 +822,21 @@ NoHitstop
     tst.b d0
     bne.s .skipPositionUpdate
 
+    ; check entity collisions. skip position update if any entity blocks new hero position.
+    move.w #MAX_NUM_ENEMIES-1,d2
+    move.l #N_ENEMIES,a2
+.loop
+    move.w N_ENEMY_STATE(a2),d0
+    beq.s .continue_loop ; if dead, skip to next enemy
+    jsr UtilEnemyBlockHeroVirtual
+    bne.s .skipPositionUpdate
+.continue_loop
+    add.l #N_ENEMY_SIZE,a2
+    dbra d2,.loop
+
     ; update sprite position
-    move.w d4,CURRENT_X
-    move.w d5,CURRENT_Y
-    ; move.l NEW_X,CURRENT_X
-    ; move.l NEW_Y,CURRENT_Y
+    move.w NEW_X,CURRENT_X
+    move.w NEW_Y,CURRENT_Y
 
 .skipPositionUpdate
 
