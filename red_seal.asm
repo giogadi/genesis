@@ -32,6 +32,18 @@ RedSealDraw:
     rts
 
 RedSealUpdate:
+    jsr RedSealUpdateFromSlash
+    rts
+
+; d0.b : returns 0 if no slash
+RedSealUpdateFromSlash:
+    jsr UtilIsEnemyHitBySlash
+    beq .Done
+    ; Enemy is hit! switch to dying and activate hitstop.
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+    bset.b #7,(N_ENEMY_DATA1+1)(a2) ; set NEW_STATE
+.Done
     rts
 
 RedSealBlockHero:
@@ -39,7 +51,7 @@ RedSealBlockHero:
     move.w NEW_X,-(sp)
     move.w N_ENEMY_HALF_H(a2),-(sp)
     move.w N_ENEMY_Y(a2),-(sp)
-    move.w N_ENEMY_HALF_W(a2),-(sp)
+    move.w #160,-(sp) ; half_w
     move.w N_ENEMY_X(a2),-(sp)
     jsr UtilMinAABBOverlapHero
     add.l #(6*2),sp
