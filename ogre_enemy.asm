@@ -54,6 +54,7 @@ OgreVTable:
     dc.l OgreMaybeDrawSlash
     dc.l DrawOgreEnemy
     dc.l OgreBlockHero
+    dc.l OgreLoad
 
 OgreGetIdleTileIndex:
     clr.l d0
@@ -899,4 +900,11 @@ OgreCheckSlashHurtHero:
 
 OgreBlockHero:
     move.b #0,d0
+    rts
+
+OgreLoad:
+    move.w #24,N_ENEMY_HALF_W(a2)
+    move.w #24,N_ENEMY_HALF_H(a2)
+    move.w #OGRE_HP,N_ENEMY_HP(a2)
+    move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a2)
     rts

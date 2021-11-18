@@ -4,6 +4,7 @@ ButtVTable:
     dc.l UtilEmptyFn
     dc.l ButtDrawEnemy
     dc.l ButtBlockHero
+    dc.l ButtLoad
 
 BUTT_ENEMY_STEPPING: equ 0
 BUTT_ENEMY_CHARGING: equ 1
@@ -313,4 +314,10 @@ ButtMaybeHurtHero:
 
 ButtBlockHero
     move.b #0,d0
+    rts
+
+ButtLoad
+    move.w #8,N_ENEMY_HALF_W(a2)
+    move.w #8,N_ENEMY_HALF_H(a2)
+    move.w #1,N_ENEMY_HP(a2)
     rts

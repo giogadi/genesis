@@ -4,6 +4,7 @@ HotDogVTable:
     dc.l UtilEmptyFn
     dc.l UtilEmptyFn
     dc.l HotDogBlockHero
+    dc.l UtilEmptyFn
 
 HOT_DOG_SLASHING: equ 0
 HOT_DOG_RECOVERY: equ 1
@@ -160,7 +161,7 @@ DrawHotDogEnemy:
     ; only draw every other frame for a blinking effect
     move.w 16(sp),d0 ; lsb of dying_frame_left
     btst.l #0,d0
-    bne.s .End
+    bne .End
     ; gonna scale slice anim by dying frames left.
     move.w #ENEMY_DYING_FRAMES,d1
     sub.w d0,d1 ; number of frames since enemy started dying in d7

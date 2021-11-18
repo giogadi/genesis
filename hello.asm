@@ -516,7 +516,6 @@ LoadTileMapB:
     ; Enemies are at the end of the tilemap file. Enemies come after
     ; 2 layers of width*height words
     move.l #(TileMap+2*TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
-    ; jsr LoadEnemies
     jsr UtilLoadEnemies
 
 ; start with default/idle animation

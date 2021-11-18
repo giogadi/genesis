@@ -22,10 +22,12 @@ ENEMY_HURT_FN_IX: equ 1
 ENEMY_OVER_DRAW_FN_IX: equ 2
 ENEMY_DRAW_FN_IX: equ 3
 ENEMY_BLOCK_HERO_FN_IX: equ 4
+ENEMY_LOAD_FN_IX: equ 5
 
 ; \1 is vtable function index
-; Update,Hurt,OverDraw,Draw
+; Update,Hurt,OverDraw,DrawBlock,Load
 ; a2 is enemy struct
+; a0,a1,d1 get CLOBBERED
 ; CURRENTLY LIMITED TO 64 VIRTUAL FUNCTIONS lmao
 M_UtilEnemyVTable: macro
     move.l \1,a0
@@ -71,6 +73,12 @@ UtilEnemyDrawVirtual:
 ; return 1 in d0 if hero can't occupy new position, 0 if hero can
 UtilEnemyBlockHeroVirtual:
     M_UtilEnemyVTable #ENEMY_BLOCK_HERO_FN_IX
+    rts
+
+; output enemy struct in a2
+; DO NOT TOUCH d2 or a0
+UtilEnemyLoadVirtual:
+    M_UtilEnemyVTable #ENEMY_LOAD_FN_IX
     rts
 
 ; \1: address, \2: aux register, \3: ram id code
@@ -694,48 +702,29 @@ CheckForDashBuffer:
 .End
     rts
 
-; don't touch a0
 UtilLoadEnemies:
-    move (a0)+,d2 ; enemy count is in d2
+    ; data input pointer is at a0. We're gonna clobber it below, so we put it in a3, which
+    ; is safe. To ensure a3 is safe for others, we push and pop the previous value of a3.
+    move.l a3,-(sp)
+    move.l a0,a3
+    move (a3)+,d2 ; enemy count is in d2
     sub.w #1,d2
     blt.w .after_loop
-    move.l #N_ENEMIES,a1
+    move.l #N_ENEMIES,a2
 .loop
-    move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a1)
+    move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a2)
     clr.l d3
-    move.w (a0)+,d3 ; enemy_type is in d3. Storing to use it later
-    move.w d3,N_ENEMY_TYPE(a1)
-    move.w (a0)+,d4 ; enemy_x
-    move.w d4,N_ENEMY_X(a1)
-    move.w (a0)+,d4 ; enemy_y
-    move.w d4,N_ENEMY_Y(a1)
-    M_JumpTable #.EnemyTypeJumpTable,a2,d3
-.EnemyTypeJumpTable dc.l .Butt,.HotDog,.Ogre,.RedSeal
-.Butt:
-    move.w #8,N_ENEMY_HALF_W(a1)
-    move.w #8,N_ENEMY_HALF_H(a1)
-    move.w #1,N_ENEMY_HP(a1)
-    bra .AfterJumpTable
-.HotDog:
-    move.w #8,N_ENEMY_HALF_W(a1)
-    move.w #8,N_ENEMY_HALF_H(a1)
-    move.w #1,N_ENEMY_HP(a1)
-    bra .AfterJumpTable
-.Ogre:
-    move.w #24,N_ENEMY_HALF_W(a1)
-    move.w #24,N_ENEMY_HALF_H(a1)
-    move.w #OGRE_HP,N_ENEMY_HP(a1)
-    move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a1)
-    bra .AfterJumpTable
-.RedSeal:
-    move.w #16,N_ENEMY_HALF_W(a1)
-    move.w #12,N_ENEMY_HALF_H(a1)
-    move.w #1,N_ENEMY_HP(a1)
-    bra .AfterJumpTable
-.AfterJumpTable
-    add.l #N_ENEMY_SIZE,a1
+    move.w (a3)+,d3 ; enemy_type is in d3. Storing to use it later
+    move.w d3,N_ENEMY_TYPE(a2)
+    move.w (a3)+,d4 ; enemy_x
+    move.w d4,N_ENEMY_X(a2)
+    move.w (a3)+,d4 ; enemy_y
+    move.w d4,N_ENEMY_Y(a2)
+    jsr UtilEnemyLoadVirtual
+    add.l #N_ENEMY_SIZE,a2
     dbra d2,.loop
 .after_loop
+    move.l (sp)+,a3
     rts
 
 UtilDrawEnemies:

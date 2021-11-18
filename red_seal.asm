@@ -4,6 +4,7 @@ RedSealVTable:
     dc.l UtilEmptyFn
     dc.l RedSealDraw
     dc.l RedSealBlockHero
+    dc.l RedSealLoad
 
 ; a2: enemy struct start
 ; d2: don't touch
@@ -62,4 +63,10 @@ RedSealBlockHero:
     rts
 .no_overlap
     move.b #0,d0
+    rts
+
+RedSealLoad:
+    move.w #16,N_ENEMY_HALF_W(a2)
+    move.w #12,N_ENEMY_HALF_H(a2)
+    move.w #1,N_ENEMY_HP(a2)
     rts
