@@ -217,6 +217,7 @@ SCROLL_TILE_H: equ 32
     include hot_dog_enemy.asm
     include ogre_enemy.asm
     include red_seal.asm
+    include crab_spawner.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------

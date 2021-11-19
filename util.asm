@@ -36,7 +36,7 @@ M_UtilEnemyVTable: macro
     clr.l d1
     move.w N_ENEMY_TYPE(a2),d1
     M_JumpTable #.EnemyJumpTable,a1,d1
-.EnemyJumpTable: dc.l .Butt,.HotDog,.Ogre,.RedSeal
+.EnemyJumpTable: dc.l .Butt,.HotDog,.Ogre,.RedSeal,.CrabSpawner
 .Butt
     add.l #ButtVTable,a0
     bra .AfterJump
@@ -48,6 +48,9 @@ M_UtilEnemyVTable: macro
     bra .AfterJump
 .RedSeal
     add.l #RedSealVTable,a0
+    bra .AfterJump
+.CrabSpawner
+    add.l #CrabSpawnerVTable,a0
     bra .AfterJump
 .AfterJump
     move.l (a0),a0
@@ -76,7 +79,8 @@ UtilEnemyBlockHeroVirtual:
     rts
 
 ; output enemy struct in a2
-; DO NOT TOUCH d2 or a0
+; DOES NOT TOUCH d2
+; clobbers a0,a1,d1
 UtilEnemyLoadVirtual:
     M_UtilEnemyVTable #ENEMY_LOAD_FN_IX
     rts
