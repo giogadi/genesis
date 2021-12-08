@@ -105,7 +105,7 @@ fn convert_with_xmltree(
                 enemy_type_num = 2;
             } else if type_attr == "red_seal" {
                 enemy_type_num = 3;
-            } else if type_attr == "crab_spawner" {
+            } else if type_attr == "spawner" {
                 enemy_type_num = 4;
             }
             enemy_strings.push(format!("\tdc.w {},{},{}", enemy_type_num, x, y));
