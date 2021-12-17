@@ -143,6 +143,12 @@ N_ENEMY_DATA1: so.w 1
 N_ENEMY_DATA2: so.w 1
 N_ENEMY_SIZE: equ __SO
 
+; struct Script
+    setso 0
+SCRIPT_CONDITION_FN: so.l 1
+SCRIPT_ACTION_FN: so.l 1
+SCRIPT_ITEM_SIZE: equ __SO
+
 RAM_BASE_ADDR:  equ $FF0000
     setso RAM_BASE_ADDR
 
@@ -619,6 +625,10 @@ CURRENT_VSCROLL_A: so.w 1
 CURRENT_VSCROLL_B: so.w 1
     move.w #0,CURRENT_VSCROLL_B
 
+; Point to first item of script
+CURRENT_SCRIPT_ITEM: so.l 1
+    move.l #Script,CURRENT_SCRIPT_ITEM
+
 ; Title screen
 ; Dimensions of title sprite are 320x136 (40x17 tiles)
 ; So every 40 tiles we will reset the vram addr to the next "row".
@@ -763,13 +773,30 @@ MainGameLoop
     move.w d0,vdp_data
 
     tst.w HITSTOP_FRAMES_LEFT
-    beq.w NoHitstop
+    beq.w .NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
     jsr CheckForDashBuffer
     jmp WaitNewFrame
-
-NoHitstop
+.NoHitstop
     GetControls d0,d1
+
+    ; Update script
+    ; Call the condition function of the current script item. If it returns d0 == 1, then call its
+    ; action function and incrment current script item ptr.
+    move.l CURRENT_SCRIPT_ITEM,a0
+    add.l #SCRIPT_CONDITION_FN,a0
+    move.l (a0),a0
+    jsr (a0) ; call condition function
+    tst.b d0
+    beq .AfterUpdateScript
+    ; condition was fulfilled. perform action.
+    move.l CURRENT_SCRIPT_ITEM,a0
+    add.l #SCRIPT_ACTION_FN,a0
+    move.l (a0),a0
+    jsr (a0) ; call action function
+    ; point to next script item
+    add.l #SCRIPT_ITEM_SIZE,CURRENT_SCRIPT_ITEM
+.AfterUpdateScript
     
     ; TODO: should we move this to the bottom of the loop?
     move.w #0,HERO_NEW_STATE
@@ -996,6 +1023,9 @@ TileCollisions:
 
 TileMap:
     include art/tiles/map3.asm
+
+Script:
+    include art/script.asm
 
 TitleTiles:
     include art/title_320_136.asm

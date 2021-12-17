@@ -17,6 +17,11 @@ M_JumpTable: macro
 UtilEmptyFn:
     rts
 
+; return false (byte) in d0
+UtilReturnFalse:
+    move.b #0,d0
+    rts
+
 ENEMY_UPDATE_FN_IX: equ 0
 ENEMY_HURT_FN_IX: equ 1
 ENEMY_OVER_DRAW_FN_IX: equ 2
