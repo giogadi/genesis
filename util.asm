@@ -22,6 +22,11 @@ UtilReturnFalse:
     move.b #0,d0
     rts
 
+; return true (byte) in d0
+UtilReturnTrue:
+    move.b #1,d0
+    rts
+
 ENEMY_UPDATE_FN_IX: equ 0
 ENEMY_HURT_FN_IX: equ 1
 ENEMY_OVER_DRAW_FN_IX: equ 2
@@ -1004,6 +1009,25 @@ UtilMinAABBOverlapHero:
     rts
 .no_overlap
     move.b #-1,d0
+    rts
+
+; if d0.b > 0, a0 points to an empty entity.
+; if d0.b <= 0, no empty entity was found.
+FindEmptyEntity:
+    move.l #N_ENEMIES,a0 ; pointer to first enemy
+    move.w #MAX_NUM_ENEMIES,d0
+.find_empty_entity_loop
+    tst.w d0
+    ble .after_find_entity_loop
+    sub.w #1,d0
+    move.w N_ENEMY_STATE(a0),d1
+    cmp.w #ENEMY_STATE_DEAD,d1
+    beq .after_find_entity_loop
+    ; not empty; try next entity
+    add.l #N_ENEMY_SIZE,a0
+    bra .find_empty_entity_loop
+.after_find_entity_loop
+    ; at this point, d0 > 0 if a0 has an empty entity, <= 0 if none found.
     rts
 
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].

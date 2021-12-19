@@ -146,7 +146,9 @@ N_ENEMY_SIZE: equ __SO
 ; struct Script
     setso 0
 SCRIPT_CONDITION_FN: so.l 1
+SCRIPT_CONDITION_FN_INPUT: so.l 1
 SCRIPT_ACTION_FN: so.l 1
+SCRIPT_ACTION_FN_INPUT: so.l 2
 SCRIPT_ITEM_SIZE: equ __SO
 
 RAM_BASE_ADDR:  equ $FF0000
@@ -207,6 +209,11 @@ ENEMY_DATA_1: so.w MAX_NUM_ENEMIES
 ENEMY_DATA_2: so.w MAX_NUM_ENEMIES
 
 N_ENEMIES: so.b (MAX_NUM_ENEMIES*N_ENEMY_SIZE)
+ENTITY_TYPE_BUTT: equ 0
+ENTITY_TYPE_HOT_DOG: equ 1
+ENTITY_TYPE_OGRE: equ 2
+ENTITY_TYPE_RED_SEAL: equ 3
+ENTITY_TYPE_SPAWNER: equ 4
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
@@ -217,6 +224,7 @@ SCROLL_TILE_W: equ 64
 SCROLL_TILE_H: equ 32
 
     include util.asm
+    include script_functions.asm
     include text.asm
     include hero_state.asm
     include butt_enemy.asm
@@ -782,17 +790,15 @@ MainGameLoop
 
     ; Update script
     ; Call the condition function of the current script item. If it returns d0 == 1, then call its
-    ; action function and incrment current script item ptr.
+    ; action function and increment current script item ptr.
     move.l CURRENT_SCRIPT_ITEM,a0
-    add.l #SCRIPT_CONDITION_FN,a0
-    move.l (a0),a0
+    move.l SCRIPT_CONDITION_FN(a0),a0
     jsr (a0) ; call condition function
     tst.b d0
     beq .AfterUpdateScript
     ; condition was fulfilled. perform action.
     move.l CURRENT_SCRIPT_ITEM,a0
-    add.l #SCRIPT_ACTION_FN,a0
-    move.l (a0),a0
+    move.l SCRIPT_ACTION_FN(a0),a0
     jsr (a0) ; call action function
     ; point to next script item
     add.l #SCRIPT_ITEM_SIZE,CURRENT_SCRIPT_ITEM

@@ -401,6 +401,7 @@ CheckIfHeroNewlyHurt:
     beq.s .continue_loop
     jsr UtilEnemyHurtVirtual
 .continue_loop
+    add.l #N_ENEMY_SIZE,a2
     dbra d2,.loop
     rts
 
