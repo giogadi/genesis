@@ -11393,6 +11393,5 @@
 	dc.w $0
 	dc.w $0
 ; Enemies
-	dc.w 2
+	dc.w 1
 	dc.w 3,160,480
-	dc.w 4,152,344

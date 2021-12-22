@@ -4,6 +4,7 @@
 	dc.w 0
 	dc.w 0
 	dc.w 0
+	dc.w 2
 	dc.w 1
 	dc.w 1
 	dc.w 1
@@ -12,6 +13,20 @@
 	dc.w 1
 	dc.w 1
 	dc.w 1
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 1
+	dc.w 1
+	dc.w 2
+	dc.w 1
+	dc.w 2
+	dc.w 1
+	dc.w 2
 	dc.w 1
 	dc.w 1
 	dc.w 1
@@ -20,31 +35,17 @@
 	dc.w 1
 	dc.w 1
 	dc.w 1
+	dc.w 2
+	dc.w 0
+	dc.w 2
+	dc.w 2
 	dc.w 1
 	dc.w 1
 	dc.w 1
 	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
+	dc.w 2
+	dc.w 2
 	dc.w 0
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
 	dc.w 0
 	dc.w 0
 	dc.w 0
@@ -83,10 +84,10 @@
 	dc.w 0
 	dc.w 0
 	dc.w 0
+	dc.w 2
+	dc.w 2
+	dc.w 2
 	dc.w 0
-	dc.w 1
-	dc.w 1
-	dc.w 1
 	dc.w 0
 	dc.w 0
 	dc.w 0
@@ -96,10 +97,10 @@
 	dc.w 0
 	dc.w 0
 	dc.w 0
+	dc.w 2
+	dc.w 2
+	dc.w 2
 	dc.w 0
-	dc.w 1
-	dc.w 1
-	dc.w 1
 	dc.w 0
 	dc.w 0
 	dc.w 0
@@ -109,19 +110,19 @@
 	dc.w 0
 	dc.w 0
 	dc.w 0
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
 	dc.w 0
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
 	dc.w 0
 	dc.w 0
 	dc.w 0
 	dc.w 0
 	dc.w 0
+	dc.w 2
+	dc.w 2
 	dc.w 0
-	dc.w 1
-	dc.w 1
 	dc.w 0
 	dc.w 0
 	dc.w 0
@@ -130,16 +131,15 @@
 	dc.w 0
 	dc.w 0
 	dc.w 0
-	dc.w 0
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
-	dc.w 1
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
+	dc.w 2
 	dc.w 0
 	dc.w 0
 	dc.w 0

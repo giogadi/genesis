@@ -8,7 +8,7 @@ use xmltree::Element;
 struct TileData {
     palette: u8,
     priority: bool,
-    collision: bool
+    collision: u8
 }
 fn get_tile_data(tileset_filename: &str) -> Vec<TileData> {
     let tileset_contents = std::fs::read_to_string(tileset_filename).unwrap();
@@ -21,7 +21,7 @@ fn get_tile_data(tileset_filename: &str) -> Vec<TileData> {
         }
         let mut palette = 0;
         let mut priority = false;
-        let mut collision = false;
+        let mut collision : u8 = 0;
         for p in &c_e.get_child("properties").unwrap().children {
             let p_e = p.as_element().unwrap();
             assert!(p_e.name == "property");
@@ -36,10 +36,10 @@ fn get_tile_data(tileset_filename: &str) -> Vec<TileData> {
                     priority = true;
                 }
             } else if name_attr == "collision" {
-                let value_attr = p_e.attributes.get("value").unwrap().to_lowercase();
-                if value_attr == "true" {
-                    collision = true;
-                }
+                let value_attr = p_e.attributes.get("value").unwrap();
+                collision =
+                    value_attr.parse::<u8>().expect(
+                        &format!("collision parse error: {}", value_attr));
             }
         }
 

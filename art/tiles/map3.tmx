@@ -191,8 +191,5 @@
   <object id="3" type="red_seal" x="160" y="480">
    <point/>
   </object>
-  <object id="4" type="spawner" x="152" y="344">
-   <point/>
-  </object>
  </objectgroup>
 </map>

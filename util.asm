@@ -240,9 +240,9 @@ fm_test_wait_loop
     bne.s fm_test_wait_loop
     rts
 
-; tile idx in d0
+; tile idx in d0. collision result in d0
 ; checks both layers of tiles.
-DoesTileCollide:
+UtilDoesTileCollide:
     ; push original ix on stack for use later
     move.w d0,-(sp)
     move.l #TileMap,a0
@@ -258,10 +258,14 @@ DoesTileCollide:
     add.w d0,a0
     ; now load in the collision info to d0
     move.w (a0),d0
-    bne.s .end  ; if we found a collision, exit here
-    ; Now look for a collision in the other layer
+    ; if we found a "full collision" (2) return early.
+    cmp.w #2,d0
+    beq .end
+    ; Now store the first layer's collision result in d2 and
+    ; look for a collision in the other layer
+    move.w d0,-(sp)
     clr.l d0
-    move.w (sp),d0 ; move tile ix back into d0
+    move.w 2(sp),d0 ; move tile ix back into d0
     move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
     ; need to move d0 words forward, which is the same as 2*d0 bytes.
     add.l d0,d0
@@ -275,14 +279,21 @@ DoesTileCollide:
     add.w d0,a0
     ; now load in the collision info to d0
     move.w (a0),d0
+    ; compare this layer's collision result to the other layer's
+    move.w (sp)+,d1
+    cmp.w d0,d1
+    ble .end
+    ; other layer had a higher collision value. use that one.
+    move.w d1,d0
 .end
     add.l #2,sp
     rts
 
 ; NOTE: THIS ASSUMES THAT TILEMAP_WIDTH == 64!!!!
-; x in d0, y in d1. outputs result in d0. 0 if collision-free, 1 if collision
+; x in d0, y in d1. outputs result in d0. 
+; 0 if collision-free, 1 if collision
 ; Assume that x and y can be longs.
-CheckCollisions:
+UtilCheckCollisions:
     ; get the tile that CURRENT_X,CURRENT_Y corresponds to.
     ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
     lsr.l #3,d0 ; divide by 8 (tile width)
@@ -302,11 +313,22 @@ CheckCollisions:
     ; 3x4.
     move.w #(HERO_WIDTH_IN_TILES+1-1),d2
     move.w #(HERO_HEIGHT_IN_TILES+1-1),d3
+    ; the min value that will impede hero position update is in d4
+    move.w #HERO_STATE_DASHING,d4
+    cmp.w HERO_STATE,d4
+    beq .DashingCollisionNumber
+    ; not dashing
+    move.w #1,d4
+.DashingCollisionNumber
+    move.w #2,d4
 .row_loop
 .column_loop
-    jsr DoesTileCollide
-    tst.w d0
-    bne.s .CheckCollisionsDone
+    ; store d1 on stack since it'll get clobbered in the next function
+    move.l d1,-(sp)
+    jsr UtilDoesTileCollide
+    move.l (sp)+,d1
+    cmp.w d4,d0
+    bge .CheckCollisionsDone
     add.l #1,d1
     move.l d1,d0
     dbra d2,.column_loop
@@ -337,7 +359,7 @@ CheckCollisionsPositionOnly:
     lsl.w #6,d1 ; 64 tiles per row, so mult by 64 by << 6 (UGH I KNOW OK)
     add.w d1,d0
     ; Now d0 is our tile index. Check the tilemap+collision-table if this tile collides.
-    jsr DoesTileCollide
+    jsr UtilDoesTileCollide
     rts
 
 SetLeftIdleAnim:

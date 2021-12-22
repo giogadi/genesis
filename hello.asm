@@ -145,8 +145,8 @@ N_ENEMY_SIZE: equ __SO
 
 ; struct Script
     setso 0
-SCRIPT_CONDITION_FN: so.l 1
-SCRIPT_CONDITION_FN_INPUT: so.l 1
+SCRIPT_COND_FN: so.l 1
+SCRIPT_COND_FN_INPUT: so.l 1
 SCRIPT_ACTION_FN: so.l 1
 SCRIPT_ACTION_FN_INPUT: so.l 2
 SCRIPT_ITEM_SIZE: equ __SO
@@ -792,7 +792,7 @@ MainGameLoop
     ; Call the condition function of the current script item. If it returns d0 == 1, then call its
     ; action function and increment current script item ptr.
     move.l CURRENT_SCRIPT_ITEM,a0
-    move.l SCRIPT_CONDITION_FN(a0),a0
+    move.l SCRIPT_COND_FN(a0),a0
     jsr (a0) ; call condition function
     tst.b d0
     beq .AfterUpdateScript
@@ -850,7 +850,7 @@ MainGameLoop
     ; use the entire register for a tile index and we're only using words above.
     and.l #$0000FFFF,d0
     and.l #$0000FFFF,d1
-    jsr CheckCollisions
+    jsr UtilCheckCollisions
     ;clr.b d0 ; disable collision result (debug)
     tst.b d0
     bne.s .skipPositionUpdate

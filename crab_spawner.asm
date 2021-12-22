@@ -10,8 +10,8 @@ CrabSpawnerVTable:
 ; ENEMY_DATA_2: (num_frames_between_spawns)
 
 CrabSpawnerLoad:
-    move.w #2*60,(N_ENEMY_DATA1)(a2)
-    move.w #2*60,(N_ENEMY_DATA2)(a2)
+    move.w #0,(N_ENEMY_DATA1)(a2)
+    move.w #5*60,(N_ENEMY_DATA2)(a2)
     rts
 
 ; a2: entity struct

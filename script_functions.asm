@@ -1,8 +1,23 @@
+; y-value in SCRIPT_COND_FN_INPUT.w
+ScriptCondHeroYLessThan:
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.w SCRIPT_COND_FN_INPUT(a1),d0 ; y-value
+    sub.w CURRENT_Y,d0 ; y-value - hero_y
+    ; cond is satisfied if d0 > 0
+    bgt .satisfied
+    ; unsatisfied
+    move.b #0,d0
+    rts
+.satisfied
+    move.b #1,d0
+    rts
+
+
 ; entity_type in SCRIPT_ACTION_FN_INPUT.w
 ; spawn_x in (SCRIPT_ACTION_FN_INPUT+2).w
 ; spawn_y in (SCRIPT_ACTION_FN_INPUT+4).w
 ; last word empty
-ScriptSpawnEntity:
+ScriptActionSpawnEntity:
     ; first, we find the first dead entity in the enemy list
     jsr FindEmptyEntity
     tst.w d0
