@@ -12,14 +12,13 @@ ScriptCondHeroYLessThan:
     move.b #1,d0
     rts
 
-
 ; entity_type in SCRIPT_ACTION_FN_INPUT.w
 ; spawn_x in (SCRIPT_ACTION_FN_INPUT+2).w
 ; spawn_y in (SCRIPT_ACTION_FN_INPUT+4).w
 ; last word empty
 ScriptActionSpawnEntity:
     ; first, we find the first dead entity in the enemy list
-    jsr FindEmptyEntity
+    jsr UtilFindEmptyEntity
     tst.w d0
     ble .end ; if no empty entity found, just return.
     ; our empty entity is in a0
@@ -35,4 +34,29 @@ ScriptActionSpawnEntity:
     jsr UtilEnemyLoadVirtual
     move.l (sp)+,a2
 .end
+    rts
+
+; entity_type in SCRIPT_ACTION_FN_INPUT.w
+ScriptActionDeleteFirstEntityOfType:
+    move.l #N_ENEMIES,a0 ; pointer to first enemy
+    move.w #MAX_NUM_ENEMIES,d0
+    move.l CURRENT_SCRIPT_ITEM,a1
+.find_empty_entity_loop
+    tst.w d0
+    ble .after_find_entity_loop
+    sub.w #1,d0
+    move.w N_ENEMY_STATE(a0),d1
+    ; if this enemy is dead, move onto next entity
+    cmp.w #ENEMY_STATE_DEAD,d1
+    beq .continue_loop
+    move.w N_ENEMY_TYPE(a0),d1
+    cmp.w SCRIPT_ACTION_FN_INPUT(a1),d1
+    ; if this is not the requested enemy type, move onto next entity
+    bne .continue_loop
+    ; this is the one. kill it!!!
+    move #ENEMY_STATE_DEAD,N_ENEMY_STATE(a0)
+.continue_loop
+    add.l #N_ENEMY_SIZE,a0
+    bra .find_empty_entity_loop
+.after_find_entity_loop
     rts

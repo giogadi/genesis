@@ -23,7 +23,7 @@ CrabSpawnerUpdate:
     bra .End
 .AfterTimerCheck
     ; first, we find the first dead enemy in the enemy list
-    jsr FindEmptyEntity
+    jsr UtilFindEmptyEntity
     ; If we finished the loop without finding an empty entity, just return.
     tst.w d0
     ble .End

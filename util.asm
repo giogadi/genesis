@@ -1035,7 +1035,7 @@ UtilMinAABBOverlapHero:
 
 ; if d0.b > 0, a0 points to an empty entity.
 ; if d0.b <= 0, no empty entity was found.
-FindEmptyEntity:
+UtilFindEmptyEntity:
     move.l #N_ENEMIES,a0 ; pointer to first enemy
     move.w #MAX_NUM_ENEMIES,d0
 .find_empty_entity_loop
