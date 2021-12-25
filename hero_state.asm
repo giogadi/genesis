@@ -82,6 +82,10 @@ HeroStateIdleUpdate:
     clr.w d4 ; dx = 0
     clr.w d5 ; dy = 0
 
+    ; if hero frozen, don't take any controller input.
+    tst.w HERO_FROZEN
+    bne .AfterControllerInput
+
     move.b CONTROLLER,d7
     btst.l #UP_BIT,d7
     beq.s .UpNotPressed
@@ -111,6 +115,8 @@ HeroStateIdleUpdate:
     add.w CURRENT_Y,d5
     move.w d4,NEW_X
     move.w d5,NEW_Y
+
+.AfterControllerInput
 
     rts
 

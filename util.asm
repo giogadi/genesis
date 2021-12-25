@@ -846,21 +846,35 @@ UtilClearScrollA:
 ; 4(sp): cameraMotionX out-param
 ; 6(sp): cameraMotionY out-param
 UtilGetCameraMotion:
+    clr.l d0
+    move.b (CURRENT_CAMERA_STATE+1),d0
+    M_JumpTable #.CameraStateJumpTable,a0,d0
+.CameraStateJumpTable: dc.l .Follow,.Manual
+.Follow:
     ; Constantly trying to position camera to center on hero.
     move.w CAMERA_TOP_Y,d0
     add.w #(VISIBLE_TILE_H*8/2),d0 ; camera center
     move.w CURRENT_Y,d1
     add.w #(HERO_HEIGHT/2),d1 ; hero center
     sub.w d0,d1 ; d1 = hero - camera
-    beq .end
-    blt .Less
+    beq .FollowEnd
+    blt .FollowLess
     move.w #1,d1
-    bra .end
-.Less
+    bra .FollowEnd
+.FollowLess
     move.w #-1,d1
-.end
+.FollowEnd
     move.w #0,4(sp)
     move.w d1,6(sp)
+    rts
+.Manual:
+    clr.w d0
+    move.b CAMERA_MANUAL_PAN_X,d0
+    ext.w d0
+    move.w d0,4(sp)
+    move.b CAMERA_MANUAL_PAN_Y,d0
+    ext.w d0
+    move.w d0,6(sp)
     rts
 
 UtilUpdateCamera:

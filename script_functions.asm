@@ -60,3 +60,22 @@ ScriptActionDeleteFirstEntityOfType:
     bra .find_empty_entity_loop
 .after_find_entity_loop
     rts
+
+ScriptActionFreezeHero:
+    move.w #1,HERO_FROZEN
+    move.w #HERO_STATE_IDLE,HERO_STATE
+    move.w #1,HERO_NEW_STATE ; do we need this?
+    rts
+
+ScriptActionUnfreezeHero:
+    move.w #0,HERO_FROZEN
+    rts
+
+; camera_pan_x_per_frame is in SCRIPT_ACTION_FN_INPUT.b
+; camera_pan_y_per_frame is in SCRIPT_ACTION_FN_INPUT+1.b
+ScriptActionPanCamera:
+    move.w #CAMERA_STATE_MANUAL_PAN,CURRENT_CAMERA_STATE
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.b SCRIPT_ACTION_FN_INPUT(a1),CAMERA_MANUAL_PAN_X
+    move.b (SCRIPT_ACTION_FN_INPUT+1)(a1),CAMERA_MANUAL_PAN_Y
+    rts

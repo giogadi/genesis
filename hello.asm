@@ -637,6 +637,19 @@ CURRENT_VSCROLL_B: so.w 1
 CURRENT_SCRIPT_ITEM: so.l 1
     move.l #Script,CURRENT_SCRIPT_ITEM
 
+HERO_FROZEN: so.w 1
+    move.w #0,HERO_FROZEN
+
+CAMERA_STATE_FOLLOW_HERO: equ 0
+CAMERA_STATE_MANUAL_PAN: equ 1
+CURRENT_CAMERA_STATE: so.w 1
+    move.w #0,CURRENT_CAMERA_STATE
+; only meaningful when MANUAL_PAN
+CAMERA_MANUAL_PAN_X: so.b 1
+    move.b #0,CAMERA_MANUAL_PAN_X
+CAMERA_MANUAL_PAN_Y: so.b 1
+    move.b #0,CAMERA_MANUAL_PAN_Y
+
 ; Title screen
 ; Dimensions of title sprite are 320x136 (40x17 tiles)
 ; So every 40 tiles we will reset the vram addr to the next "row".
@@ -832,7 +845,7 @@ MainGameLoop
     jsr ClampMax
     move.w d0,d4
 
-    ; ; clamp sprite y
+    ; clamp sprite y
     move.w d5,d0
     move.w #0,d1
     jsr ClampMin
