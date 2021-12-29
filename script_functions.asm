@@ -12,6 +12,20 @@ ScriptCondHeroYLessThan:
     move.b #1,d0
     rts
 
+; y-value in SCRIPT_COND_FN_INPUT.w
+ScriptCondCameraTopYLessThan:
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.w SCRIPT_COND_FN_INPUT(a1),d0 ; y-value
+    sub.w CAMERA_TOP_Y,d0 ; y-value - camera_top_y
+    ; cond is satisfied if d0 > 0
+    bgt .satisfied
+    ; unsatisfied
+    move.b #0,d0
+    rts
+.satisfied
+    move.b #1,d0
+    rts
+
 ; entity_type in SCRIPT_ACTION_FN_INPUT.w
 ; spawn_x in (SCRIPT_ACTION_FN_INPUT+2).w
 ; spawn_y in (SCRIPT_ACTION_FN_INPUT+4).w
@@ -79,3 +93,8 @@ ScriptActionPanCamera:
     move.b SCRIPT_ACTION_FN_INPUT(a1),CAMERA_MANUAL_PAN_X
     move.b (SCRIPT_ACTION_FN_INPUT+1)(a1),CAMERA_MANUAL_PAN_Y
     rts
+
+ScriptActionCameraFollowHero:
+    move.w #CAMERA_STATE_FOLLOW_HERO,CURRENT_CAMERA_STATE
+    rts
+

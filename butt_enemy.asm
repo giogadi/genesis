@@ -320,4 +320,6 @@ ButtLoad
     move.w #8,N_ENEMY_HALF_W(a2)
     move.w #8,N_ENEMY_HALF_H(a2)
     move.w #1,N_ENEMY_HP(a2)
+    clr.w N_ENEMY_DATA1(a2)
+    clr.w N_ENEMY_DATA2(a2)
     rts

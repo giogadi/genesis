@@ -907,4 +907,6 @@ OgreLoad:
     move.w #24,N_ENEMY_HALF_H(a2)
     move.w #OGRE_HP,N_ENEMY_HP(a2)
     move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    clr.w N_ENEMY_DATA1(a2)
+    clr.w N_ENEMY_DATA2(a2)
     rts
