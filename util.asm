@@ -1066,6 +1066,34 @@ UtilFindEmptyEntity:
     ; at this point, d0 > 0 if a0 has an empty entity, <= 0 if none found.
     rts
 
+; input: entity type in d0
+; output:
+; if d0.b > 0, a0 points to the entity
+; else, no entity was found.
+UtilFindLiveEntityOfType:
+    move.l #N_ENEMIES,a0 ; pointer to first enemy
+    move.l d2,-(sp) ; push d2 onto the stack, because we gonna use it.
+    move.w d0,d2 ; copy entity type into d2
+    move.w #MAX_NUM_ENEMIES,d0
+.find_entity_loop
+    tst.w d0
+    ble .after_find_entity_loop
+    sub.w #1,d0
+    move.w N_ENEMY_STATE(a0),d1
+    cmp.w #ENEMY_STATE_DEAD,d1
+    ; if enemy is dead, continue to next enemy
+    beq .continue_loop
+    move.w N_ENEMY_TYPE(a0),d1
+    cmp.w d1,d2 ; is this enemy the right type? If so, exit loop.
+    beq .after_find_entity_loop
+.continue_loop
+    add.l #N_ENEMY_SIZE,a0
+    bra .find_entity_loop
+.after_find_entity_loop
+    ; at this point, d0 > 0 if a0 has an empty entity, <= 0 if none found.
+    move.l (sp)+,d2 ; restore previous value of d2.
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:

@@ -52,27 +52,14 @@ ScriptActionSpawnEntity:
 
 ; entity_type in SCRIPT_ACTION_FN_INPUT.w
 ScriptActionDeleteFirstEntityOfType:
-    move.l #N_ENEMIES,a0 ; pointer to first enemy
-    move.w #MAX_NUM_ENEMIES,d0
     move.l CURRENT_SCRIPT_ITEM,a1
-.find_empty_entity_loop
-    tst.w d0
-    ble .after_find_entity_loop
-    sub.w #1,d0
-    move.w N_ENEMY_STATE(a0),d1
-    ; if this enemy is dead, move onto next entity
-    cmp.w #ENEMY_STATE_DEAD,d1
-    beq .continue_loop
-    move.w N_ENEMY_TYPE(a0),d1
-    cmp.w SCRIPT_ACTION_FN_INPUT(a1),d1
-    ; if this is not the requested enemy type, move onto next entity
-    bne .continue_loop
-    ; this is the one. kill it!!!
+    move.w SCRIPT_ACTION_FN_INPUT(a1),d0
+    jsr UtilFindLiveEntityOfType
+    tst.b d0
+    ble .end ; quit if no such entity found
+    ; our entity is in a0.
     move #ENEMY_STATE_DEAD,N_ENEMY_STATE(a0)
-.continue_loop
-    add.l #N_ENEMY_SIZE,a0
-    bra .find_empty_entity_loop
-.after_find_entity_loop
+.end
     rts
 
 ScriptActionFreezeHero:
@@ -98,3 +85,29 @@ ScriptActionCameraFollowHero:
     move.w #CAMERA_STATE_FOLLOW_HERO,CURRENT_CAMERA_STATE
     rts
 
+; motion_dir is in SCRIPT_ACTION_FN_INPUT.b
+ScriptActionMoveOgre:
+    ; first find our ogre enemy.
+    move.w #ENTITY_TYPE_OGRE,d0
+    jsr UtilFindLiveEntityOfType
+    tst.b d0
+    ble .end ; if no ogre found, just quit
+    ; our ogre enemy is in a0
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.b SCRIPT_ACTION_FN_INPUT(a1),d0
+    ; move direction into bottom 2 bits of enemy_data2 so that ogre faces in direction of motion.
+    move.b (N_ENEMY_DATA2+1)(a0),d1
+    and.b #%11111100,d1
+    or.b d0,d1
+    move.b d1,(N_ENEMY_DATA2+1)(a0)
+    ; now, move direction into top 2 bits of d0.b
+    ror.b #2,d0
+    ; set "is moving" bit and "is manual" bit
+    or.b #%00110000,d0
+    ; set the appropriate ogre data
+    move.b N_ENEMY_DATA1(a0),d1
+    and.b #%00001111,d1 ; only want to set the manual-motion-relevant bits
+    or.b d0,d1
+    move.b d1,N_ENEMY_DATA1(a0)
+.end
+    rts

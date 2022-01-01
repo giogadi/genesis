@@ -30,7 +30,13 @@
     dc.l UtilReturnTrue
     dc.l 0
     dc.l ScriptActionSpawnEntity
-    dc.w ENTITY_TYPE_OGRE,138,48,0
+    dc.w ENTITY_TYPE_OGRE,160,-40,0
+    ; move ogre down
+    dc.l UtilReturnTrue
+    dc.l 0
+    dc.l ScriptActionMoveOgre
+    dc.b FACING_DOWN,0
+    dc.w 0,0,0
     ; unfreeze hero
     dc.l UtilReturnTrue
     dc.l 0

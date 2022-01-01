@@ -10,7 +10,7 @@ OGRE_HURT_FLICKER_DURATION: equ 30
 OGRE_HP: equ 10
 
 ; State:
-; ENEMY_DATA_1: 0000 00(next_state,2) 0000 00(state,2)
+; ENEMY_DATA_1: (manual_move_dir,2)(manual_is_moving,1)(manual_control,1) 00(next_state,2) 0000 00(state,2)
 ; ENEMY_DATA_2: (hit-blink,8) 0000 00(facing_direction,2)
 OGRE_STATE_MASK: equ %00000011
 OGRE_DIRECTION_MASK: equ %00000011
@@ -431,6 +431,12 @@ OgreUpdateFromSlash:
 ; a2: ogre struct
 ; d2: not allowed
 OgreEnemyUpdate:
+    ; if under manual control, do a separate manual control update.
+    btst.b #4,N_ENEMY_DATA1(a2)
+    beq .NotManualControl
+    jsr OgreManualUpdate
+    bra .end
+.NotManualControl
     ; update hurt flicker
     tst.b N_ENEMY_DATA2(a2)
     beq.s .DoneFlickering
@@ -493,7 +499,7 @@ OgreIdleUpdate:
     ; check if should switch to slash startup state. For now, it's on a timer.
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     bgt.s .NoTransition
-    and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to startup
+    and.b #(!OGRE_STATE_MASK),N_ENEMY_DATA1(a2) ; set next_state to startup
     or.b #OGRE_STATE_STARTUP,N_ENEMY_DATA1(a2)
     ; GROSS: figure out a good way to do new state init in the state itself
     move.w #OGRE_STARTUP_DURATION,N_ENEMY_STATE_FRAMES_LEFT(a2)
@@ -504,14 +510,14 @@ OgreStartupUpdate:
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     bgt.s .NoTransition
     ; Transition to slashing
-    and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to slashing
+    and.b #(!OGRE_STATE_MASK),N_ENEMY_DATA1(a2) ; set next_state to slashing
     or.b #OGRE_STATE_SLASHING,N_ENEMY_DATA1(a2)
 .NoTransition
     rts
 
 OgreSlashingUpdate:
     ; only slashing for one frame. Transition to recovery.
-    and.b #%11111100,N_ENEMY_DATA1(a2) ; set next_state to recovery
+    and.b #(!OGRE_STATE_MASK),N_ENEMY_DATA1(a2) ; set next_state to recovery
     or.b #OGRE_STATE_RECOVERY,N_ENEMY_DATA1(a2)
     move.w #OGRE_RECOVERY_DURATION,N_ENEMY_STATE_FRAMES_LEFT(a2)
     rts
@@ -520,7 +526,7 @@ OgreRecoveryUpdate:
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     bgt.s .NoTransition
     ; Transition to idle
-    and.b #%11111100,N_ENEMY_DATA1(a2)
+    and.b #(!OGRE_STATE_MASK),N_ENEMY_DATA1(a2)
     or.b #OGRE_STATE_IDLE,N_ENEMY_DATA1(a2)
     move.w #30,N_ENEMY_STATE_FRAMES_LEFT(a2)
 .NoTransition
@@ -533,7 +539,7 @@ OgreEnemyAliveUpdate:
     ; transition to "next state" by copying next state into current state.
     move.b N_ENEMY_DATA1(a2),d0
     and.b #OGRE_STATE_MASK,d0
-    and.b #%11111100,(N_ENEMY_DATA1+1)(a2)
+    and.b #(!OGRE_STATE_MASK),(N_ENEMY_DATA1+1)(a2)
     or.b d0,(N_ENEMY_DATA1+1)(a2)
     M_JumpTable #.StateJumpTable,a0,d0 ; new state still in d0
 .StateJumpTable dc.l .Idle,.Startup,.Slashing,.Recovery
@@ -908,5 +914,31 @@ OgreLoad:
     move.w #OGRE_HP,N_ENEMY_HP(a2)
     move.w #120,N_ENEMY_STATE_FRAMES_LEFT(a2)
     clr.w N_ENEMY_DATA1(a2)
+    ; initialize as manually controlled
+    bset.b #4,N_ENEMY_DATA1(a2)
     clr.w N_ENEMY_DATA2(a2)
+    rts
+
+OgreManualUpdate:
+    move.b N_ENEMY_DATA1(a2),d0
+    btst.l #5,d0 ; are we moving the ogre?
+    beq .end
+    ; get motion direction
+    rol.b #2,d0 ; put motion direction in first 2 bits of d0
+    and.b #%00000011,d0 ; mask out all but the first 2 bits of d0
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+.Up
+    sub.l #OGRE_WALK_SPEED,N_ENEMY_Y(a2)
+    bra .end
+.Down
+    add.l #OGRE_WALK_SPEED,N_ENEMY_Y(a2)
+    bra .end
+.Left
+    sub.l #OGRE_WALK_SPEED,N_ENEMY_X(a2)
+    bra .end
+.Right
+    add.l #OGRE_WALK_SPEED,N_ENEMY_X(a2)
+    bra .end
+.end
     rts
