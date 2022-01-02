@@ -34,9 +34,29 @@
     ; move ogre down
     dc.l UtilReturnTrue
     dc.l 0
-    dc.l ScriptActionMoveOgre
+    dc.l ScriptActionMoveStoredOgre
     dc.b FACING_DOWN,0
     dc.w 0,0,0
+    ; when ogre hits its mark, stop the ogre
+    dc.l ScriptCondStoredEntityYGreaterThan
+    dc.w 72,0
+    dc.l ScriptActionStopStoredOgre
+    dc.l 0,0
+    ; put ogre in "ready-to-slash" pose
+    dc.l UtilReturnTrue
+    dc.l 0
+    dc.l ScriptActionStoredOgreSetState
+    dc.b OGRE_STATE_STARTUP,0
+    dc.w 0,0,0
+    ; wait a little bit, then let ogre AI take over
+    dc.l UtilReturnTrue
+    dc.l 0
+    dc.l ScriptActionResetCounter
+    dc.l 0,0
+    dc.l ScriptCondAddCounterAndCheckValue
+    dc.l 120
+    dc.l ScriptActionStoredOgreEnableAI
+    dc.l 0,0
     ; unfreeze hero
     dc.l UtilReturnTrue
     dc.l 0

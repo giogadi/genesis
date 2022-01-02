@@ -16,14 +16,60 @@ ScriptCondHeroYLessThan:
 ScriptCondCameraTopYLessThan:
     move.l CURRENT_SCRIPT_ITEM,a1
     move.w SCRIPT_COND_FN_INPUT(a1),d0 ; y-value
-    sub.w CAMERA_TOP_Y,d0 ; y-value - camera_top_y
-    ; cond is satisfied if d0 > 0
+    cmp.w CAMERA_TOP_Y,d0 ; y-value - camera_top_y
+    ; cond is satisfied if > 0
     bgt .satisfied
     ; unsatisfied
     move.b #0,d0
     rts
 .satisfied
     move.b #1,d0
+    rts
+
+; y-value in SCRIPT_COND_FN_INPUT.w
+ScriptCondStoredEntityYGreaterThan:
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.w SCRIPT_COND_FN_INPUT(a1),d0 ; y-value
+    move.l SCRIPT_STORED_ENTITY,a0
+    move.w N_ENEMY_Y(a0),d1 ; entity y
+    cmp.w d1,d0 ; y-value - entity_y
+    ; cond is satisfied if (d0 - d1) < 0
+    blt .satisfied
+    ; unsatisfied
+    move.b #0,d0
+    rts
+.satisfied
+    move.b #1,d0
+    rts
+
+; counter is assumed to be SCRIPT_DATA.l
+; target value is in SCRIPT_COND_FN_INPUT.l
+ScriptCondAddCounterAndCheckValue:
+    move.l SCRIPT_DATA,d0
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.l SCRIPT_COND_FN_INPUT(a1),d1
+    cmp.l d1,d0
+    bge .satisfied
+    ; unsatisfied
+    add.l #1,SCRIPT_DATA ; increment counter
+    move.b #0,d0
+    rts
+.satisfied
+    move.b #1,d0
+    rts
+
+; counter is assumed to be SCRIPT_DATA.l
+ScriptActionResetCounter:
+    clr.l SCRIPT_DATA
+    rts
+
+; entity_type in SCRIPT_ACTION_FN_INPUT.w
+; spawn_x in (SCRIPT_ACTION_FN_INPUT+2).w
+; spawn_y in (SCRIPT_ACTION_FN_INPUT+4).w
+; last word empty
+ScriptActionSpawnEntityAndStore:
+    jsr ScriptActionSpawnEntity
+    move.l LAST_SPAWNED_ENTITY,SCRIPT_STORED_ENTITY
     rts
 
 ; entity_type in SCRIPT_ACTION_FN_INPUT.w
@@ -36,6 +82,7 @@ ScriptActionSpawnEntity:
     tst.w d0
     ble .end ; if no empty entity found, just return.
     ; our empty entity is in a0
+    move.l a0,SCRIPT_STORED_ENTITY
     move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a0)
     move.l CURRENT_SCRIPT_ITEM,a1
     move.w SCRIPT_ACTION_FN_INPUT(a1),N_ENEMY_TYPE(a0)
@@ -86,12 +133,8 @@ ScriptActionCameraFollowHero:
     rts
 
 ; motion_dir is in SCRIPT_ACTION_FN_INPUT.b
-ScriptActionMoveOgre:
-    ; first find our ogre enemy.
-    move.w #ENTITY_TYPE_OGRE,d0
-    jsr UtilFindLiveEntityOfType
-    tst.b d0
-    ble .end ; if no ogre found, just quit
+ScriptActionMoveStoredOgre:
+    move.l SCRIPT_STORED_ENTITY,a0
     ; our ogre enemy is in a0
     move.l CURRENT_SCRIPT_ITEM,a1
     move.b SCRIPT_ACTION_FN_INPUT(a1),d0
@@ -110,4 +153,30 @@ ScriptActionMoveOgre:
     or.b d0,d1
     move.b d1,N_ENEMY_DATA1(a0)
 .end
+    rts
+
+ScriptActionStopStoredOgre:
+    move.l SCRIPT_STORED_ENTITY,a0
+    ; clear "is moving" bit of ogre
+    bclr.b #5,N_ENEMY_DATA1(a0)
+    rts
+
+; desired state is in SCRIPT_ACTION_FN_INPUT.b
+ScriptActionStoredOgreSetState:
+    move.l SCRIPT_STORED_ENTITY,a0
+    ; ogre is in a0
+    ; get desired state from action input
+    move.l CURRENT_SCRIPT_ITEM,a1
+    move.b SCRIPT_ACTION_FN_INPUT(a1),d0
+    move.b (N_ENEMY_DATA1+1)(a0),d1
+    and.b #(!OGRE_STATE_MASK),d1
+    or.b d0,d1
+    move.b d1,(N_ENEMY_DATA1+1)(a0)
+.end
+    rts
+
+ScriptActionStoredOgreEnableAI:
+    move.l SCRIPT_STORED_ENTITY,a0
+    ; clear top 4 bits (all manual-control related) of ogre enemy data
+    and.b #%00001111,N_ENEMY_DATA1(a0)
     rts
