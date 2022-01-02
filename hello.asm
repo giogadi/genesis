@@ -520,9 +520,15 @@ LoadTileMapB:
     move.w d1,vdp_data
     dbra d0,.loop
 
-    ; Enemies are at the end of the tilemap file. Enemies come after
-    ; 2 layers of width*height words
-    move.l #(TileMap+2*TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    ; after the tilemap comes the hero start position. this is after 2 layers of width*height words
+    ; in the tilemap data.
+TILEMAP_HERO_START_DATA: equ TileMap+2*TILEMAP_WIDTH*TILEMAP_HEIGHT*2
+    move.w TILEMAP_HERO_START_DATA,CURRENT_X
+    move.w (TILEMAP_HERO_START_DATA+2),CURRENT_Y
+
+    ; Enemies are at the end of the tilemap file. They come right after the hero start data above.
+TILEMAP_ENEMY_DATA: equ (TILEMAP_HERO_START_DATA+4)
+    move.l #TILEMAP_ENEMY_DATA,a0
     jsr UtilLoadEnemies
 
 ; start with default/idle animation
@@ -536,9 +542,6 @@ LoadTileMapB:
 __main
 ; PSG test.
     ;jsr @test_psg
-
-    move.w #(20*8),CURRENT_X
-    move.w #(85*8),CURRENT_Y
 
 LEFT_IDLE_STATE: equ 0
 RIGHT_IDLE_STATE: equ 1
@@ -740,9 +743,29 @@ TitleGameLoop:
 
 CAMERA_LEFT_X: so.w 1
     move.w #0,CAMERA_LEFT_X
+
 CAMERA_TOP_Y: so.w 1
-    ;move.w #2*8,CAMERA_TOP_Y
-    move.w #((TILEMAP_HEIGHT-VISIBLE_TILE_H)*8),CAMERA_TOP_Y
+    ; set camera pos to center on hero (but clamp to tilemap dimensions)
+    move.w CURRENT_Y,d0
+    add.w #(HERO_HEIGHT/2-VISIBLE_TILE_H*8/2),d0
+    ; if camera is above top of map (into the top 2 rows of padding), clamp.
+CAMERA_MIN_Y: equ 2*8
+    move.w #CAMERA_MIN_Y,d1
+    cmp.w d1,d0
+    bge .AfterClampCameraTop
+    move.w #CAMERA_MIN_Y,d0
+.AfterClampCameraTop
+    ; if camera is below bottom of map, clamp.
+CAMERA_MAX_Y: equ ((TILEMAP_HEIGHT-28)*8)
+    move.w #CAMERA_MAX_Y,d1
+    cmp.w d0,d1
+    bge .AfterClampCameraBottom
+    move.w #CAMERA_MAX_Y,d0
+.AfterClampCameraBottom
+    move.w d0,CAMERA_TOP_Y
+
+    
+; IF I REMEMBER CORRECTLY, these only need to be changed if the tilemap width changes?
 NEXT_DOWN_SCROLL_VRAM_OFFSET: so.w 1
     move.w #31*64*2,NEXT_DOWN_SCROLL_VRAM_OFFSET
 NEXT_UP_SCROLL_VRAM_OFFSET: so.w 1 

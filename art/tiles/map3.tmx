@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="64" height="89" tilewidth="8" tileheight="8" infinite="0" nextlayerid="4" nextobjectid="5">
+<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="64" height="89" tilewidth="8" tileheight="8" infinite="0" nextlayerid="6" nextobjectid="7">
  <tileset firstgid="1" source="bridge2_tileset.tsx"/>
  <layer id="1" name="Tile Layer 1" width="64" height="89">
   <data encoding="csv">
@@ -187,8 +187,11 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="3" name="enemies">
+ <objectgroup id="3" name="objects">
   <object id="3" type="red_seal" x="160" y="480">
+   <point/>
+  </object>
+  <object id="6" name="hero" type="hero_start" x="160" y="680">
    <point/>
   </object>
  </objectgroup>

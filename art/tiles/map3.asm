@@ -11392,6 +11392,8 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
+; Hero start position
+	dc.w 160,680
 ; Enemies
 	dc.w 1
-	dc.w 3,160,480
+	dc.w ENTITY_TYPE_RED_SEAL,160,480

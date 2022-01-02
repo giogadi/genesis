@@ -81,9 +81,9 @@ fn convert_with_xmltree(
         }
     }
     
-    write!(asm_map_out, "; Enemies\n").unwrap();
     let object_group = tiled_map.get_child("objectgroup");
     let mut enemy_strings = Vec::<String>::new();
+    let mut hero_start: Option<(i32,i32)> = None;
     if object_group.is_some() {
         let object_group = object_group.unwrap();
         for c in &object_group.children {
@@ -94,23 +94,42 @@ fn convert_with_xmltree(
                 continue;
             }
             let type_attr = type_attr.unwrap();
-            let x = e.attributes.get("x").unwrap().parse::<u32>().unwrap();
-            let y = e.attributes.get("y").unwrap().parse::<u32>().unwrap();
-            let mut enemy_type_num = 0;
-            if type_attr == "butt" {
-                enemy_type_num = 0;
-            } else if type_attr == "hot_dog" {
-                enemy_type_num = 1;
-            } else if type_attr == "ogre" {
-                enemy_type_num = 2;
-            } else if type_attr == "red_seal" {
-                enemy_type_num = 3;
-            } else if type_attr == "spawner" {
-                enemy_type_num = 4;
+            let x = e.attributes.get("x").unwrap().parse::<i32>().unwrap();
+            let y = e.attributes.get("y").unwrap().parse::<i32>().unwrap();
+            
+            if type_attr == "hero_start" {
+                if hero_start.is_some() {
+                    println!("Warning: more than one hero_start object in map!");
+                }
+                hero_start = Some((x,y));
+                continue;
             }
-            enemy_strings.push(format!("\tdc.w {},{},{}", enemy_type_num, x, y));
+
+            // let mut enemy_type_num = 0;
+            let mut enemy_name = "";
+            if type_attr == "butt" {
+                // enemy_type_num = 0;
+                enemy_name = "ENTITY_TYPE_BUTT";
+            } else if type_attr == "hot_dog" {
+                // enemy_type_num = 1;
+                enemy_name = "ENTITY_TYPE_HOT_DOG";
+            } else if type_attr == "ogre" {
+                // enemy_type_num = 2;
+                enemy_name = "ENTITY_TYPE_OGRE";
+            } else if type_attr == "red_seal" {
+                // enemy_type_num = 3;
+                enemy_name = "ENTITY_TYPE_RED_SEAL";
+            } else if type_attr == "spawner" {
+                // enemy_type_num = 4;
+                enemy_name = "ENTITY_TYPE_SPAWNER";
+            }
+            enemy_strings.push(format!("\tdc.w {},{},{}", enemy_name, x, y));
         }
     }
+    assert!(hero_start.is_some());
+    write!(asm_map_out, "; Hero start position\n").unwrap();
+    write!(asm_map_out, "\tdc.w {},{}\n", hero_start.unwrap().0, hero_start.unwrap().1).unwrap();
+    write!(asm_map_out, "; Enemies\n").unwrap();
     write!(asm_map_out, "\tdc.w {}\n", enemy_strings.len()).unwrap();
     for s in enemy_strings {
         write!(asm_map_out, "{}\n", s).unwrap();
