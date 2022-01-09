@@ -14,6 +14,11 @@ HOT_DOG_RECOVERY_DURATION: equ 30
 
 HOT_DOG_SLASH_SPEED: equ 4
 
+HOT_DOG_FIREBALL_COOLDOWN: equ 60
+
+; ENEMY_DATA1.w: timer-until-next-fireball
+; ENEMY_DATA2: 0000 0000 0000 0000
+
 ; a2: butt struct
 ; d2: not allowed
 HotDogUpdate:
@@ -82,9 +87,13 @@ HotDogMaybeHurtHero:
 ; a2: enemy struct
 ; d2: not allowed
 HotDogAliveUpdate:
-    ; if we've already spawned a bullet, don't spawn another one.
-    btst.b #0,(N_ENEMY_DATA1+1)(a2)
-    bne .end
+    ; check fireball timer
+    move.w N_ENEMY_DATA1(a2),d0
+    ble .FireballTime
+    ; not fireball time yet. decrement timer and exit
+    sub.w #1,N_ENEMY_DATA1(a2)
+    bra .end ; not time for fireball yet
+.FireballTime
     ; empty entity in a0 if d0 > 0
     jsr UtilFindEmptyEntity    
     tst.w d0
@@ -96,14 +105,41 @@ HotDogAliveUpdate:
     move.w N_ENEMY_Y(a2),d0
     add.w #16,d0
     move.w d0,N_ENEMY_Y(a0)
-    ; to use the entity's virtual load function, we gotta have the output struct in a2.
+    ; to use the entity's load function, we gotta have the output struct in a2.
     ; so we push the current a2 onto the stack to make room.
     move.l a2,-(sp)
     move.l a0,a2
-    jsr UtilEnemyLoadVirtual
-    move.l (sp)+,a2
-    ; flip flag so we don't spawn more than one fireball
-    bset.b #0,(N_ENEMY_DATA1+1)(a2)
+    jsr FireballLoad
+    ; set fireball's velocity toward hero at 1px/s
+    move.w CURRENT_X,d0
+    sub.w N_ENEMY_X(a2),d0 ; hero.x - enemy.x
+    move.w CURRENT_Y,d1
+    sub.w N_ENEMY_Y(a2),d1 ; hero.y - enemy.y
+    ; push x,y onto the stack to call atan2
+    move.w d1,-(sp)
+    move.w d0,-(sp)
+    jsr Atan2
+    add.l #4,sp ; pop arguments back off stack
+    ; angle is in d0. we need to get cos and sin of it.
+    move.b d0,d1 ; make copy of angle
+    jsr Cos
+    ext.l d0 ; output is a word, but we want to do a signed add to a long
+    ; push d2 onto the stack so we can use it
+    move.b d2,-(sp)
+    move.b #(ONE_PIXEL_LONG_UNIT_LOG2-8),d2
+    lsl.l d2,d0 ; cos(theta) * 1px/s
+    move.l d0,N_ENEMY_DATA1(a2) ; set x_vel
+    ; now sin
+    move.b d1,d0
+    jsr Sin
+    ext.l d0
+    move.b #(ONE_PIXEL_LONG_UNIT_LOG2-8),d2
+    lsl.l d2,d0 ; sin(theta) * 1px/s
+    move.l d0,N_ENEMY_DATA3(a2) ; set y_vel
+    move.b (sp)+,d2
+    move.l (sp)+,a2 ; we're done with fireball in a2, so put back previous value of a2 (hotdog)
+    ; reset fireball timer
+    move.w #HOT_DOG_FIREBALL_COOLDOWN,N_ENEMY_DATA1(a2)
 .end
     rts
 
@@ -305,6 +341,7 @@ HotDogLoad
     move.w #8,N_ENEMY_HALF_W(a2)
     move.w #8,N_ENEMY_HALF_H(a2)
     move.w #1,N_ENEMY_HP(a2)
-    clr.w N_ENEMY_DATA1(a2)
+    ;clr.w N_ENEMY_DATA1(a2)
+    move.w #HOT_DOG_FIREBALL_COOLDOWN,N_ENEMY_DATA1(a2)
     clr.w N_ENEMY_DATA2(a2)
     rts

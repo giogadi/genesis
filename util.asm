@@ -1047,6 +1047,35 @@ UtilMinAABBOverlapHero:
     move.b #-1,d0
     rts
 
+; sp + 4: x
+; sp + 6: y
+; return value in d0.b
+UtilPointInCameraView:
+    move.w 4(sp),d0 ; x
+    move.w CAMERA_LEFT_X,d1
+    ; x < camera_left_x : return false
+    cmp.w d0,d1
+    bgt .PointNotInside
+    add.w #(VISIBLE_TILE_W*8),d1 ; camera_right_x
+    ; camera_right_x <= x: return false
+    cmp.w d1,d0
+    bge .PointNotInside
+    move.w 6(sp),d0 ; y
+    move.w CAMERA_TOP_Y,d1
+    ; if y < camera_top_y : return false
+    cmp.w d0,d1
+    bgt .PointNotInside
+    add.w #(VISIBLE_TILE_H*8),d1 ; camera_bottom_y
+    ; camera_bottom_y <= y: return false
+    cmp.w d1,d0
+    bgt .PointNotInside
+    ; point is inside!
+    move.b #1,d0
+    rts
+.PointNotInside
+    move.b #0,d0
+    rts
+
 ; if d0.b > 0, a0 points to an empty entity.
 ; if d0.b <= 0, no empty entity was found.
 UtilFindEmptyEntity:

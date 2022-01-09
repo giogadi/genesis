@@ -129,6 +129,9 @@ VRAM_MAX_ADDR:    equ $FFFF
 CRAM_MAX_ADDR:    equ $7F
 VSRAM_MAX_ADDR:   equ $4F
 
+ONE_PIXEL_LONG_UNIT_LOG2: equ 16
+ONE_PIXEL_LONG_UNIT: equ (1<<ONE_PIXEL_LONG_UNIT_LOG2)
+
 ; struct Enemy
     setso 0
 N_ENEMY_STATE: so.w 1
@@ -141,6 +144,8 @@ N_ENEMY_HALF_H: so.w 1
 N_ENEMY_HP: so.w 1
 N_ENEMY_DATA1: so.w 1
 N_ENEMY_DATA2: so.w 1
+N_ENEMY_DATA3: so.w 1
+N_ENEMY_DATA4: so.w 1
 N_ENEMY_SIZE: equ __SO
 
 ; struct Script

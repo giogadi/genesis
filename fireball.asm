@@ -6,15 +6,29 @@ FireballVTable:
     dc.l UtilReturnFalse
     dc.l FireballLoad
 
-; ENEMY_DATA_1: 0000 0000 0000 0000
-; ENEMY_DATA_2: 0000 0000 0000 0000
-
-FIREBALL_SPEED: equ (65536/2) ; 1 pixel per frame
+; ENEMY_DATA1.l: x velocity
+; ENEMY_DATA3.l: y velocity
 
 ; a2: entity struct
 ; d2: not allowed
 FireballUpdate:
-    add.l #FIREBALL_SPEED,N_ENEMY_Y(a2)
+    ; check if fireball is outside of camera view + some padding
+    move.w N_ENEMY_Y(a2),-(sp)
+    move.w N_ENEMY_X(a2),-(sp)
+    jsr UtilPointInCameraView
+    add.w #4,sp
+    tst.b d0
+    bne .StillAlive
+    ; fireball is outside of view! despawn it.
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+    rts
+.StillAlive
+    move.l N_ENEMY_X(a2),d0
+    add.l N_ENEMY_DATA1(a2),d0
+    move.l d0,N_ENEMY_X(a2)
+    move.l N_ENEMY_Y(a2),d0
+    add.l N_ENEMY_DATA3(a2),d0
+    move.l d0,N_ENEMY_Y(a2)
     rts
 
 ; a2: enemy struct start
@@ -58,9 +72,9 @@ FireballMaybeHurtHero:
     rts
 
 FireballLoad
-    move.w #4,N_ENEMY_HALF_W(a2)
-    move.w #4,N_ENEMY_HALF_H(a2)
+    move.w #3,N_ENEMY_HALF_W(a2)
+    move.w #3,N_ENEMY_HALF_H(a2)
     move.w #1,N_ENEMY_HP(a2)
-    clr.w N_ENEMY_DATA1(a2)
-    clr.w N_ENEMY_DATA2(a2)
+    clr.l N_ENEMY_DATA1(a2)
+    clr.l N_ENEMY_DATA3(a2)
     rts

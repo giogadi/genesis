@@ -200,7 +200,7 @@ ButtZoomingUpdate:
     jsr Cos
     ext.l d0 ; output is a word, but we want to add to do a signed add to a long
     move.b #10,d1 
-    lsl.l d1,d0 ; divide out 256, multiply 65536 * 2 (2 pixel per frame)
+    lsl.l d1,d0 ; divide out 256, multiply 65536 * 4 (4 pixel per frame)
     add.l d0,N_ENEMY_X(a2) ; update enemy_x
     clr.l d0
     move.b (N_ENEMY_DATA2+1)(a2),d0 ; get angle again for sin
