@@ -212,8 +212,10 @@ LAST_LINK_WRITTEN: so.w 1
 
 VISIBLE_TILE_W: equ 40
 VISIBLE_TILE_H: equ 28
-SCROLL_TILE_W: equ 64
-SCROLL_TILE_H: equ 32
+SCROLL_TILE_W_LOG2: equ 6
+SCROLL_TILE_H_LOG2: equ 5
+SCROLL_TILE_W: equ (1<<SCROLL_TILE_W_LOG2)
+SCROLL_TILE_H: equ (1<<SCROLL_TILE_H_LOG2)
 
     include util.asm
     include script_functions.asm
@@ -505,14 +507,13 @@ TILE_COLLISIONS: so.w TILE_SET_SIZE
     move.w (a0)+,(a1)+
     dbra d0,.tile_collisions_load_loop
 
-TILEMAP_WIDTH: equ 64
-TILEMAP_HEIGHT: equ 89
+TILEMAP_WIDTH: equ (1<<TILEMAP_WIDTH_LOG2)
 TILEMAP_SIZE: equ TILEMAP_WIDTH*TILEMAP_HEIGHT
 
 LoadTileMapB:
     move.w #SCROLL_B_BASE_ADDR,d0
     SetVramAddr d0,d1
-    move.w #(64*32)-1,d0
+    move.w #(SCROLL_TILE_W*SCROLL_TILE_H)-1,d0
     move.l #TileMap,a0
 .loop
     move.w (a0)+,d1
@@ -522,7 +523,7 @@ LoadTileMapB:
 
     ; after the tilemap comes the hero start position. this is after 2 layers of width*height words
     ; in the tilemap data.
-TILEMAP_HERO_START_DATA: equ TileMap+2*TILEMAP_WIDTH*TILEMAP_HEIGHT*2
+TILEMAP_HERO_START_DATA: equ TileMap+2*TILEMAP_SIZE*2
     move.w TILEMAP_HERO_START_DATA,CURRENT_X
     move.w (TILEMAP_HERO_START_DATA+2),CURRENT_Y
 
@@ -667,7 +668,7 @@ ShowTitleImage
     add.w #1,d0
     dbra d4,.CellLoop
     ; End of row
-    add.w #(2*64),d3
+    add.w #(2*SCROLL_TILE_W),d3
     dbra d2,.RowLoop
 
 ShowP1Start
@@ -765,9 +766,10 @@ CAMERA_MAX_Y: equ ((TILEMAP_HEIGHT-28)*8)
     move.w d0,CAMERA_TOP_Y
 
     
-; IF I REMEMBER CORRECTLY, these only need to be changed if the tilemap width changes?
+; IF I REMEMBER CORRECTLY, these only need to be changed if the tilemap width changes? or maybe the scroll width?
 NEXT_DOWN_SCROLL_VRAM_OFFSET: so.w 1
-    move.w #31*64*2,NEXT_DOWN_SCROLL_VRAM_OFFSET
+    ;move.w #31*64*2,NEXT_DOWN_SCROLL_VRAM_OFFSET
+    move.w #((SCROLL_TILE_H-1)*SCROLL_TILE_W*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
 NEXT_UP_SCROLL_VRAM_OFFSET: so.w 1 
     move.w #0,NEXT_UP_SCROLL_VRAM_OFFSET
 
@@ -777,12 +779,12 @@ NEXT_UP_SCROLL_VRAM_OFFSET: so.w 1
     and.l #$0000FFFF,d3
     lsr.w #3,d3 ; camera world row in tiles
     sub.w #2,d3 ; offset to center camera in scroll
-    lsl.w #7,d3 ; multiply by 64*2 to get tile offset in bytes
+    lsl.w #(SCROLL_TILE_W_LOG2+1),d3 ; multiply by SCROLL_TILE_W*2 to get tile offset in bytes
 
 LoadTileMapBAgain:
     move.w #SCROLL_B_BASE_ADDR,d0
     SetVramAddr d0,d1
-    move.w #(64*32)-1,d0
+    move.w #(SCROLL_TILE_W*SCROLL_TILE_H)-1,d0
     move.l #TileMap,a0
     add.l d3,a0
 .loop
@@ -794,8 +796,8 @@ LoadTileMapBAgain:
 LoadTileMapA:
     move.w #SCROLL_A_BASE_ADDR,d0
     SetVramAddr d0,d1
-    move.w #(64*32)-1,d0
-    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    move.w #(SCROLL_TILE_W*SCROLL_TILE_H)-1,d0
+    move.l #(TileMap+TILEMAP_SIZE*2),a0
     add.l d3,a0
 .loop
     move.w (a0)+,d1
@@ -1060,11 +1062,9 @@ TileSet:
 TileCollisions:
     include art/tiles/bridge2_tileset_collisions.asm
 
-TileMap:
-    include art/tiles/map3.asm
-
-Script:
-    include art/script.asm
+; level
+    include art/levels/bridge/level.asm
+    ;include art/levels/test1/level.asm
 
 TitleTiles:
     include art/title_320_136.asm

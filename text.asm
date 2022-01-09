@@ -1,3 +1,4 @@
+; TODO lmao vasm supports strings, idiot
 TEXT_A: equ (0+FONT_TILE_START)
 TEXT_B: equ (1+FONT_TILE_START)
 TEXT_C: equ (2+FONT_TILE_START)

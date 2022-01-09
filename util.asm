@@ -124,7 +124,7 @@ SetVsramAddr: macro
 ; d1: y
 ; both are gonna get clobbered.
 UtilSetScrollAWriteAt:
-    lsl.w #6,d1 ; 64 * y
+    lsl.w #TILEMAP_WIDTH_LOG2,d1 ; 64 * y
     add.w d0,d1 ; x + 64 * y
     add.w d1,d1 ; go from tiles to bytes
     add.w #SCROLL_A_BASE_ADDR,d1
@@ -266,7 +266,7 @@ UtilDoesTileCollide:
     move.w d0,-(sp)
     clr.l d0
     move.w 2(sp),d0 ; move tile ix back into d0
-    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    move.l #(TileMap+TILEMAP_SIZE*2),a0
     ; need to move d0 words forward, which is the same as 2*d0 bytes.
     add.l d0,d0
     add.l d0,a0
@@ -289,7 +289,6 @@ UtilDoesTileCollide:
     add.l #2,sp
     rts
 
-; NOTE: THIS ASSUMES THAT TILEMAP_WIDTH == 64!!!!
 ; x in d0, y in d1. outputs result in d0. 
 ; 0 if collision-free, 1 if collision
 ; Assume that x and y can be longs.
@@ -298,12 +297,8 @@ UtilCheckCollisions:
     ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
     lsr.l #3,d0 ; divide by 8 (tile width)
     lsr.l #3,d1
-    ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index. Oh lord,
-    ; this means querying the tilemap at this location to get the tileset value, and then querying
-    ; the collision data for that tileset value. omg
-    ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
-    ;mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
-    lsl.l #6,d1 ; 64 tiles per row, so multiply by 64 by left-shifting 6 times
+    ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index.
+    lsl.l #TILEMAP_WIDTH_LOG2,d1 ; TILEMAP_WIDTH tiles per row, so multiply by TILEMAP_WIDTH by left-shifting
     add.l d1,d0
     move.l d0,d1
     ; d0 and d1 now both hold our tile index. We gotta check this tile and the neighboring tiles that the hero
@@ -317,10 +312,16 @@ UtilCheckCollisions:
     move.w #HERO_STATE_DASHING,d4
     cmp.w HERO_STATE,d4
     beq .DashingCollisionNumber
+    ; also use dashing collision number if hero is recoiling from damage
+    move.w #HERO_STATE_HURT,d4
+    cmp.w HERO_STATE,d4
+    beq .DashingCollisionNumber
     ; not dashing
     move.w #1,d4
+    bra .AfterDashingCollisionNumber
 .DashingCollisionNumber
     move.w #2,d4
+.AfterDashingCollisionNumber
 .row_loop
 .column_loop
     ; store d1 on stack since it'll get clobbered in the next function
@@ -351,12 +352,8 @@ CheckCollisionsPositionOnly:
     ; usually done by dividing CURRENT_X by TILE_WIDTH; but we know that TILE_WIDTH is 8px. ezpz.
     lsr.w #3,d0 ; divide by 8 (tile width)
     lsr.w #3,d1
-    ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index. Oh lord,
-    ; this means querying the tilemap at this location to get the tileset value, and then querying
-    ; the collision data for that tileset value. omg
-    ; TODO: ouch, MUL is 70 cycles. Maybe we should keep track of both a (x,y) and a linear index?
-    ;mulu.w #40,d1 ; 40 tiles per row in this tilemap (UGH I KNOW OK)
-    lsl.w #6,d1 ; 64 tiles per row, so mult by 64 by << 6 (UGH I KNOW OK)
+    ; Now d0,d1 is our tile coordinate. But we need to turn that into a single index.
+    lsl.w #TILEMAP_WIDTH_LOG2,d1 ; TILEMAP_WIDTH tiles per row, so mult by left shifting
     add.w d1,d0
     ; Now d0 is our tile index. Check the tilemap+collision-table if this tile collides.
     jsr UtilDoesTileCollide
@@ -917,11 +914,11 @@ UtilUpdateCamera:
     move.w d0,d3 ; row ix
     and.l #$0000FFFF,d3
     sub.w #2,d3 ; HOWDY
-    lsl.w #7,d3 ; multiply by 64*2 to get tile offset in bytes
+    lsl.w #(TILEMAP_WIDTH_LOG2+1),d3 ; multiply by TILEMAP_WIDTH*2 to get tile offset in bytes
     move.w #SCROLL_B_BASE_ADDR,d0
     add.w NEXT_UP_SCROLL_VRAM_OFFSET,d0 ; HOWDY
     SetVramAddr d0,d1
-    move.w #(64-1),d0
+    move.w #(SCROLL_TILE_W-1),d0
     move.l #TileMap,a0
     add.l d3,a0
 .UpScrollBLoop
@@ -933,8 +930,8 @@ UtilUpdateCamera:
     move.w #SCROLL_A_BASE_ADDR,d0
     add.w NEXT_UP_SCROLL_VRAM_OFFSET,d0 ; HOWDY
     SetVramAddr d0,d1
-    move.w #(64-1),d0
-    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    move.w #(SCROLL_TILE_W-1),d0
+    move.l #(TileMap+TILEMAP_SIZE*2),a0
     add.l d3,a0
 .UpScrollALoop
     move.w (a0)+,d1
@@ -942,9 +939,9 @@ UtilUpdateCamera:
     move.w d1,vdp_data
     dbra d0,.UpScrollALoop
     ; Update next VRAM offsets, wrapping as necessary.
-    sub.w #(64*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
+    sub.w #(SCROLL_TILE_W*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
     and.w #$0FFF,NEXT_DOWN_SCROLL_VRAM_OFFSET
-    sub.w #(64*2),NEXT_UP_SCROLL_VRAM_OFFSET
+    sub.w #(SCROLL_TILE_W*2),NEXT_UP_SCROLL_VRAM_OFFSET
     and.w #$0FFF,NEXT_UP_SCROLL_VRAM_OFFSET
     bra .AfterTileScroll
 
@@ -953,11 +950,11 @@ UtilUpdateCamera:
     move.w d0,d3 ; row ix
     and.l #$0000FFFF,d3
     add.w #29,d3 ; one visible playfield plus 2 (bottom edge of scroll from current camera top)
-    lsl.w #7,d3 ; multiply by 64*2 to get tile offset in bytes
+    lsl.w #(TILEMAP_WIDTH_LOG2+1),d3 ; multiply by TILEMAP_WIDTH*2 to get tile offset in bytes
     move.w #SCROLL_B_BASE_ADDR,d0
     add.w NEXT_DOWN_SCROLL_VRAM_OFFSET,d0
     SetVramAddr d0,d1
-    move.w #(64-1),d0
+    move.w #(SCROLL_TILE_W-1),d0
     move.l #TileMap,a0
     add.l d3,a0
 .DownScrollBLoop
@@ -968,8 +965,8 @@ UtilUpdateCamera:
     move.w #SCROLL_A_BASE_ADDR,d0
     add.w NEXT_DOWN_SCROLL_VRAM_OFFSET,d0
     SetVramAddr d0,d1
-    move.w #(64-1),d0
-    move.l #(TileMap+TILEMAP_WIDTH*TILEMAP_HEIGHT*2),a0
+    move.w #(SCROLL_TILE_W-1),d0
+    move.l #(TileMap+TILEMAP_SIZE*2),a0
     add.l d3,a0
 .DownScrollALoop
     move.w (a0)+,d1
@@ -977,9 +974,9 @@ UtilUpdateCamera:
     move.w d1,vdp_data
     dbra d0,.DownScrollALoop
     ; Update next VRAM offsets, wrapping as necessary.
-    add.w #(64*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
+    add.w #(SCROLL_TILE_W*2),NEXT_DOWN_SCROLL_VRAM_OFFSET
     and.w #$0FFF,NEXT_DOWN_SCROLL_VRAM_OFFSET
-    add.w #(64*2),NEXT_UP_SCROLL_VRAM_OFFSET
+    add.w #(SCROLL_TILE_W*2),NEXT_UP_SCROLL_VRAM_OFFSET
     and.w #$0FFF,NEXT_UP_SCROLL_VRAM_OFFSET
 .AfterTileScroll
     ; actually do vscroll
