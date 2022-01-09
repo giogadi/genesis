@@ -27,7 +27,7 @@ HotDogUpdate:
     ; shouldn't happen
     rts
 .Alive:
-    ; do nothing
+    jsr HotDogAliveUpdate
     rts
 .Dying:
     jsr HotDogDyingUpdate
@@ -76,6 +76,34 @@ HotDogMaybeHurtHero:
     move.w #HERO_STATE_HURT,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.b d0,(HURT_DIRECTION+1)
+.end
+    rts
+
+; a2: enemy struct
+; d2: not allowed
+HotDogAliveUpdate:
+    ; if we've already spawned a bullet, don't spawn another one.
+    btst.b #0,(N_ENEMY_DATA1+1)(a2)
+    bne .end
+    ; empty entity in a0 if d0 > 0
+    jsr UtilFindEmptyEntity    
+    tst.w d0
+    ; if no empty entity found, just give up
+    ble .end
+    move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a0)
+    move.w #ENTITY_TYPE_FIREBALL,N_ENEMY_TYPE(a0)
+    move.w N_ENEMY_X(a2),N_ENEMY_X(a0)
+    move.w N_ENEMY_Y(a2),d0
+    add.w #16,d0
+    move.w d0,N_ENEMY_Y(a0)
+    ; to use the entity's virtual load function, we gotta have the output struct in a2.
+    ; so we push the current a2 onto the stack to make room.
+    move.l a2,-(sp)
+    move.l a0,a2
+    jsr UtilEnemyLoadVirtual
+    move.l (sp)+,a2
+    ; flip flag so we don't spawn more than one fireball
+    bset.b #0,(N_ENEMY_DATA1+1)(a2)
 .end
     rts
 

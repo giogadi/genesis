@@ -206,6 +206,7 @@ ENTITY_TYPE_HOT_DOG: equ 1
 ENTITY_TYPE_OGRE: equ 2
 ENTITY_TYPE_RED_SEAL: equ 3
 ENTITY_TYPE_SPAWNER: equ 4
+ENTITY_TYPE_FIREBALL: equ 5
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
@@ -226,6 +227,7 @@ SCROLL_TILE_H: equ (1<<SCROLL_TILE_H_LOG2)
     include ogre_enemy.asm
     include red_seal.asm
     include crab_spawner.asm
+    include fireball.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------
@@ -480,8 +482,17 @@ RED_SEAL_SPRITE_TILE_SIZE: equ (3*4)
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+FireballSpriteLoad:
+FIREBALL_SPRITE_TILE_START: equ (RED_SEAL_SPRITE_TILE_START+RED_SEAL_SPRITE_TILE_SIZE)
+FIREBALL_SPRITE_TILE_SIZE: equ 1
+    move.w #(8*FIREBALL_SPRITE_TILE_SIZE)-1,d0
+    move.l #FireballSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 FontTileLoad:
-FONT_TILE_START: equ (RED_SEAL_SPRITE_TILE_START+RED_SEAL_SPRITE_TILE_SIZE)
+FONT_TILE_START: equ (FIREBALL_SPRITE_TILE_START+FIREBALL_SPRITE_TILE_SIZE)
 FONT_TILE_SIZE: equ 40
     move.w #(8*FONT_TILE_SIZE)-1,d0
     move.l #FontTiles,a0
@@ -1063,8 +1074,8 @@ TileCollisions:
     include art/tiles/bridge2_tileset_collisions.asm
 
 ; level
-    include art/levels/bridge/level.asm
-    ;include art/levels/test1/level.asm
+    ;include art/levels/bridge/level.asm
+    include art/levels/test1/level.asm
 
 TitleTiles:
     include art/title_320_136.asm
@@ -1133,6 +1144,9 @@ RedSealSprite:
 
 DashBarSprite:
     include art/ui/dash_bar.asm
+
+FireballSprite:
+    include art/fireball.asm
 
 SineLookupTable:
     include sine_lookup_table.asm

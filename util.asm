@@ -46,7 +46,7 @@ M_UtilEnemyVTable: macro
     clr.l d1
     move.w N_ENEMY_TYPE(a2),d1
     M_JumpTable #.EnemyJumpTable,a1,d1
-.EnemyJumpTable: dc.l .Butt,.HotDog,.Ogre,.RedSeal,.CrabSpawner
+.EnemyJumpTable: dc.l .Butt,.HotDog,.Ogre,.RedSeal,.CrabSpawner,.FireballVTable
 .Butt
     add.l #ButtVTable,a0
     bra .AfterJump
@@ -61,6 +61,9 @@ M_UtilEnemyVTable: macro
     bra .AfterJump
 .CrabSpawner
     add.l #CrabSpawnerVTable,a0
+    bra .AfterJump
+.FireballVTable
+    add.l #FireballVTable,a0
     bra .AfterJump
 .AfterJump
     move.l (a0),a0
