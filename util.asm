@@ -312,9 +312,13 @@ UtilCheckCollisions:
     move.w #(HERO_WIDTH_IN_TILES+1-1),d2
     move.w #(HERO_HEIGHT_IN_TILES+1-1),d3
     ; the min value that will impede hero position update is in d4
-    move.w #HERO_STATE_DASHING,d4
-    cmp.w HERO_STATE,d4
-    beq .DashingCollisionNumber
+    ; push d0 onto stack because we need it to check if hero is dashing.
+    move.l d0,-(sp)
+    jsr HeroStateIsDashActive
+    move.b d0,d4
+    move.l (sp)+,d0
+    tst.b d4
+    bne .DashingCollisionNumber
     ; also use dashing collision number if hero is recoiling from damage
     move.w #HERO_STATE_HURT,d4
     cmp.w HERO_STATE,d4

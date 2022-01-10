@@ -18,11 +18,20 @@ FireballUpdate:
     jsr UtilPointInCameraView
     add.w #4,sp
     tst.b d0
-    bne .StillAlive
+    bne .StillInView
     ; fireball is outside of view! despawn it.
     move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
     rts
-.StillAlive
+.StillInView
+    ; Check if hero is slashing the fireball.
+    jsr UtilIsEnemyHitBySlash
+    tst.b d0
+    beq .NotSlashed
+    ; hit by slash. despawn and add hitstop
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+    rts
+.NotSlashed
     move.l N_ENEMY_X(a2),d0
     add.l N_ENEMY_DATA1(a2),d0
     move.l d0,N_ENEMY_X(a2)
@@ -64,10 +73,11 @@ FireballMaybeHurtHero:
     add.l #(6*2),sp
     tst.b d0
     blt.b .end
-    ; overlap
+    ; overlap. hurt hero and despawn fireball.
     move.w #HERO_STATE_HURT,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.b d0,(HURT_DIRECTION+1)
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
 .end
     rts
 

@@ -36,6 +36,17 @@ HeroStateDashing:
     jsr HeroStateDashingUpdate
     rts
 
+; return value in d0
+HeroStateIsDashActive:
+    tst.l HERO_DASH_CURRENT_SPEED
+    beq .Inactive
+    ; active!
+    move.b #1,d0
+    rts
+.Inactive
+    move.b #0,d0
+    rts
+
 ; Update FACING_DIRECTION,NEW_ANIM_STATE,NEW_X,NEW_Y
 HeroStateIdleUpdate:
     ; Hurt Transition
@@ -233,7 +244,17 @@ HeroStateSlashStartupUpdate
 
 ; HERO_STATE_FRAMES_LEFT,BUTTON_RELEASED_SINCE_LAST_SLASH,NEW_ANIM_STATE
 SlashStartupNewState
+    ; if dashing, slash should start up instantly.
+    jsr HeroStateIsDashActive
+    tst.b d0
+    beq .DashNotActive
+    ; dash active! instant slash
+    move.w #0,HERO_STATE_FRAMES_LEFT
+    bra .AfterSetFramesLeft
+.DashNotActive
+    ; dash inactive. add default startup.
     move.w #SLASH_STARTUP_ITERS,HERO_STATE_FRAMES_LEFT
+.AfterSetFramesLeft
     move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH
     move.l #.AnimJumpTable,a0
     clr.l d0
@@ -404,6 +425,7 @@ CheckIfHeroNewlyHurt:
 .loop
     ; if enemy is not alive, skip to next enemy
     move.w N_ENEMY_STATE(a2),d0
+    cmp.w #ENEMY_STATE_DEAD,d0
     beq.s .continue_loop
     jsr UtilEnemyHurtVirtual
 .continue_loop
@@ -418,8 +440,8 @@ MaybeSetNewlyHurtState
     move.w #3,HITSTOP_FRAMES_LEFT
     ; set hurt frame counter
     move.w #8,HERO_STATE_FRAMES_LEFT
-    ; reset slash state
-    ; move.w #SLASH_STATE_NONE,SLASH_STATE
+    ; reset dash state
+    clr.l HERO_DASH_CURRENT_SPEED
     move.l #.HurtAnimJumpTable,a0
     clr.l d0
     move.w HURT_DIRECTION,d0; ; direction hero will move during hurt

@@ -271,8 +271,8 @@
 	dc.w $3
 	dc.w $2
 	dc.w $2
-	dc.w $1
-	dc.w $3
+	dc.w $4
+	dc.w $2
 	dc.w $1
 	dc.w $2
 	dc.w $4
@@ -324,32 +324,32 @@
 	dc.w $3
 	dc.w $1
 	dc.w $3
+	dc.w $1
+	dc.w $1
 	dc.w $1
 	dc.w $1
 	dc.w $1
+	dc.w $3
+	dc.w $2
+	dc.w $1
+	dc.w $3
+	dc.w $1
+	dc.w $4
 	dc.w $1
 	dc.w $1
-	dc.w $C
-	dc.w $B
-	dc.w $D
-	dc.w $7
-	dc.w $7
-	dc.w $C
-	dc.w $C
-	dc.w $7
-	dc.w $7
-	dc.w $9
-	dc.w $A
-	dc.w $D
-	dc.w $7
-	dc.w $C
-	dc.w $8
-	dc.w $B
-	dc.w $7
-	dc.w $9
-	dc.w $9
-	dc.w $9
+	dc.w $2
+	dc.w $3
 	dc.w $1
+	dc.w $2
+	dc.w $3
+	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $3
+	dc.w $2
+	dc.w $3
+	dc.w $2
+	dc.w $4
 	dc.w $1
 	dc.w $3
 	dc.w $1
@@ -392,31 +392,31 @@
 	dc.w $4
 	dc.w $3
 	dc.w $2
+	dc.w $1
+	dc.w $2
+	dc.w $1
+	dc.w $4
+	dc.w $3
+	dc.w $4
 	dc.w $4
-	dc.w $A
-	dc.w $C
-	dc.w $D
-	dc.w $B
-	dc.w $D
-	dc.w $C
-	dc.w $7
-	dc.w $9
-	dc.w $A
-	dc.w $B
-	dc.w $8
-	dc.w $9
-	dc.w $6
-	dc.w $A
-	dc.w $B
-	dc.w $C
-	dc.w $8
-	dc.w $A
-	dc.w $8
-	dc.w $7
+	dc.w $3
 	dc.w $4
+	dc.w $3
+	dc.w $3
+	dc.w $1
+	dc.w $3
+	dc.w $2
+	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $2
+	dc.w $1
 	dc.w $3
+	dc.w $2
 	dc.w $4
 	dc.w $4
+	dc.w $4
+	dc.w $4
 	dc.w $3
 	dc.w $3
 	dc.w $4
@@ -456,29 +456,29 @@
 	dc.w $4
 	dc.w $2
 	dc.w $1
+	dc.w $4
+	dc.w $4
 	dc.w $1
-	dc.w $C
-	dc.w $B
-	dc.w $9
-	dc.w $8
-	dc.w $C
-	dc.w $7
-	dc.w $8
-	dc.w $7
-	dc.w $6
-	dc.w $B
-	dc.w $6
-	dc.w $D
-	dc.w $A
-	dc.w $A
-	dc.w $C
-	dc.w $8
-	dc.w $9
-	dc.w $D
-	dc.w $9
-	dc.w $9
+	dc.w $4
 	dc.w $2
+	dc.w $3
 	dc.w $4
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $1
+	dc.w $3
+	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $2
+	dc.w $3
+	dc.w $2
+	dc.w $2
+	dc.w $2
+	dc.w $2
+	dc.w $2
+	dc.w $2
 	dc.w $4
 	dc.w $1
 	dc.w $4
@@ -515,33 +515,33 @@
 	dc.w $4
 	dc.w $2
 	dc.w $4
+	dc.w $1
+	dc.w $3
 	dc.w $1
 	dc.w $3
+	dc.w $2
 	dc.w $1
+	dc.w $2
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $2
 	dc.w $3
+	dc.w $3
+	dc.w $4
+	dc.w $3
+	dc.w $2
 	dc.w $4
+	dc.w $4
+	dc.w $1
+	dc.w $1
+	dc.w $2
+	dc.w $2
 	dc.w $2
-	dc.w $C
-	dc.w $7
-	dc.w $7
-	dc.w $B
-	dc.w $C
-	dc.w $7
-	dc.w $6
-	dc.w $6
-	dc.w $B
-	dc.w $9
-	dc.w $7
-	dc.w $D
-	dc.w $A
-	dc.w $9
-	dc.w $C
-	dc.w $C
-	dc.w $A
-	dc.w $7
-	dc.w $A
-	dc.w $7
 	dc.w $1
+	dc.w $4
+	dc.w $3
+	dc.w $4
 	dc.w $2
 	dc.w $2
 	dc.w $2
@@ -582,31 +582,31 @@
 	dc.w $4
 	dc.w $2
 	dc.w $3
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $1
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $2
+	dc.w $2
+	dc.w $4
 	dc.w $2
+	dc.w $1
+	dc.w $3
+	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $3
 	dc.w $4
 	dc.w $2
-	dc.w $D
-	dc.w $7
-	dc.w $B
-	dc.w $C
-	dc.w $8
-	dc.w $8
-	dc.w $A
-	dc.w $6
-	dc.w $D
-	dc.w $A
-	dc.w $A
-	dc.w $9
-	dc.w $8
-	dc.w $7
-	dc.w $6
-	dc.w $B
-	dc.w $C
-	dc.w $C
-	dc.w $6
-	dc.w $7
 	dc.w $1
 	dc.w $1
+	dc.w $1
 	dc.w $2
 	dc.w $1
 	dc.w $2
@@ -645,30 +645,30 @@
 	dc.w $3
 	dc.w $1
 	dc.w $1
+	dc.w $3
+	dc.w $2
+	dc.w $2
+	dc.w $3
 	dc.w $3
+	dc.w $2
+	dc.w $4
+	dc.w $2
+	dc.w $2
+	dc.w $2
+	dc.w $3
+	dc.w $3
+	dc.w $1
+	dc.w $2
+	dc.w $1
+	dc.w $1
+	dc.w $2
 	dc.w $2
+	dc.w $3
+	dc.w $4
 	dc.w $2
+	dc.w $1
 	dc.w $3
-	dc.w $C
-	dc.w $9
-	dc.w $8
-	dc.w $6
-	dc.w $9
-	dc.w $6
-	dc.w $B
-	dc.w $8
-	dc.w $C
-	dc.w $8
-	dc.w $7
-	dc.w $9
-	dc.w $C
-	dc.w $D
-	dc.w $7
-	dc.w $A
-	dc.w $9
-	dc.w $A
-	dc.w $9
-	dc.w $6
+	dc.w $3
 	dc.w $4
 	dc.w $4
 	dc.w $2
@@ -705,34 +705,34 @@
 	dc.w $0
 	dc.w $3
 	dc.w $1
+	dc.w $2
+	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $4
 	dc.w $2
+	dc.w $3
+	dc.w $4
+	dc.w $3
+	dc.w $3
 	dc.w $2
 	dc.w $4
 	dc.w $4
+	dc.w $3
+	dc.w $2
+	dc.w $2
+	dc.w $2
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $3
 	dc.w $4
 	dc.w $2
 	dc.w $3
 	dc.w $4
-	dc.w $D
-	dc.w $9
-	dc.w $8
-	dc.w $8
-	dc.w $C
-	dc.w $B
-	dc.w $B
-	dc.w $8
-	dc.w $A
-	dc.w $A
-	dc.w $C
-	dc.w $7
-	dc.w $6
-	dc.w $A
-	dc.w $7
-	dc.w $9
-	dc.w $7
-	dc.w $D
-	dc.w $D
-	dc.w $8
+	dc.w $2
+	dc.w $4
+	dc.w $1
 	dc.w $2
 	dc.w $3
 	dc.w $4
@@ -776,27 +776,27 @@
 	dc.w $1
 	dc.w $1
 	dc.w $1
+	dc.w $1
+	dc.w $1
+	dc.w $4
+	dc.w $2
+	dc.w $3
+	dc.w $3
+	dc.w $3
+	dc.w $4
+	dc.w $4
+	dc.w $4
+	dc.w $2
+	dc.w $4
 	dc.w $4
-	dc.w $6
-	dc.w $7
-	dc.w $7
-	dc.w $B
-	dc.w $D
-	dc.w $9
-	dc.w $8
-	dc.w $A
-	dc.w $6
-	dc.w $9
-	dc.w $A
-	dc.w $9
-	dc.w $8
-	dc.w $9
-	dc.w $6
-	dc.w $C
-	dc.w $B
-	dc.w $B
-	dc.w $A
-	dc.w $6
+	dc.w $1
+	dc.w $1
+	dc.w $4
+	dc.w $3
+	dc.w $2
+	dc.w $2
+	dc.w $4
+	dc.w $4
 	dc.w $2
 	dc.w $1
 	dc.w $2
@@ -831,37 +831,37 @@
 	dc.w $0
 	dc.w $0
 	dc.w $0
+	dc.w $1
+	dc.w $3
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $2
 	dc.w $1
+	dc.w $3
+	dc.w $4
+	dc.w $4
+	dc.w $3
 	dc.w $3
 	dc.w $2
+	dc.w $1
+	dc.w $3
 	dc.w $4
+	dc.w $2
 	dc.w $3
 	dc.w $2
+	dc.w $2
+	dc.w $3
+	dc.w $3
 	dc.w $2
 	dc.w $2
 	dc.w $3
 	dc.w $1
-	dc.w $6
-	dc.w $9
-	dc.w $A
-	dc.w $9
-	dc.w $A
-	dc.w $B
-	dc.w $C
-	dc.w $C
-	dc.w $7
-	dc.w $B
-	dc.w $7
-	dc.w $9
-	dc.w $6
-	dc.w $A
-	dc.w $6
-	dc.w $A
-	dc.w $6
-	dc.w $C
-	dc.w $B
-	dc.w $9
+	dc.w $3
+	dc.w $4
+	dc.w $2
 	dc.w $1
+	dc.w $1
 	dc.w $2
 	dc.w $2
 	dc.w $3
@@ -899,32 +899,32 @@
 	dc.w $2
 	dc.w $2
 	dc.w $4
+	dc.w $3
+	dc.w $1
+	dc.w $2
+	dc.w $2
+	dc.w $1
+	dc.w $1
 	dc.w $3
+	dc.w $3
 	dc.w $1
+	dc.w $2
+	dc.w $4
+	dc.w $2
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $4
+	dc.w $4
 	dc.w $2
 	dc.w $1
+	dc.w $1
+	dc.w $2
 	dc.w $2
+	dc.w $4
+	dc.w $3
 	dc.w $2
-	dc.w $6
-	dc.w $7
-	dc.w $8
-	dc.w $A
-	dc.w $B
-	dc.w $8
-	dc.w $8
-	dc.w $A
-	dc.w $A
-	dc.w $B
-	dc.w $7
-	dc.w $A
-	dc.w $9
-	dc.w $C
-	dc.w $6
-	dc.w $D
-	dc.w $9
-	dc.w $A
-	dc.w $C
-	dc.w $9
+	dc.w $4
 	dc.w $3
 	dc.w $1
 	dc.w $2
@@ -966,29 +966,29 @@
 	dc.w $3
 	dc.w $4
 	dc.w $3
+	dc.w $1
+	dc.w $4
+	dc.w $3
+	dc.w $4
+	dc.w $1
+	dc.w $2
+	dc.w $3
+	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $2
 	dc.w $1
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $3
+	dc.w $2
 	dc.w $4
+	dc.w $1
 	dc.w $3
-	dc.w $D
-	dc.w $9
-	dc.w $8
-	dc.w $C
-	dc.w $9
-	dc.w $7
-	dc.w $C
-	dc.w $D
-	dc.w $D
-	dc.w $9
-	dc.w $7
-	dc.w $9
-	dc.w $D
-	dc.w $8
-	dc.w $A
-	dc.w $C
-	dc.w $8
-	dc.w $6
-	dc.w $7
-	dc.w $A
+	dc.w $2
 	dc.w $4
 	dc.w $1
 	dc.w $4
@@ -1025,34 +1025,34 @@
 	dc.w $0
 	dc.w $3
 	dc.w $2
+	dc.w $4
+	dc.w $3
 	dc.w $4
+	dc.w $1
 	dc.w $3
+	dc.w $4
+	dc.w $1
+	dc.w $4
+	dc.w $1
+	dc.w $2
+	dc.w $2
 	dc.w $4
+	dc.w $3
 	dc.w $1
+	dc.w $4
 	dc.w $3
+	dc.w $4
+	dc.w $2
+	dc.w $1
 	dc.w $4
+	dc.w $4
+	dc.w $1
 	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $2
 	dc.w $4
-	dc.w $B
-	dc.w $8
-	dc.w $A
-	dc.w $7
-	dc.w $A
-	dc.w $6
-	dc.w $D
-	dc.w $6
-	dc.w $C
-	dc.w $C
-	dc.w $8
-	dc.w $9
-	dc.w $6
-	dc.w $C
-	dc.w $A
-	dc.w $A
-	dc.w $C
-	dc.w $B
-	dc.w $8
-	dc.w $D
 	dc.w $4
 	dc.w $4
 	dc.w $3
@@ -1091,33 +1091,33 @@
 	dc.w $1
 	dc.w $3
 	dc.w $3
+	dc.w $3
+	dc.w $1
+	dc.w $2
+	dc.w $4
+	dc.w $2
 	dc.w $3
 	dc.w $1
+	dc.w $3
 	dc.w $2
 	dc.w $4
+	dc.w $1
+	dc.w $3
 	dc.w $2
+	dc.w $2
+	dc.w $1
+	dc.w $3
+	dc.w $4
+	dc.w $4
+	dc.w $1
 	dc.w $3
-	dc.w $6
-	dc.w $A
-	dc.w $A
-	dc.w $D
-	dc.w $C
-	dc.w $7
-	dc.w $6
-	dc.w $9
-	dc.w $C
-	dc.w $6
-	dc.w $A
-	dc.w $B
-	dc.w $B
-	dc.w $6
-	dc.w $9
-	dc.w $6
-	dc.w $9
-	dc.w $A
-	dc.w $A
-	dc.w $7
+	dc.w $4
 	dc.w $2
+	dc.w $3
+	dc.w $1
+	dc.w $3
+	dc.w $1
+	dc.w $3
 	dc.w $2
 	dc.w $4
 	dc.w $2
@@ -1161,27 +1161,27 @@
 	dc.w $3
 	dc.w $4
 	dc.w $1
-	dc.w $D
-	dc.w $A
-	dc.w $8
-	dc.w $B
-	dc.w $B
-	dc.w $9
-	dc.w $6
-	dc.w $9
-	dc.w $7
-	dc.w $A
-	dc.w $8
-	dc.w $A
-	dc.w $A
-	dc.w $A
-	dc.w $B
-	dc.w $D
-	dc.w $6
-	dc.w $D
-	dc.w $6
-	dc.w $B
 	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $4
+	dc.w $1
+	dc.w $4
+	dc.w $2
+	dc.w $1
+	dc.w $2
+	dc.w $1
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $3
+	dc.w $4
+	dc.w $2
 	dc.w $3
 	dc.w $2
 	dc.w $3
@@ -1217,37 +1217,37 @@
 	dc.w $0
 	dc.w $1
 	dc.w $4
+	dc.w $2
 	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $3
+	dc.w $3
+	dc.w $4
 	dc.w $2
+	dc.w $1
 	dc.w $4
+	dc.w $1
+	dc.w $1
 	dc.w $4
 	dc.w $3
+	dc.w $1
+	dc.w $2
 	dc.w $3
 	dc.w $4
+	dc.w $1
+	dc.w $1
 	dc.w $2
-	dc.w $D
-	dc.w $B
-	dc.w $A
-	dc.w $9
-	dc.w $8
-	dc.w $C
-	dc.w $8
-	dc.w $6
-	dc.w $A
-	dc.w $A
-	dc.w $7
-	dc.w $A
-	dc.w $B
-	dc.w $C
-	dc.w $D
-	dc.w $7
-	dc.w $8
-	dc.w $C
-	dc.w $7
-	dc.w $B
+	dc.w $3
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $3
 	dc.w $2
+	dc.w $4
 	dc.w $4
 	dc.w $4
+	dc.w $4
 	dc.w $3
 	dc.w $1
 	dc.w $3
@@ -1282,33 +1282,33 @@
 	dc.w $4
 	dc.w $2
 	dc.w $4
+	dc.w $3
+	dc.w $1
+	dc.w $1
+	dc.w $2
+	dc.w $1
+	dc.w $2
 	dc.w $3
+	dc.w $2
 	dc.w $1
+	dc.w $3
+	dc.w $4
+	dc.w $4
+	dc.w $2
+	dc.w $2
 	dc.w $1
+	dc.w $2
+	dc.w $3
 	dc.w $2
+	dc.w $3
+	dc.w $3
 	dc.w $1
 	dc.w $2
 	dc.w $3
-	dc.w $8
-	dc.w $9
-	dc.w $7
-	dc.w $B
-	dc.w $A
-	dc.w $9
-	dc.w $A
-	dc.w $7
-	dc.w $7
-	dc.w $C
-	dc.w $A
-	dc.w $7
-	dc.w $D
-	dc.w $C
-	dc.w $C
-	dc.w $C
-	dc.w $7
-	dc.w $C
-	dc.w $8
-	dc.w $8
+	dc.w $1
+	dc.w $2
+	dc.w $4
+	dc.w $1
 	dc.w $1
 	dc.w $3
 	dc.w $3
@@ -1349,32 +1349,32 @@
 	dc.w $1
 	dc.w $1
 	dc.w $4
+	dc.w $1
+	dc.w $2
+	dc.w $3
+	dc.w $2
+	dc.w $1
+	dc.w $4
+	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $3
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $2
 	dc.w $1
 	dc.w $2
 	dc.w $3
 	dc.w $2
-	dc.w $7
-	dc.w $6
-	dc.w $9
-	dc.w $8
-	dc.w $A
-	dc.w $9
-	dc.w $D
-	dc.w $6
-	dc.w $D
-	dc.w $D
-	dc.w $8
-	dc.w $6
-	dc.w $7
-	dc.w $D
-	dc.w $6
-	dc.w $6
-	dc.w $A
-	dc.w $9
-	dc.w $7
-	dc.w $B
+	dc.w $4
 	dc.w $2
+	dc.w $3
 	dc.w $3
+	dc.w $4
+	dc.w $3
 	dc.w $1
 	dc.w $4
 	dc.w $3
@@ -1414,30 +1414,30 @@
 	dc.w $1
 	dc.w $1
 	dc.w $2
+	dc.w $1
+	dc.w $1
+	dc.w $1
+	dc.w $1
 	dc.w $1
+	dc.w $3
+	dc.w $1
+	dc.w $1
+	dc.w $2
+	dc.w $2
 	dc.w $1
+	dc.w $4
+	dc.w $4
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $3
 	dc.w $1
-	dc.w $9
-	dc.w $9
-	dc.w $6
-	dc.w $D
-	dc.w $7
-	dc.w $D
-	dc.w $D
-	dc.w $B
-	dc.w $9
-	dc.w $6
-	dc.w $7
-	dc.w $A
-	dc.w $D
-	dc.w $7
-	dc.w $8
-	dc.w $9
-	dc.w $7
-	dc.w $9
-	dc.w $6
-	dc.w $7
+	dc.w $2
+	dc.w $3
+	dc.w $3
+	dc.w $4
 	dc.w $2
+	dc.w $2
 	dc.w $3
 	dc.w $2
 	dc.w $1
@@ -1475,32 +1475,32 @@
 	dc.w $3
 	dc.w $2
 	dc.w $4
+	dc.w $3
+	dc.w $2
 	dc.w $3
 	dc.w $2
+	dc.w $1
+	dc.w $4
+	dc.w $1
 	dc.w $3
+	dc.w $3
+	dc.w $1
 	dc.w $2
+	dc.w $3
+	dc.w $4
+	dc.w $3
+	dc.w $1
+	dc.w $3
+	dc.w $3
+	dc.w $1
 	dc.w $1
+	dc.w $2
 	dc.w $4
-	dc.w $B
-	dc.w $6
-	dc.w $A
-	dc.w $7
-	dc.w $D
-	dc.w $7
-	dc.w $A
-	dc.w $8
-	dc.w $C
-	dc.w $B
-	dc.w $9
-	dc.w $A
-	dc.w $C
-	dc.w $8
-	dc.w $7
-	dc.w $A
-	dc.w $9
-	dc.w $6
-	dc.w $A
-	dc.w $D
+	dc.w $2
+	dc.w $2
+	dc.w $3
+	dc.w $2
+	dc.w $1
 	dc.w $4
 	dc.w $2E
 	dc.w $2E
@@ -1545,26 +1545,26 @@
 	dc.w $3
 	dc.w $2
 	dc.w $1
-	dc.w $9
-	dc.w $D
-	dc.w $7
-	dc.w $B
-	dc.w $D
-	dc.w $9
-	dc.w $B
-	dc.w $D
-	dc.w $6
-	dc.w $D
-	dc.w $9
-	dc.w $8
-	dc.w $A
-	dc.w $8
-	dc.w $8
-	dc.w $A
-	dc.w $A
-	dc.w $B
-	dc.w $9
-	dc.w $D
+	dc.w $2
+	dc.w $2
+	dc.w $1
+	dc.w $1
+	dc.w $4
+	dc.w $1
+	dc.w $2
+	dc.w $1
+	dc.w $1
+	dc.w $1
+	dc.w $1
+	dc.w $4
+	dc.w $2
+	dc.w $3
+	dc.w $3
+	dc.w $2
+	dc.w $2
+	dc.w $3
+	dc.w $4
+	dc.w $4
 	dc.w $3
 	dc.w $4
 	dc.w $3
@@ -1609,26 +1609,26 @@
 	dc.w $3
 	dc.w $4
 	dc.w $1
-	dc.w $C
-	dc.w $B
-	dc.w $8
-	dc.w $C
-	dc.w $7
-	dc.w $8
-	dc.w $7
-	dc.w $C
-	dc.w $7
-	dc.w $7
-	dc.w $A
-	dc.w $9
-	dc.w $B
-	dc.w $D
-	dc.w $A
-	dc.w $A
-	dc.w $C
-	dc.w $B
-	dc.w $6
-	dc.w $6
+	dc.w $3
+	dc.w $2
+	dc.w $4
+	dc.w $4
+	dc.w $4
+	dc.w $4
+	dc.w $2
+	dc.w $4
+	dc.w $3
+	dc.w $3
+	dc.w $4
+	dc.w $1
+	dc.w $1
+	dc.w $4
+	dc.w $1
+	dc.w $3
+	dc.w $4
+	dc.w $2
+	dc.w $1
+	dc.w $3
 	dc.w $3
 	dc.w $3
 	dc.w $2
@@ -1673,9 +1673,9 @@
 	dc.w $1
 	dc.w $2
 	dc.w $3
+	dc.w $2
+	dc.w $2
 	dc.w $4
-	dc.w $1
-	dc.w $1
 	dc.w $3
 	dc.w $1
 	dc.w $4
@@ -1737,8 +1737,8 @@
 	dc.w $2
 	dc.w $1
 	dc.w $3
-	dc.w $2
-	dc.w $3
+	dc.w $4
+	dc.w $1
 	dc.w $2
 	dc.w $1
 	dc.w $4
@@ -1801,7 +1801,7 @@
 	dc.w $1
 	dc.w $2
 	dc.w $2
-	dc.w $2
+	dc.w $1
 	dc.w $4
 	dc.w $3
 	dc.w $2
@@ -4097,10 +4097,7 @@
 	dc.w $0
 	dc.w $0
 ; Hero start position
-	dc.w 160,224
+	dc.w 160,184
 ; Enemies
-	dc.w 4
-	dc.w ENTITY_TYPE_HOT_DOG,120,192
-	dc.w ENTITY_TYPE_HOT_DOG,184,128
-	dc.w ENTITY_TYPE_HOT_DOG,120,128
-	dc.w ENTITY_TYPE_HOT_DOG,184,64
+	dc.w 1
+	dc.w ENTITY_TYPE_HOT_DOG,160,96
