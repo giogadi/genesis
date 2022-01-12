@@ -1127,6 +1127,24 @@ UtilFindLiveEntityOfType:
     move.l (sp)+,d2 ; restore previous value of d2.
     rts
 
+; return random number in d0.w using xorshift16
+UtilRand16:
+    move.w d2,-(sp)
+    move.w RNG_SEED,d0
+    move.w d0,d1
+    lsl.w #7,d1
+    eor.w d1,d0 ; d0: x ^= x << 7
+    move.w d0,d1 ; d1 = d0
+    move.b #9,d2
+    lsr.w d2,d1 ; x >> 9
+    eor.w d1,d0 ; d0: x ^= x >> 9
+    move.w d0,d1
+    lsl.w #8,d1 ; x << 8
+    eor.w d1,d0 ; x ^= x << 8
+    move.w (sp)+,d2
+    move.w d0,RNG_SEED
+    rts
+
 ; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
 ; TODO try to avoid long math.
 ; SmoothStep:

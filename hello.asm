@@ -667,6 +667,9 @@ CAMERA_MANUAL_PAN_X: so.b 1
 CAMERA_MANUAL_PAN_Y: so.b 1
     move.b #0,CAMERA_MANUAL_PAN_Y
 
+RNG_SEED: so.w 1
+    move.w #1,RNG_SEED
+
 ; Title screen
 ; Dimensions of title sprite are 320x136 (40x17 tiles)
 ; So every 40 tiles we will reset the vram addr to the next "row".

@@ -15,11 +15,53 @@ HOT_DOG_RECOVERY_DURATION: equ 30
 HOT_DOG_SLASH_SPEED: equ 4
 
 HOT_DOG_FIREBALL_COOLDOWN: equ 60
+HOT_DOG_STOP_TIME: equ 30
+HOT_DOG_MOVE_TIME: equ 30
 
 ; ENEMY_DATA1.w: timer-until-next-fireball
-; ENEMY_DATA2: 0000 0000 0000 0000
+; ENEMY_DATA2: (motion_angle,8) 000(is_new_state,1) (is_moving,4)
+; ENEMY_STATE_FRAMES_LEFT
 
-; a2: butt struct
+HOT_DOG_STATE_STOPPED: equ 0
+HOT_DOG_STATE_MOVING: equ 1
+; a2: entity struct
+; output: d0
+HotDogGetState:
+    move.b (N_ENEMY_DATA2+1)(a2),d0
+    and.b #$0F,d0
+    rts
+
+; a2: entity struct
+; input state: d0.b (assume only the state bits are set)
+HotDogSetState:
+    move.b (N_ENEMY_DATA2+1)(a2),d1
+    and.b #$F0,d1
+    or.b d0,d1
+    move.b d1,(N_ENEMY_DATA2+1)(a2)
+    rts
+
+; output: d0
+HotDogGetMotionAngle:
+    move.b N_ENEMY_DATA2(a2),d0
+    rts
+
+; input angle: d0.b
+HotDogSetMotionAngle:
+    move.b d0,N_ENEMY_DATA2(a2)
+    rts
+
+; update status reg
+HotDogCheckNewStateBit:
+    btst.b #4,(N_ENEMY_DATA2+1)(a2)
+    rts
+HotDogSetNewStateBit:
+    bset.b #4,(N_ENEMY_DATA2+1)(a2)
+    rts
+HotDogClearNewStateBit:
+    bclr.b #4,(N_ENEMY_DATA2+1)(a2)
+    rts
+
+; a2: entity struct
 ; d2: not allowed
 HotDogUpdate:
     ; TODO: try to make this only run in alive update
@@ -87,6 +129,68 @@ HotDogMaybeHurtHero:
 ; a2: enemy struct
 ; d2: not allowed
 HotDogAliveUpdate:
+    jsr HotDogMaybeShootFireballAtHero
+    clr.l d0
+    jsr HotDogGetState ; motion state in d0
+    M_JumpTable #.StateJumpTable,a0,d0
+.StateJumpTable dc.l .Stopped,.Moving
+.Stopped
+    jsr HotDogStoppedUpdate
+    rts
+.Moving
+    jsr HotDogMovingUpdate
+    rts
+
+HotDogStoppedUpdate:
+    jsr HotDogCheckNewStateBit
+    beq .AfterNewState
+    move.w #HOT_DOG_STOP_TIME,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    jsr HotDogClearNewStateBit
+.AfterNewState
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .StayStopped
+    ; transition to moving
+    jsr HotDogSetNewStateBit
+    move.b #HOT_DOG_STATE_MOVING,d0
+    jsr HotDogSetState
+.StayStopped
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    rts
+
+HotDogMovingUpdate:
+    jsr HotDogCheckNewStateBit
+    beq .AfterNewState
+    jsr UtilRand16 ; random value in d0
+    jsr HotDogSetMotionAngle ; set motion angle to random value
+    move.w #HOT_DOG_MOVE_TIME,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    jsr HotDogClearNewStateBit
+.AfterNewState
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .StayMoving
+    ; transition to stopped
+    jsr HotDogSetNewStateBit
+    move.b #HOT_DOG_STATE_STOPPED,d0
+    jsr HotDogSetState
+.StayMoving
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    jsr HotDogGetMotionAngle ; in d0
+    move.b d0,d1 ; copy angle to d1
+    jsr Cos ; result in d0
+    ext.l d0
+    ; push d2 onto the stack
+    move.w d2,-(sp)
+    move.b #(ONE_PIXEL_LONG_UNIT_LOG2-8),d2
+    lsl.l d2,d0
+    add.l d0,N_ENEMY_X(a2)
+    move.b d1,d0 ; get angle back in d0 and do sin
+    jsr Sin
+    ext.l d0
+    lsl.l d2,d0
+    add.l d0,N_ENEMY_Y(a2)
+    move.w (sp)+,d2
+    rts
+
+HotDogMaybeShootFireballAtHero:
     ; check fireball timer
     move.w N_ENEMY_DATA1(a2),d0
     ble .FireballTime
@@ -142,127 +246,6 @@ HotDogAliveUpdate:
     move.w #HOT_DOG_FIREBALL_COOLDOWN,N_ENEMY_DATA1(a2)
 .end
     rts
-
-; ; a2: enemy_state
-; ; a3: enemy_x
-; ; a4: enemy_y
-; ; a5: enemy_data_1
-; ; a6: enemy_data_2
-; ; d2: not allowed
-; ;
-; ; State:
-; ; ENEMY_DATA_1: 0000 000(AI_state,1) (frame_counter,8)
-; ; ENEMY_DATA_2: 0000 000(old_state,1) 0000 00(motion_direction,2)
-; UpdateHotDogEnemy:    
-;     rts ; DEBUG
-;     move.l #.StateJumpTable,a0
-;     clr.l d0
-;     move.b (a5),d0; ENEMY_DATA_1. need AI_state
-;     add.b d0,d0 ; longs to bytes
-;     add.b d0,d0
-;     and.w #%0000000000000100,d0
-;     add.l d0,a0
-;     ; dereference jump table to get address to jump to
-;     move.l (a0),a0
-;     jmp (a0)
-; .StateJumpTable dc.l HotDogSlashing,HotDogRecovery
-; HotDogSlashing:
-;     jsr HotDogSlashingUpdate
-;     bra.s UpdateHotDogEnemyEnd
-; HotDogRecovery:
-;     jsr HotDogRecoveryUpdate
-;     bra.s UpdateHotDogEnemyEnd
-; UpdateHotDogEnemyEnd
-;     bset.b #0,(a6) ; clear the "new state" field of enemy_data_2 (by setting "old state")
-;     rts
-
-; HotDogSlashingUpdate:
-;     btst.b #0,(a6) ; 0 if this is a new state
-;     bne.s .AfterNewState
-;     jsr HotDogSlashingNewState
-; .AfterNewState
-;     ; maybe transition to recovery if done slashing
-;     tst.b 1(a5)
-;     bgt.s .NoTransition
-;     move.b #HOT_DOG_RECOVERY,(a5)
-;     move.b #0,(a6) ; set new state
-;     bra.s HotDogRecovery
-; .NoTransition
-;     sub.b #1,1(a5) ; decrement frame counter
-;     move.l #.DirectionJumpTable,a0
-;     clr.l d0
-;     move.b 1(a6),d0 ; bottom byte of ENEMY_DATA_2 for current direction
-;     add.b d0,d0 ; longs to bytes
-;     add.b d0,d0 
-;     add.l d0,a0
-;     ; dereference jump table to get address to jump to
-;     move.l (a0),a0
-;     jmp (a0)
-; .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
-; .Up:
-;     sub.w #HOT_DOG_SLASH_SPEED,(a4)
-;     rts
-; .Down:
-;     add.w #HOT_DOG_SLASH_SPEED,(a4)
-;     rts
-; .Left:
-;     sub.w #HOT_DOG_SLASH_SPEED,(a3)
-;     rts
-; .Right:
-;     add.w #HOT_DOG_SLASH_SPEED,(a3)
-;     rts
-
-; HotDogSlashingNewState:
-;     move.b #HOT_DOG_SLASH_DURATION,1(a5) ; reset frame timer
-;     ; pick the slashing direction. We see whether we are farther from hero in x or y dir,
-;     ; then go in that dir.
-;     move.w (a3),d0 ; enemy_x
-;     move.w (a4),d1 ; enemy_y
-;     sub.w CURRENT_X,d0 ; enemy_x - hero_x
-;     sub.w CURRENT_Y,d1 ; enemy_y - hero_y
-;     move.w d0,d3 ; enemy_x - hero_x in d3
-;     jsr AbsValue
-;     move.w d0,d4 ; abs(dx) in d4
-;     move.w d1,d0
-;     jsr AbsValue ; abs(dy) in d0
-;     cmp.w d4,d0
-;     ble.s .FartherInX
-;     ; farther in y. now check whether to go up or down
-;     tst.w d1
-;     blt.s .GoingDown
-;     ; going up
-;     move.b #FACING_UP,1(a6) ; enemy_data_2
-;     bra.s .End
-; .GoingDown
-;     move.b #FACING_DOWN,1(a6) ; enemy_data_2
-;     bra.s .End
-; .FartherInX
-;     tst.w d3
-;     blt.s .GoingRight
-;     ; going left
-;     move.b #FACING_LEFT,1(a6)
-;     bra.s .End
-; .GoingRight
-;     move.b #FACING_RIGHT,1(a6)
-;     bra.s .End
-; .End
-;     rts
-
-; HotDogRecoveryUpdate:
-;     ; do new state setup
-;     btst.b #0,(a6) ; 0 if this is a new state
-;     bne.s .AfterNewState
-;     move.b #HOT_DOG_RECOVERY_DURATION,1(a5)
-; .AfterNewState
-;     ; maybe transition back to slashing if done with recovery
-;     tst.b 1(a5)
-;     bgt.s .NoTransition
-;     move.b #HOT_DOG_SLASHING,(a5)
-;     move.b #0,(a6) ; set new state
-;     bra.w HotDogSlashing
-; .NoTransition
-;     sub.b #1,1(a5) ; decrement frame counter
-;     rts
 
 ; a2: enemy struct start
 ; d2: don't touch
@@ -340,8 +323,8 @@ HotDogBlockHero:
 HotDogLoad
     move.w #8,N_ENEMY_HALF_W(a2)
     move.w #8,N_ENEMY_HALF_H(a2)
-    move.w #1,N_ENEMY_HP(a2)
-    ;clr.w N_ENEMY_DATA1(a2)
+    move.w #3,N_ENEMY_HP(a2)
     move.w #HOT_DOG_FIREBALL_COOLDOWN,N_ENEMY_DATA1(a2)
     clr.w N_ENEMY_DATA2(a2)
+    jsr HotDogSetNewStateBit
     rts
