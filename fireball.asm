@@ -73,11 +73,21 @@ FireballMaybeHurtHero:
     add.l #(6*2),sp
     tst.b d0
     blt.b .end
-    ; overlap. hurt hero and despawn fireball.
+    ; overlap.
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2) ; despawn fireball
+    ; check if hero is in parry state (TODO: ALSO CHECK THAT HERO PARRIED IN CORRECT DIRECTION)
+    move.w HERO_STATE,d1
+    cmp.w #HERO_STATE_PARRY_ACTIVE,d1
+    bne .NotParry
+    ; parry
+    move.w #HERO_STATE_PARRY_SUCCESS_RECOVERY,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    bra .end
+.NotParry
+    ; hurt hero.
     move.w #HERO_STATE_HURT,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.b d0,(HURT_DIRECTION+1)
-    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
 .end
     rts
 

@@ -198,7 +198,7 @@ ENEMY_TYPE_HOT_DOG: equ 1
 ENEMY_TYPE_OGRE: equ 2
 ENEMY_TYPE_RED_SEAL: equ 3
 
-MAX_NUM_ENEMIES: equ 5
+MAX_NUM_ENEMIES: equ 10
 ENEMY_STATE_DEAD: equ 0
 ENEMY_STATE_ALIVE: equ 1
 ENEMY_STATE_DYING: equ 2
@@ -608,6 +608,10 @@ HERO_STATE_SLASH_ACTIVE: equ 2
 HERO_STATE_SLASH_RECOVERY: equ 3
 HERO_STATE_HURT: equ 4
 HERO_STATE_DASHING: equ 5
+HERO_STATE_PARRY_STARTUP: equ 6
+HERO_STATE_PARRY_ACTIVE: equ 7
+HERO_STATE_PARRY_SUCCESS_RECOVERY: equ 8
+HERO_STATE_PARRY_FAIL_RECOVERY: equ 9
 
 HERO_NEW_STATE: so.w 1
     move.w #1,HERO_NEW_STATE
@@ -629,6 +633,10 @@ HERO_DASH_COOLDOWN_FRAMES_LEFT: so.w 1
 HERO_DASH_CURRENT_SPEED: so.l 1
 HERO_DASH_CURRENT_STATE: so.w 1 ; 0: accel, 1: decel
 HERO_DASH_DIRECTION: so.w 1
+HERO_CAN_QUICK_SLASH: so.w 1
+    move.w #0,HERO_CAN_QUICK_SLASH
+BUTTON_RELEASED_SINCE_LAST_PARRY: so.w 1
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_PARRY
 
 GLOBAL_PALETTE: so.w 1
     move.w #0,GLOBAL_PALETTE
@@ -859,12 +867,13 @@ MainGameLoop
 .AfterUpdateScript
     
     ; TODO: should we move this to the bottom of the loop?
-    move.w #0,HERO_NEW_STATE
+    ; move.w #0,HERO_NEW_STATE
     move.l CURRENT_X,NEW_X
     move.l CURRENT_Y,NEW_Y
 
     jsr UpdateButtonReleasedSinceLastSlash
     jsr UpdateButtonReleasedSinceLastDash
+    jsr UpdateButtonReleasedSinceLastParry
     ; Update Dash cooldown.
     tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
     ble.s .AfterCooldownUpdate
@@ -1042,6 +1051,8 @@ MainGameLoop
     move.w LAST_LINK_WRITTEN,d0
     and.w #$FF00,d0 ; zero out link data
     move.w d0,vdp_data
+
+    move.w #0,HERO_NEW_STATE
 
 
 WaitNewFrame

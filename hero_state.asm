@@ -4,6 +4,11 @@ HERO_DASH_MAX_SPEED: equ (5*65536)
 HERO_DASH_DECEL: equ (65536/6)
 HERO_DASH_MIN_SPEED: equ 65536
 
+HERO_PARRY_STARTUP_FRAMES: equ 4
+HERO_PARRY_ACTIVE_FRAMES: equ 30
+HERO_PARRY_FAIL_RECOVERY_FRAMES: equ 30
+HERO_PARRY_SUCCESS_RECOVERY_FRAMES: equ 30
+
 HeroStateUpdate:
     move.l #.HeroStateJumpTable,a0
     clr.l d0
@@ -13,7 +18,10 @@ HeroStateUpdate:
     ; dereference jump table to get address to jump to
     move.l (a0),a0
     jmp (a0)
-.HeroStateJumpTable dc.l HeroStateIdle,HeroStateSlashStartup,HeroStateSlashActive,HeroStateSlashRecovery,HeroStateHurt,HeroStateDashing
+.HeroStateJumpTable
+    dc.l HeroStateIdle,HeroStateSlashStartup,HeroStateSlashActive,HeroStateSlashRecovery
+    dc.l HeroStateHurt,HeroStateDashing,HeroStateParryStartup,HeroStateParryActive
+    dc.l HeroStateParrySuccessRecovery,HeroStateParryFailRecovery
 HeroStateIdle:
     jsr HeroStateIdleUpdate
     rts
@@ -35,6 +43,18 @@ HeroStateHurt:
 HeroStateDashing:
     jsr HeroStateDashingUpdate
     rts
+HeroStateParryStartup:
+    jsr HeroStateParryStartupUpdate
+    rts
+HeroStateParryActive:
+    jsr HeroStateParryActiveUpdate
+    rts
+HeroStateParrySuccessRecovery:
+    jsr HeroStateParrySuccessRecoveryUpdate
+    rts
+HeroStateParryFailRecovery:
+    jsr HeroStateParryFailRecoveryUpdate
+    rts
 
 ; return value in d0
 HeroStateIsDashActive:
@@ -55,11 +75,17 @@ HeroStateIdleUpdate:
     cmp.w #HERO_STATE_HURT,d0
     beq.w HeroStateHurt
 
+    ; Parry transition
+    jsr HeroStateMaybeStartParry
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_PARRY_STARTUP,d0
+    beq HeroStateParryStartup
+
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_STARTUP,d0
-    beq.s HeroStateSlashStartup
+    beq HeroStateSlashStartup
 
     ; Dash Transition
     ; jsr HeroStateMaybeStartDash
@@ -183,15 +209,15 @@ HeroStateHurtUpdate:
     move.w d5,NEW_Y
     rts
 
-HeroStateMaybeStartSlash
-    tst.w BUTTON_RELEASED_SINCE_LAST_SLASH
-    beq.s .End
+HeroStateMaybeStartParry
+    tst.w BUTTON_RELEASED_SINCE_LAST_PARRY
+    beq .End
     move.b CONTROLLER,d0
-    btst.l #A_BIT,d0
-    beq.s .End
-    move.w #HERO_STATE_SLASH_STARTUP,HERO_STATE
+    btst.l #B_BIT,d0
+    beq .End
+    move.w #HERO_STATE_PARRY_STARTUP,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    ; In order to enable slashing in a different direction from dash, we check if a direction
+    ; In order to enable parrying in a different direction from dash, we check if a direction
     ; is also being pressed and turn the hero that way if so
     ; up
     btst.l #UP_BIT,d0
@@ -217,7 +243,190 @@ HeroStateMaybeStartSlash
     move.w #FACING_RIGHT,FACING_DIRECTION
     rts
 .AfterRight
-.End    
+.End
+    rts
+
+HeroStateParryStartupUpdate
+    tst.w HERO_NEW_STATE
+    beq .AfterNewState
+    move.w #HERO_PARRY_STARTUP_FRAMES,HERO_STATE_FRAMES_LEFT
+    ; set parry startup anim
+    clr.l d0
+    move.w FACING_DIRECTION,d0
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingDown
+    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingLeft
+    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingRight
+    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.AfterAnimState
+    move.w #0,HERO_NEW_STATE
+.AfterNewState
+    tst.w HERO_STATE_FRAMES_LEFT
+    bgt .StillInStartup
+    ; transition to parry active
+    move.w #1,HERO_NEW_STATE
+    move.w #HERO_STATE_PARRY_ACTIVE,HERO_STATE
+    bra HeroStateParryActive
+.StillInStartup
+    sub.w #1,HERO_STATE_FRAMES_LEFT
+    rts
+
+HeroStateParryActiveUpdate
+    tst.w HERO_NEW_STATE
+    beq .AfterNewState
+    move.w #HERO_PARRY_ACTIVE_FRAMES,HERO_STATE_FRAMES_LEFT
+    ; set parry active anim
+    clr.l d0
+    move.w FACING_DIRECTION,d0
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingDown
+    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingLeft
+    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingRight
+    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.AfterAnimState
+    move.w #0,HERO_NEW_STATE
+.AfterNewState
+
+    jsr CheckIfHeroNewlyHurt
+
+    tst.w HERO_STATE_FRAMES_LEFT
+    bgt .ContinueInState
+    ; transition to parry failure
+    move.w #1,HERO_NEW_STATE
+    move.w #HERO_STATE_PARRY_FAIL_RECOVERY,HERO_STATE
+    bra HeroStateParryFailRecovery
+.ContinueInState
+    sub.w #1,HERO_STATE_FRAMES_LEFT
+    rts
+
+HeroStateParrySuccessRecoveryUpdate
+    ; handle transitions into quick-slash and dash.
+    jsr HeroStateMaybeStartSlash
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_SLASH_STARTUP,d0
+    beq HeroStateSlashStartup
+
+    jsr HeroStateMaybeStartDash
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_DASHING,d0
+    beq HeroStateDashing
+
+    ; TODO maybe allow transition into another parry to do like simul-parries? that'd be rad.
+
+    tst.w HERO_NEW_STATE
+    beq .AfterNewState
+    move.w #HERO_PARRY_SUCCESS_RECOVERY_FRAMES,HERO_STATE_FRAMES_LEFT
+.AfterNewState
+    tst.w HERO_STATE_FRAMES_LEFT
+    bgt .ContinueInState
+    ; transition back into idle
+    move.w #1,HERO_NEW_STATE
+    move.w #HERO_STATE_IDLE,HERO_STATE
+    bra HeroStateIdle
+.ContinueInState
+    sub.w #1,HERO_STATE_FRAMES_LEFT
+    rts
+
+HeroStateParryFailRecoveryUpdate
+    tst.w HERO_NEW_STATE
+    beq .AfterNewState
+    move.w #HERO_PARRY_FAIL_RECOVERY_FRAMES,HERO_STATE_FRAMES_LEFT
+    ; set parry fail anim
+    clr.l d0
+    move.w FACING_DIRECTION,d0
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingDown
+    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingLeft
+    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.FacingRight
+    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    bra .AfterAnimState
+.AfterAnimState
+    move.w #0,HERO_NEW_STATE
+.AfterNewState
+    tst.w HERO_STATE_FRAMES_LEFT
+    bgt .ContinueInState
+    ; transition to idle
+    move.w #1,HERO_NEW_STATE
+    move.w #HERO_STATE_IDLE,HERO_STATE
+    bra HeroStateIdle
+.ContinueInState
+    sub.w #1,HERO_STATE_FRAMES_LEFT
+    rts
+
+HeroStateMaybeStartSlash
+    tst.w BUTTON_RELEASED_SINCE_LAST_SLASH
+    beq .End
+    move.b CONTROLLER,d0
+    btst.l #A_BIT,d0
+    beq .End
+    ; In order to enable slashing in a different direction from dash, we check if a direction
+    ; is also being pressed and turn the hero that way if so
+    ; up
+    btst.l #UP_BIT,d0
+    beq.s .AfterUp
+    move.w #FACING_UP,FACING_DIRECTION
+    bra .AfterDirection
+.AfterUp
+    ; down
+    btst.l #DOWN_BIT,d0
+    beq.s .AfterDown
+    move.w #FACING_DOWN,FACING_DIRECTION
+    bra .AfterDirection
+.AfterDown
+    ; left
+    btst.l #LEFT_BIT,d0
+    beq.s .AfterLeft
+    move.w #FACING_LEFT,FACING_DIRECTION
+    bra .AfterDirection
+.AfterLeft
+    ; right
+    btst.l #RIGHT_BIT,d0
+    beq.s .AfterDirection
+    move.w #FACING_RIGHT,FACING_DIRECTION
+    bra .AfterDirection
+.AfterDirection
+    ; Decide whether hero can quick-slash. Possible if still dashing or in parry-success state
+    jsr HeroStateIsDashActive
+    tst.w d0
+    bne .CanQuickSlash
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_PARRY_SUCCESS_RECOVERY,d0
+    beq .CanQuickSlash
+    ; can't quick-slash.
+    move.w #0,HERO_CAN_QUICK_SLASH
+    bra .AfterQuickSlash
+.CanQuickSlash
+    move.w #1,HERO_CAN_QUICK_SLASH
+.AfterQuickSlash
+    move.w #HERO_STATE_SLASH_STARTUP,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+.End
     rts
 
 HeroStateSlashStartupUpdate
@@ -244,15 +453,19 @@ HeroStateSlashStartupUpdate
 
 ; HERO_STATE_FRAMES_LEFT,BUTTON_RELEASED_SINCE_LAST_SLASH,NEW_ANIM_STATE
 SlashStartupNewState
-    ; if dashing, slash should start up instantly.
-    jsr HeroStateIsDashActive
-    tst.b d0
-    beq .DashNotActive
-    ; dash active! instant slash
+    ; ; if dashing, slash should start up instantly.
+    ; jsr HeroStateIsDashActive
+    ; tst.b d0
+    ; beq .DashNotActive
+    ; ; dash active! instant slash
+
+    tst.w HERO_CAN_QUICK_SLASH
+    beq .CannotQuickSlash
+    ; quick-slash!
     move.w #0,HERO_STATE_FRAMES_LEFT
     bra .AfterSetFramesLeft
-.DashNotActive
-    ; dash inactive. add default startup.
+.CannotQuickSlash
+    ; no quick-slash. add default startup.
     move.w #SLASH_STARTUP_ITERS,HERO_STATE_FRAMES_LEFT
 .AfterSetFramesLeft
     move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH
@@ -281,13 +494,13 @@ SlashStartupNewState
 UpdateButtonReleasedSinceLastSlash
     tst.w BUTTON_RELEASED_SINCE_LAST_SLASH
     bne.s .End
-    move.w HERO_STATE,d0
-    cmp.w #HERO_STATE_SLASH_STARTUP,d0
-    beq.s .End
-    cmp.w #HERO_STATE_SLASH_ACTIVE,d0
-    beq.s .End
-    cmp.w #HERO_STATE_SLASH_RECOVERY,d0
-    beq.s .End
+    ; move.w HERO_STATE,d0
+    ; cmp.w #HERO_STATE_SLASH_STARTUP,d0
+    ; beq.s .End
+    ; cmp.w #HERO_STATE_SLASH_ACTIVE,d0
+    ; beq.s .End
+    ; cmp.w #HERO_STATE_SLASH_RECOVERY,d0
+    ; beq.s .End
     move.b CONTROLLER,d0
     btst.l #A_BIT,d0
     bne.s .End
@@ -305,6 +518,16 @@ UpdateButtonReleasedSinceLastDash
     btst.l #C_BIT,d0
     bne.s .End
     move.w #1,BUTTON_RELEASED_SINCE_LAST_DASH
+.End
+    rts
+
+UpdateButtonReleasedSinceLastParry
+    tst.w BUTTON_RELEASED_SINCE_LAST_PARRY
+    bne.s .End
+    move.b CONTROLLER,d0
+    btst.l #B_BIT,d0
+    bne.s .End
+    move.w #1,BUTTON_RELEASED_SINCE_LAST_PARRY
 .End
     rts
 
@@ -475,6 +698,31 @@ HeroStateMaybeStartDash
     beq.s .End
     move.w #HERO_STATE_DASHING,HERO_STATE
     move.w #1,HERO_NEW_STATE
+    move.w #0,DASH_BUFFERED
+    ; allow setting a direction on the spot
+    btst.l #UP_BIT,d0
+    beq.s .AfterUp
+    move.w #FACING_UP,FACING_DIRECTION
+    bra .AfterDirection
+.AfterUp
+    ; down
+    btst.l #DOWN_BIT,d0
+    beq.s .AfterDown
+    move.w #FACING_DOWN,FACING_DIRECTION
+    bra .AfterDirection
+.AfterDown
+    ; left
+    btst.l #LEFT_BIT,d0
+    beq.s .AfterLeft
+    move.w #FACING_LEFT,FACING_DIRECTION
+    bra .AfterDirection
+.AfterLeft
+    ; right
+    btst.l #RIGHT_BIT,d0
+    beq.s .AfterDirection
+    move.w #FACING_RIGHT,FACING_DIRECTION
+    bra .AfterDirection
+.AfterDirection
 .End    
     rts
 
