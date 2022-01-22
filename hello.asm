@@ -496,8 +496,17 @@ FIREBALL_SPRITE_TILE_SIZE: equ 1
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+FutureSpriteLoad:
+FUTURE_SPRITE_TILE_START: equ (FIREBALL_SPRITE_TILE_START+FIREBALL_SPRITE_TILE_SIZE)
+FUTURE_SPRITE_TILE_SIZE: equ 1
+    move.w #(8*FUTURE_SPRITE_TILE_SIZE)-1,d0
+    move.l #FutureSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 FontTileLoad:
-FONT_TILE_START: equ (FIREBALL_SPRITE_TILE_START+FIREBALL_SPRITE_TILE_SIZE)
+FONT_TILE_START: equ (FUTURE_SPRITE_TILE_START+FUTURE_SPRITE_TILE_SIZE)
 FONT_TILE_SIZE: equ 40
     move.w #(8*FONT_TILE_SIZE)-1,d0
     move.l #FontTiles,a0
@@ -632,7 +641,9 @@ BUTTON_RELEASED_SINCE_LAST_DASH: so.w 1
 HERO_DASH_COOLDOWN_FRAMES_LEFT: so.w 1
 HERO_DASH_CURRENT_SPEED: so.l 1
 HERO_DASH_CURRENT_STATE: so.w 1 ; 0: accel, 1: decel
-HERO_DASH_DIRECTION: so.w 1
+; HERO_DASH_DIRECTION: so.w 1
+HERO_DASH_DIRECTION_X: so.b 1
+HERO_DASH_DIRECTION_Y: so.b 1
 HERO_CAN_QUICK_SLASH: so.w 1
     move.w #0,HERO_CAN_QUICK_SLASH
 BUTTON_RELEASED_SINCE_LAST_PARRY: so.w 1
@@ -1166,6 +1177,9 @@ DashBarSprite:
 
 FireballSprite:
     include art/fireball.asm
+
+FutureSprite:
+    include art/future.asm
 
 SineLookupTable:
     include sine_lookup_table.asm

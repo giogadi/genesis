@@ -690,39 +690,16 @@ MaybeSetNewlyHurtState
 
 HeroStateMaybeStartDash
     tst.w BUTTON_RELEASED_SINCE_LAST_DASH
-    beq.s .End
+    beq .End
     tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
-    bgt.s .End
+    bgt .End
     move.b CONTROLLER,d0
     btst.l #C_BIT,d0
-    beq.s .End
+    beq .End
     move.w #HERO_STATE_DASHING,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.w #0,DASH_BUFFERED
-    ; allow setting a direction on the spot
-    btst.l #UP_BIT,d0
-    beq.s .AfterUp
-    move.w #FACING_UP,FACING_DIRECTION
-    bra .AfterDirection
-.AfterUp
-    ; down
-    btst.l #DOWN_BIT,d0
-    beq.s .AfterDown
-    move.w #FACING_DOWN,FACING_DIRECTION
-    bra .AfterDirection
-.AfterDown
-    ; left
-    btst.l #LEFT_BIT,d0
-    beq.s .AfterLeft
-    move.w #FACING_LEFT,FACING_DIRECTION
-    bra .AfterDirection
-.AfterLeft
-    ; right
-    btst.l #RIGHT_BIT,d0
-    beq.s .AfterDirection
-    move.w #FACING_RIGHT,FACING_DIRECTION
-    bra .AfterDirection
-.AfterDirection
+    jsr UtilUpdateDashDirectionFromControllerInD0
 .End    
     rts
 
@@ -755,7 +732,6 @@ HeroStateDashingUpdate
     ; handle new state
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
-    move.w FACING_DIRECTION,HERO_DASH_DIRECTION
     move.l #HERO_DASH_INIT_SPEED,HERO_DASH_CURRENT_SPEED
     move.w #0,HERO_DASH_CURRENT_STATE
     move.w #0,BUTTON_RELEASED_SINCE_LAST_DASH
@@ -798,27 +774,27 @@ HeroStateDashingUpdate
     move.w #1,HERO_NEW_STATE
     bra HeroStateIdle
 .NoTransition
-    move.l #.DashDirectionJumpTable,a0
-    clr.l d0
-    move.w HERO_DASH_DIRECTION,d0; offset in longs into jump table
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
     move.l HERO_DASH_CURRENT_SPEED,d0
-    jmp (a0)
-.DashDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
-.FacingUp
-    sub.l d0,NEW_Y
-    rts
-.FacingDown
-    add.l d0,NEW_Y
-    rts
-.FacingLeft
-    sub.l d0,NEW_X
-    rts
-.FacingRight
+
+    tst.b HERO_DASH_DIRECTION_X
+    beq .AfterDashX
+    blt .DashLeft
+    ; Dash right
     add.l d0,NEW_X
+    bra .AfterDashX
+.DashLeft
+    sub.l d0,NEW_X
+.AfterDashX
+
+    tst.b HERO_DASH_DIRECTION_Y
+    beq .AfterDashY
+    blt .DashUp
+    ; Dash down
+    add.l d0,NEW_Y
+    bra .AfterDashY
+.DashUp
+    sub.l d0,NEW_Y
+.AfterDashY
     rts
 
 ; TODO: consider re-using this in DashingUpdate above
@@ -830,28 +806,27 @@ DashSlashPositionUpdate:
 .AfterClamp
     ; If 0 speed, skip position update
     ; TODO: can we skip this tst? Does the sub.l check still hold here?
-    tst.l HERO_DASH_CURRENT_SPEED
-    beq.s .End
-    move.l #.FacingDirectionJumpTable,a0
-    clr.l d0
-    move.w HERO_DASH_DIRECTION,d0; offset in longs into jump table
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
     move.l HERO_DASH_CURRENT_SPEED,d0
-    jmp (a0)
-.FacingDirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
-.FacingUp
-    sub.l d0,NEW_Y
-    rts
-.FacingDown
-    add.l d0,NEW_Y
-    rts
-.FacingLeft
-    sub.l d0,NEW_X
-    rts
-.FacingRight
+    beq .End
+
+    tst.b HERO_DASH_DIRECTION_X
+    beq .AfterDashX
+    blt .DashLeft
+    ; Dash right
     add.l d0,NEW_X
+    bra .AfterDashX
+.DashLeft
+    sub.l d0,NEW_X
+.AfterDashX
+
+    tst.b HERO_DASH_DIRECTION_Y
+    beq .AfterDashY
+    blt .DashUp
+    ; Dash down
+    add.l d0,NEW_Y
+    bra .AfterDashY
+.DashUp
+    sub.l d0,NEW_Y
+.AfterDashY
 .End
     rts

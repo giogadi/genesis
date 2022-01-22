@@ -701,6 +701,32 @@ AbsValue:
 .End
     rts
 
+UtilUpdateDashDirectionFromControllerInD0
+    clr.b HERO_DASH_DIRECTION_X
+    clr.b HERO_DASH_DIRECTION_Y
+    ; now look for a direction and update FACING_DIRECTION if we find one
+    ; up
+    btst.l #UP_BIT,d0
+    beq.s .AfterUp
+    sub.b #1,HERO_DASH_DIRECTION_Y
+.AfterUp
+    ; down
+    btst.l #DOWN_BIT,d0
+    beq.s .AfterDown
+    add.b #1,HERO_DASH_DIRECTION_Y
+.AfterDown
+    ; left
+    btst.l #LEFT_BIT,d0
+    beq.s .AfterLeft
+    sub.b #1,HERO_DASH_DIRECTION_X
+.AfterLeft
+    ; right
+    btst.l #RIGHT_BIT,d0
+    beq.s .AfterRight
+    add.b #1,HERO_DASH_DIRECTION_X
+.AfterRight
+    rts
+
 ; Should be called during freeze only
 CheckForDashBuffer:
     ; if slash is active, this is an attack hitstop. look for a buffered input to dash.
@@ -714,31 +740,7 @@ CheckForDashBuffer:
     btst.l #C_BIT,d0
     beq.s .End
     move.w #1,DASH_BUFFERED
-    ; now look for a direction and update FACING_DIRECTION if we find one
-    ; up
-    btst.l #UP_BIT,d0
-    beq.s .AfterUp
-    move.w #FACING_UP,FACING_DIRECTION
-    rts
-.AfterUp
-    ; down
-    btst.l #DOWN_BIT,d0
-    beq.s .AfterDown
-    move.w #FACING_DOWN,FACING_DIRECTION
-    rts
-.AfterDown
-    ; left
-    btst.l #LEFT_BIT,d0
-    beq.s .AfterLeft
-    move.w #FACING_LEFT,FACING_DIRECTION
-    rts
-.AfterLeft
-    ; right
-    btst.l #RIGHT_BIT,d0
-    beq.s .AfterRight
-    move.w #FACING_RIGHT,FACING_DIRECTION
-    rts
-.AfterRight
+    jsr UtilUpdateDashDirectionFromControllerInD0
 .End
     rts
 

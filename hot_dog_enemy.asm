@@ -6,17 +6,19 @@ HotDogVTable:
     dc.l HotDogBlockHero
     dc.l HotDogLoad
 
-HOT_DOG_SLASHING: equ 0
-HOT_DOG_RECOVERY: equ 1
+; HOT_DOG_SLASHING: equ 0
+; HOT_DOG_RECOVERY: equ 1
 
-HOT_DOG_SLASH_DURATION: equ 10
-HOT_DOG_RECOVERY_DURATION: equ 30
+; HOT_DOG_SLASH_DURATION: equ 10
+; HOT_DOG_RECOVERY_DURATION: equ 30
 
-HOT_DOG_SLASH_SPEED: equ 4
+; HOT_DOG_SLASH_SPEED: equ 4
 
 HOT_DOG_FIREBALL_COOLDOWN: equ 60
-HOT_DOG_STOP_TIME: equ 30
-HOT_DOG_MOVE_TIME: equ 30
+; HOT_DOG_STOP_TIME: equ 30
+; HOT_DOG_MOVE_TIME: equ 30
+HOT_DOG_STOP_TIME: equ 120
+HOT_DOG_MOVE_TIME: equ 60
 
 ; ENEMY_DATA1.w: timer-until-next-fireball
 ; ENEMY_DATA2: (motion_angle,8) 000(is_new_state,1) (is_moving,4)
@@ -145,6 +147,9 @@ HotDogStoppedUpdate:
     jsr HotDogCheckNewStateBit
     beq .AfterNewState
     move.w #HOT_DOG_STOP_TIME,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    ; sample new direction to move in
+    jsr UtilRand16 ; random value in d0
+    jsr HotDogSetMotionAngle ; set motion angle to random value
     jsr HotDogClearNewStateBit
 .AfterNewState
     tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
@@ -160,8 +165,8 @@ HotDogStoppedUpdate:
 HotDogMovingUpdate:
     jsr HotDogCheckNewStateBit
     beq .AfterNewState
-    jsr UtilRand16 ; random value in d0
-    jsr HotDogSetMotionAngle ; set motion angle to random value
+    ; jsr UtilRand16 ; random value in d0
+    ; jsr HotDogSetMotionAngle ; set motion angle to random value
     move.w #HOT_DOG_MOVE_TIME,N_ENEMY_STATE_FRAMES_LEFT(a2)
     jsr HotDogClearNewStateBit
 .AfterNewState
@@ -206,9 +211,7 @@ HotDogMaybeShootFireballAtHero:
     move.w #ENEMY_STATE_ALIVE,N_ENEMY_STATE(a0)
     move.w #ENTITY_TYPE_FIREBALL,N_ENEMY_TYPE(a0)
     move.w N_ENEMY_X(a2),N_ENEMY_X(a0)
-    move.w N_ENEMY_Y(a2),d0
-    add.w #16,d0
-    move.w d0,N_ENEMY_Y(a0)
+    move.w N_ENEMY_Y(a2),N_ENEMY_Y(a0)
     ; to use the entity's load function, we gotta have the output struct in a2.
     ; so we push the current a2 onto the stack to make room.
     move.l a2,-(sp)
@@ -247,12 +250,57 @@ HotDogMaybeShootFireballAtHero:
 .end
     rts
 
+FUTURE_SEAL_WIDTH: equ 8
+FUTURE_SEAL_HEIGHT: equ 8
+HotDogDrawFutureSeal:
+    jsr HotDogGetMotionAngle ; in d0
+    move.b d0,d1 ; copy angle to d1
+    jsr Cos ; result in d0
+    ext.l d0
+    ; push d2,d3,d4 onto the stack
+    move.w d2,-(sp)
+    move.w d3,-(sp)
+    move.w d4,-(sp)
+    move.b #(ONE_PIXEL_LONG_UNIT_LOG2+4-8),d2
+    ;move.b #(ONE_PIXEL_LONG_UNIT_LOG2-8),d2
+    lsl.l d2,d0
+    add.l N_ENEMY_X(a2),d0
+    swap d0 ; we only want full pixel part.
+    add.w #(MIN_DISPLAY_X-FUTURE_SEAL_WIDTH/2),d0
+    move.w d0,d3 ; x is in d3!!
+
+    move.b d1,d0 ; get angle back in d0 and do sin
+    jsr Sin
+    ext.l d0
+    lsl.l d2,d0
+    add.l N_ENEMY_Y(a2),d0
+    swap d0
+    sub.w CAMERA_TOP_Y,d0
+    add.w #(MIN_DISPLAY_Y-FUTURE_SEAL_HEIGHT/2),d0
+    move.w d0,d4 ; y is in d4!!
+    
+    add.w #1,SPRITE_COUNTER
+    move.w #0,d0 ; 1x1
+    or.w SPRITE_COUNTER,d0 ; link to next sprite
+    move.w d4,vdp_data ; y
+    move.w d0,vdp_data ; link data
+    move.w d0,LAST_LINK_WRITTEN
+    move.w #FUTURE_SPRITE_TILE_START,vdp_data
+    move.w d3,vdp_data ; x
+
+    ; restore d2,d3,d4
+    move.w (sp)+,d4
+    move.w (sp)+,d3
+    move.w (sp)+,d2
+    rts
+
 ; a2: enemy struct start
 ; d2: don't touch
 HotDogDrawEnemy:
     move.w N_ENEMY_STATE(a2),d0
     cmp.w #ENEMY_STATE_DYING,d0
-    beq.s .DrawDying
+    beq .DrawDying
+    jsr HotDogDrawFutureSeal
     add.w #1,SPRITE_COUNTER
     move.w #$0500,d0 ; 2x2
     or.w SPRITE_COUNTER,d0 ; link to next sprite
@@ -268,7 +316,7 @@ HotDogDrawEnemy:
     sub.w N_ENEMY_HALF_W(a2),d1
     add.w #MIN_DISPLAY_X,d1
     move.w d1,vdp_data ; x
-    bra.w .End
+    bra .End
 .DrawDying
     ; only draw every few frames for a blinking effect
     move.w N_ENEMY_STATE_FRAMES_LEFT(a2),d0
