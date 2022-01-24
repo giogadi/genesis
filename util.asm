@@ -1147,16 +1147,73 @@ UtilRand16:
     move.w d0,RNG_SEED
     rts
 
-; d0 is x. Makes a smooth step from [0,65536] -> [0,65536].
-; TODO try to avoid long math.
-; SmoothStep:
-;     lsr.l #8,d0 ; cx
-;     move.l d0,d1 ; cx in d1
-;     mulu d1,d0 ; (cx)^2 in d0
-;     mulu d0,d1 ; (cx)^3 in d1
-;     ; TODO AVOID THIS MULTIPLY BY 3
-;     mulu #3,d0 ; 3(cx)^2 in d0
-;     ; c in this case is 256. 2(cx^3)/c is just dividing by 128, or shifting right 7 times.
-;     lsr.l #7,d1 ; 2(cx)^3/c in d1
-;     sub.l d1,d0
-;     rts
+; a2: enemy struct
+; d0: desired enemy dist
+; return target position in d0,d1
+UtilGetEnemy4WayTargetPos:
+    ; push enemy dist onto stack
+    move.w d0,-(sp)
+
+    ; enemy above hero: y > x && y > -x
+    ; enemy below hero: y < x && y < -x
+    ; enemy left of hero: y > x && y < -x
+    ; eney right of hero: y < x && y > -x
+    ; keep things simple; using sprite centerpoints for positions. but what can go wrong?
+    move.w N_ENEMY_X(a2),d0 ; enemy_center_x
+    sub.w CURRENT_X,d0 ; enemy_center_x - hero_min_x
+    sub.w #(HERO_WIDTH/2),d0 ; enemy_center_x - hero_center_x
+    
+    move.w N_ENEMY_Y(a2),d1 ; enemy_center_y
+    sub.w CURRENT_Y,d1 ; enemy_center_y - hero_min_y
+    sub.w #(HERO_HEIGHT/2),d1 ; enemy_center_y - hero_center_y
+
+    cmp.w d0,d1
+    bgt.s .ygtx
+    ; y <= x
+    neg.w d0 ; -x
+    cmp.w d0,d1
+    bgt.s .RightOfHero
+    bra.s .AboveHero
+.ygtx
+    neg.w d0 ; -x
+    cmp.w d0,d1
+    bgt.s .BelowHero
+    bra.s .LeftOfHero
+.AboveHero
+    move.w CURRENT_X,d0
+    add.w #(HERO_WIDTH/2),d0
+    move.w CURRENT_Y,d1
+    ; sub out desired dist
+    sub.w 0(sp),d1
+    sub.w N_ENEMY_HALF_H(a2),d1
+    bra .End
+.BelowHero
+    move.w CURRENT_X,d0
+    add.w #(HERO_WIDTH/2),d0
+    move.w CURRENT_Y,d1
+    ; add desired dist + hero height
+    add.w 0(sp),d1
+    add.w #HERO_HEIGHT,d1
+    ;add.w #(OGRE_DESIRED_DIST+HERO_HEIGHT),d1
+    add.w N_ENEMY_HALF_H(a2),d1
+    bra .End
+.LeftOfHero
+    move.w CURRENT_X,d0
+    sub.w 0(sp),d0
+    ;sub.w #OGRE_DESIRED_DIST,d0
+    sub.w N_ENEMY_HALF_W(a2),d0
+    move.w CURRENT_Y,d1
+    add.w #(HERO_HEIGHT/2),d1
+    bra .End
+.RightOfHero
+    move.w CURRENT_X,d0
+    add.w 0(sp),d0
+    add.w #HERO_WIDTH,d0
+    ;add.w #(OGRE_DESIRED_DIST+HERO_WIDTH),d0
+    add.w N_ENEMY_HALF_W(a2),d0
+    move.w CURRENT_Y,d1
+    add.w #(HERO_HEIGHT/2),d1
+.End
+    ; reset stack
+    add.l #2,sp
+    rts

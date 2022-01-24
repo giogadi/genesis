@@ -298,64 +298,6 @@ OgreUpdateFacingDirection:
     move.b #FACING_RIGHT,(N_ENEMY_DATA2+1)(a2)
     rts
 
-; a2: enemy struct
-; d2: not allowed
-; return target position in d0,d1
-OgreGetTargetPosition:
-    ; ogre above hero: y > x && y > -x
-    ; ogre below hero: y < x && y < -x
-    ; ogre left of hero: y > x && y < -x
-    ; ogre right of hero: y < x && y > -x
-    ; keep things simple; using sprite centerpoints for positions. but what can go wrong?
-    move.w N_ENEMY_X(a2),d0 ; enemy_center_x
-    sub.w CURRENT_X,d0 ; enemy_center_x - hero_min_x
-    sub.w #(HERO_WIDTH/2),d0 ; enemy_center_x - hero_center_x
-    
-    move.w N_ENEMY_Y(a2),d1 ; enemy_center_y
-    sub.w CURRENT_Y,d1 ; enemy_center_y - hero_min_y
-    sub.w #(HERO_HEIGHT/2),d1 ; enemy_center_y - hero_center_y
-
-    cmp.w d0,d1
-    bgt.s .ygtx
-    ; y <= x
-    neg.w d0 ; -x
-    cmp.w d0,d1
-    bgt.s .RightOfHero
-    bra.s .AboveHero
-.ygtx
-    neg.w d0 ; -x
-    cmp.w d0,d1
-    bgt.s .BelowHero
-    bra.s .LeftOfHero
-.AboveHero
-    move.w CURRENT_X,d0
-    add.w #(HERO_WIDTH/2),d0
-    move.w CURRENT_Y,d1
-    sub.w #OGRE_DESIRED_DIST,d1
-    sub.w N_ENEMY_HALF_H(a2),d1
-    rts
-.BelowHero
-    move.w CURRENT_X,d0
-    add.w #(HERO_WIDTH/2),d0
-    move.w CURRENT_Y,d1
-    add.w #(OGRE_DESIRED_DIST+HERO_HEIGHT),d1
-    add.w N_ENEMY_HALF_H(a2),d1
-    rts
-.LeftOfHero
-    move.w CURRENT_X,d0
-    sub.w #OGRE_DESIRED_DIST,d0
-    sub.w N_ENEMY_HALF_W(a2),d0
-    move.w CURRENT_Y,d1
-    add.w #(HERO_HEIGHT/2),d1
-    rts
-.RightOfHero
-    move.w CURRENT_X,d0
-    add.w #(OGRE_DESIRED_DIST+HERO_WIDTH),d0
-    add.w N_ENEMY_HALF_W(a2),d0
-    move.w CURRENT_Y,d1
-    add.w #(HERO_HEIGHT/2),d1
-    rts
-
 ; d0 is enemy_state. uses a0. result in d1
 OgreCanBeHit:
     M_JumpTable #.StateJumpTable,a0,d0
@@ -463,7 +405,8 @@ OgreEnemyUpdate:
 
 OgreIdleUpdate:
     jsr OgreUpdateFacingDirection
-    jsr OgreGetTargetPosition ; position in d0,d1
+    move.w #OGRE_DESIRED_DIST,d0
+    jsr UtilGetEnemy4WayTargetPos
     sub.w N_ENEMY_X(a2),d0 ; target_x - ogre_x
     blt.s .MoveLeft
     ; move right

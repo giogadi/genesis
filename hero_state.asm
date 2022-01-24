@@ -430,11 +430,18 @@ HeroStateMaybeStartSlash
     rts
 
 HeroStateSlashStartupUpdate
+    ; if dashing, hero can't get hurt.
+    jsr HeroStateIsDashActive
+    tst.w d0
+    bne .AfterHurtCheck
+
     ; Hurt Transition
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
     beq.w HeroStateHurt
+
+.AfterHurtCheck
 
     ; New state setup
     tst.w HERO_NEW_STATE
@@ -532,11 +539,18 @@ UpdateButtonReleasedSinceLastParry
     rts
 
 HeroStateSlashActiveUpdate
+    ; if dashing, hero can't get hurt.
+    jsr HeroStateIsDashActive
+    tst.w d0
+    bne .AfterHurtCheck
+
     ; Hurt Transition
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
     beq.w HeroStateHurt
+
+.AfterHurtCheck
 
     ; Dash Transition if buffered
     tst.w DASH_BUFFERED

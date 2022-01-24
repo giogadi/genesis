@@ -228,7 +228,8 @@ SCROLL_TILE_H: equ (1<<SCROLL_TILE_H_LOG2)
     include text.asm
     include hero_state.asm
     include butt_enemy.asm
-    include hot_dog_enemy.asm
+    ;include hot_dog_enemy.asm
+    include hot_dog_4way.asm
     include ogre_enemy.asm
     include red_seal.asm
     include crab_spawner.asm
