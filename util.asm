@@ -555,7 +555,11 @@ UtilIsEnemyHitBySlash:
     ; TODO: consider checking this just once to skip all slash updates
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_ACTIVE,d0
+    ;bne .end
+    beq .AfterStateCheck
+    cmp.w #HERO_STATE_DASHING,d0
     bne .end
+.AfterStateCheck
     ; check slash AABB against enemy's AABB
     move.w SLASH_MAX_X,d0
     move.w N_ENEMY_X(a2),d1

@@ -68,24 +68,26 @@ HOT_DOG_TARGET_Y: equ N_ENEMY_DATA4
 ; a2: entity struct
 ; d2: not allowed
 HotDogUpdate:
-    ; TODO: try to make this only run in alive update
     jsr HotDogUpdateFromSlash
     clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     M_JumpTable #.StateJumpTable,a0,d0
-.StateJumpTable dc.l .Dead,.Alive,.Dying
-.Dead:
+.StateJumpTable dc.l HotDogDead,HotDogAlive,HotDogDying
+HotDogDead:
     ; shouldn't happen
     rts
-.Alive:
+HotDogAlive:
     jsr HotDogAliveUpdate
     rts
-.Dying:
+HotDogDying:
     jsr HotDogDyingUpdate
     rts
 
 ; d0.b : returns 0 if no slash
 HotDogUpdateFromSlash:
+    move.w N_ENEMY_STATE(a2),d0
+    cmp.w #ENEMY_STATE_ALIVE,d0
+    bne .Done
     jsr UtilIsEnemyHitBySlash
     beq .Done
     ; Enemy is hit! switch to dying and activate hitstop.
@@ -100,13 +102,15 @@ HotDogDyingUpdate:
     btst.b #7,(N_ENEMY_DATA1+1)(a2)
     beq .AfterNewState
     bclr.b #7,(N_ENEMY_DATA1+1)(a2) ; not a new state anymore
-    move.w #(ENEMY_DYING_FRAMES+1),N_ENEMY_STATE_FRAMES_LEFT(a2)
+    move.w #ENEMY_DYING_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
 .AfterNewState
-    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
-    bgt .AfterStateTransition
-    ; We're dead now
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .StillDying
+    ; we dead
     move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
-.AfterStateTransition
+    rts
+.StillDying
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     rts
 
 HotDogMaybeHurtHero:
@@ -223,22 +227,6 @@ HotDogMovingUpdate:
     ; M_ClampMinL d0,d3
     move.l d0,N_ENEMY_Y(a2)
 .AfterWalk
-
-    ; jsr HotDogGetMotionAngle ; in d0
-    ; move.b d0,d1 ; copy angle to d1
-    ; jsr Cos ; result in d0
-    ; ext.l d0
-    ; ; push d2 onto the stack
-    ; move.w d2,-(sp)
-    ; move.b #(ONE_PIXEL_LONG_UNIT_LOG2-8),d2
-    ; lsl.l d2,d0
-    ; add.l d0,N_ENEMY_X(a2)
-    ; move.b d1,d0 ; get angle back in d0 and do sin
-    ; jsr Sin
-    ; ext.l d0
-    ; lsl.l d2,d0
-    ; add.l d0,N_ENEMY_Y(a2)
-    ; move.w (sp)+,d2
     rts
 
 HotDogMaybeShootFireballAtHero:
@@ -265,8 +253,10 @@ HotDogMaybeShootFireballAtHero:
     jsr FireballLoad
     ; set fireball's velocity toward hero at 1px/s
     move.w CURRENT_X,d0
+    add.w #(HERO_WIDTH/2),d0
     sub.w N_ENEMY_X(a2),d0 ; hero.x - enemy.x
     move.w CURRENT_Y,d1
+    add.w #(HERO_HEIGHT/2),d1
     sub.w N_ENEMY_Y(a2),d1 ; hero.y - enemy.y
     ; push x,y onto the stack to call atan2
     move.w d1,-(sp)
@@ -322,9 +312,13 @@ HotDogDrawEnemy:
     ; only draw every few frames for a blinking effect
     move.w N_ENEMY_STATE_FRAMES_LEFT(a2),d0
     btst.l #1,d0
-    beq .End
+    bne .DoDraw
+    ; If we're in hitstop, always draw
+    tst.w HITSTOP_FRAMES_LEFT
+    ble .End
+.DoDraw
     ; gonna scale slice anim by dying frames left.
-    move.w #ENEMY_DYING_FRAMES,d1
+    move.w #(ENEMY_DYING_FRAMES-1),d1
     sub.w d0,d1 ; number of frames since enemy started dying in d1
     ; left slice first. offset a few pixels down-left
     add.w #1,SPRITE_COUNTER

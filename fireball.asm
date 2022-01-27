@@ -6,8 +6,12 @@ FireballVTable:
     dc.l UtilReturnFalse
     dc.l FireballLoad
 
+; alive
 ; ENEMY_DATA1.l: x velocity
 ; ENEMY_DATA3.l: y velocity
+
+; dying
+; ENEMY_DATA1.b: new state
 
 ; a2: entity struct
 ; d2: not allowed
@@ -23,12 +27,31 @@ FireballUpdate:
     move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
     rts
 .StillInView
+    ; If enemy is dying, do dying update
+    move.w N_ENEMY_STATE(a2),d0
+    cmp.w #ENEMY_STATE_DYING,d0
+    bne .Alive
+    tst.b N_ENEMY_DATA1(a2) ; new state?
+    beq .AfterNewDyingState
+    move.w #ENEMY_DYING_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    move.b #0,N_ENEMY_DATA1(a2)
+.AfterNewDyingState
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .StillDying
+    ; transition to dead.
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+    rts
+.StillDying
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    rts
+.Alive
     ; Check if hero is slashing the fireball.
     jsr UtilIsEnemyHitBySlash
     tst.b d0
     beq .NotSlashed
-    ; hit by slash. despawn and add hitstop
-    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+    ; hit by slash. set to dying and add hitstop
+    move.w #ENEMY_STATE_DYING,N_ENEMY_STATE(a2)
+    move.b #1,N_ENEMY_DATA1(a2)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     rts
 .NotSlashed
@@ -43,6 +66,18 @@ FireballUpdate:
 ; a2: enemy struct start
 ; d2: don't touch
 FireballDraw:
+    move.w N_ENEMY_STATE(a2),d0
+    ; if dying, flicker sprite
+    cmp.w #ENEMY_STATE_DYING,d0
+    bne .DoDraw
+    ; always draw sprite during hitstop
+    tst.w HITSTOP_FRAMES_LEFT
+    bgt .DoDraw
+    ; otherwise, use frame counter to decide flicker
+    move.w N_ENEMY_STATE_FRAMES_LEFT(a2),d0
+    btst.l #1,d0
+    beq .End
+.DoDraw
     add.w #1,SPRITE_COUNTER
     move.w #0,d0 ; 1x1
     or.w SPRITE_COUNTER,d0 ; link to next sprite
@@ -74,7 +109,6 @@ FireballMaybeHurtHero:
     tst.b d0
     blt.b .end
     ; overlap.
-    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2) ; despawn fireball
     ; check if hero is in parry state (TODO: ALSO CHECK THAT HERO PARRIED IN CORRECT DIRECTION)
     move.w HERO_STATE,d1
     cmp.w #HERO_STATE_PARRY_ACTIVE,d1
@@ -82,12 +116,16 @@ FireballMaybeHurtHero:
     ; parry
     move.w #HERO_STATE_PARRY_SUCCESS_RECOVERY,HERO_STATE
     move.w #1,HERO_NEW_STATE
+    ; when we parry, hero "kills" fireball like an enemy.
+    move.w #ENEMY_STATE_DYING,N_ENEMY_STATE(a2)
     bra .end
 .NotParry
     ; hurt hero.
     move.w #HERO_STATE_HURT,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.b d0,(HURT_DIRECTION+1)
+    ; when we hit hero, fireball just disappears. TODO maybe do an explosion or smth
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
 .end
     rts
 

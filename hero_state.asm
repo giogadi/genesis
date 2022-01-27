@@ -809,6 +809,14 @@ HeroStateDashingUpdate
 .DashUp
     sub.l d0,NEW_Y
 .AfterDashY
+
+    ; We slashing now
+    move.w NEW_X,SLASH_MIN_X
+    move.w NEW_Y,SLASH_MIN_Y
+    move.w SLASH_MIN_X,SLASH_MAX_X
+    add.w #HERO_WIDTH,SLASH_MAX_X
+    move.w SLASH_MIN_Y,SLASH_MAX_Y
+    add.w #HERO_HEIGHT,SLASH_MAX_Y
     rts
 
 ; TODO: consider re-using this in DashingUpdate above

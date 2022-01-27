@@ -132,6 +132,10 @@ ScriptActionCameraFollowHero:
     move.w #CAMERA_STATE_FOLLOW_HERO,CURRENT_CAMERA_STATE
     rts
 
+ScriptActionCameraStopFollowingHero:
+    move.w #CAMERA_STATE_MANUAL_PAN,CURRENT_CAMERA_STATE
+    rts
+
 ; motion_dir is in SCRIPT_ACTION_FN_INPUT.b
 ScriptActionMoveStoredOgre:
     move.l SCRIPT_STORED_ENTITY,a0
