@@ -878,8 +878,6 @@ MainGameLoop
     add.l #SCRIPT_ITEM_SIZE,CURRENT_SCRIPT_ITEM
 .AfterUpdateScript
     
-    ; TODO: should we move this to the bottom of the loop?
-    ; move.w #0,HERO_NEW_STATE
     move.l CURRENT_X,NEW_X
     move.l CURRENT_Y,NEW_Y
 
@@ -1063,9 +1061,6 @@ MainGameLoop
     move.w LAST_LINK_WRITTEN,d0
     and.w #$FF00,d0 ; zero out link data
     move.w d0,vdp_data
-
-    move.w #0,HERO_NEW_STATE
-
 
 WaitNewFrame
     cmp.b #1,NEW_FRAME

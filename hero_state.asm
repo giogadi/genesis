@@ -19,41 +19,42 @@ HeroStateUpdate:
     move.l (a0),a0
     jmp (a0)
 .HeroStateJumpTable
-    dc.l HeroStateIdle,HeroStateSlashStartup,HeroStateSlashActive,HeroStateSlashRecovery
-    dc.l HeroStateHurt,HeroStateDashing,HeroStateParryStartup,HeroStateParryActive
-    dc.l HeroStateParrySuccessRecovery,HeroStateParryFailRecovery
-HeroStateIdle:
+    dc.l .HeroStateIdle,.HeroStateSlashStartup,.HeroStateSlashActive,.HeroStateSlashRecovery
+    dc.l .HeroStateHurt,.HeroStateDashing,.HeroStateParryStartup,.HeroStateParryActive
+    dc.l .HeroStateParrySuccessRecovery,.HeroStateParryFailRecovery
+.HeroStateIdle:
     jsr HeroStateIdleUpdate
-    rts
-HeroStateSlashStartup:
+    bra .AfterJumpTable
+.HeroStateSlashStartup:
     jsr HeroStateSlashStartupUpdate
-    jsr DashSlashPositionUpdate
-    rts
-HeroStateSlashActive:
+    bra .AfterJumpTable
+.HeroStateSlashActive:
     jsr HeroStateSlashActiveUpdate
-    jsr DashSlashPositionUpdate
-    rts
-HeroStateSlashRecovery:
+    bra .AfterJumpTable
+.HeroStateSlashRecovery:
     jsr HeroStateSlashRecoveryUpdate
-    jsr DashSlashPositionUpdate
-    rts
-HeroStateHurt:
+    bra .AfterJumpTable
+.HeroStateHurt:
     jsr HeroStateHurtUpdate
-    rts
-HeroStateDashing:
+    bra .AfterJumpTable
+.HeroStateDashing:
     jsr HeroStateDashingUpdate
-    rts
-HeroStateParryStartup:
+    bra .AfterJumpTable
+.HeroStateParryStartup:
     jsr HeroStateParryStartupUpdate
-    rts
-HeroStateParryActive:
+    bra .AfterJumpTable
+.HeroStateParryActive:
     jsr HeroStateParryActiveUpdate
-    rts
-HeroStateParrySuccessRecovery:
+    bra .AfterJumpTable
+.HeroStateParrySuccessRecovery:
     jsr HeroStateParrySuccessRecoveryUpdate
-    rts
-HeroStateParryFailRecovery:
+    bra .AfterJumpTable
+.HeroStateParryFailRecovery:
     jsr HeroStateParryFailRecoveryUpdate
+.AfterJumpTable
+    ; if there was a state transition, evaluate the state machine again.
+    tst.w HERO_NEW_STATE
+    bne HeroStateUpdate
     rts
 
 ; return value in d0
@@ -69,23 +70,31 @@ HeroStateIsDashActive:
 
 ; Update FACING_DIRECTION,NEW_ANIM_STATE,NEW_X,NEW_Y
 HeroStateIdleUpdate:
+    clr.w HERO_NEW_STATE
+    
     ; Hurt Transition
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
-    beq.w HeroStateHurt
+    bne .AfterHurtTransition
+    rts
+.AfterHurtTransition
 
     ; Parry transition
     jsr HeroStateMaybeStartParry
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_PARRY_STARTUP,d0
-    beq HeroStateParryStartup
+    bne .AfterParryTransition
+    rts
+.AfterParryTransition
 
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_STARTUP,d0
-    beq HeroStateSlashStartup
+    bne .AfterSlashTransition
+    rts
+.AfterSlashTransition
 
     ; Dash Transition
     ; jsr HeroStateMaybeStartDash
@@ -163,16 +172,17 @@ HeroStateHurtUpdate:
     tst.w HERO_NEW_STATE
     beq.s .HeroStateHurtUpdateAfterNewState
     jsr MaybeSetNewlyHurtState
+    clr.w HERO_NEW_STATE
 .HeroStateHurtUpdateAfterNewState
 
     ; Transitions!
     move.w HERO_STATE_FRAMES_LEFT,d2
-    bgt.s .HeroStateHurtUpdateAfterIdleTransition
+    bgt.s .AfterIdleTransition
     ; Transition to idle
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    bra.w HeroStateIdle
-.HeroStateHurtUpdateAfterIdleTransition
+    rts
+.AfterIdleTransition
 
     ; state update
     sub.w #1,HERO_STATE_FRAMES_LEFT
@@ -275,7 +285,7 @@ HeroStateParryStartupUpdate
     ; transition to parry active
     move.w #1,HERO_NEW_STATE
     move.w #HERO_STATE_PARRY_ACTIVE,HERO_STATE
-    bra HeroStateParryActive
+    rts
 .StillInStartup
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
@@ -306,41 +316,48 @@ HeroStateParryActiveUpdate
 .AfterNewState
 
     jsr CheckIfHeroNewlyHurt
+    tst.w HERO_NEW_STATE ; check if parry succeeded
+    beq .ParryNoHit
+    rts
+.ParryNoHit
 
     tst.w HERO_STATE_FRAMES_LEFT
     bgt .ContinueInState
     ; transition to parry failure
     move.w #1,HERO_NEW_STATE
     move.w #HERO_STATE_PARRY_FAIL_RECOVERY,HERO_STATE
-    bra HeroStateParryFailRecovery
+    rts
 .ContinueInState
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
 
 HeroStateParrySuccessRecoveryUpdate
-    ; handle transitions into quick-slash and dash.
-    jsr HeroStateMaybeStartSlash
-    move.w HERO_STATE,d0
-    cmp.w #HERO_STATE_SLASH_STARTUP,d0
-    beq HeroStateSlashStartup
-
-    jsr HeroStateMaybeStartDash
-    move.w HERO_STATE,d0
-    cmp.w #HERO_STATE_DASHING,d0
-    beq HeroStateDashing
-
-    ; TODO maybe allow transition into another parry to do like simul-parries? that'd be rad.
-
     tst.w HERO_NEW_STATE
     beq .AfterNewState
     move.w #HERO_PARRY_SUCCESS_RECOVERY_FRAMES,HERO_STATE_FRAMES_LEFT
+    clr.w HERO_NEW_STATE
 .AfterNewState
+
+    ; handle transitions into quick-slash and dash.
+    jsr HeroStateMaybeStartSlash
+    tst.w HERO_NEW_STATE
+    beq .AfterSlashTransition
+    rts
+.AfterSlashTransition
+
+    jsr HeroStateMaybeStartDash
+    tst.w HERO_NEW_STATE
+    beq .AfterDashTransition
+    rts
+.AfterDashTransition
+
+    ; TODO maybe allow transition into another parry to do like simul-parries? that'd be rad.
     tst.w HERO_STATE_FRAMES_LEFT
     bgt .ContinueInState
     ; transition back into idle
     move.w #1,HERO_NEW_STATE
     move.w #HERO_STATE_IDLE,HERO_STATE
-    bra HeroStateIdle
+    rts
 .ContinueInState
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
@@ -374,7 +391,7 @@ HeroStateParryFailRecoveryUpdate
     ; transition to idle
     move.w #1,HERO_NEW_STATE
     move.w #HERO_STATE_IDLE,HERO_STATE
-    bra HeroStateIdle
+    rts
 .ContinueInState
     sub.w #1,HERO_STATE_FRAMES_LEFT
     rts
@@ -430,6 +447,13 @@ HeroStateMaybeStartSlash
     rts
 
 HeroStateSlashStartupUpdate
+    ; New state setup
+    tst.w HERO_NEW_STATE
+    beq.s .AfterNewState
+    jsr SlashStartupNewState
+    clr.w HERO_NEW_STATE
+.AfterNewState
+
     ; if dashing, hero can't get hurt.
     jsr HeroStateIsDashActive
     tst.w d0
@@ -439,23 +463,19 @@ HeroStateSlashStartupUpdate
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
-    beq.w HeroStateHurt
+    bne .AfterHurtCheck
+    rts
 
 .AfterHurtCheck
-
-    ; New state setup
-    tst.w HERO_NEW_STATE
-    beq.s .AfterNewState
-    jsr SlashStartupNewState
-.AfterNewState
     ; Transition to SLASH_ACTIVE if ready
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.w .NoTransition
     move.w #HERO_STATE_SLASH_ACTIVE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    bra HeroStateSlashActive
+    rts
 .NoTransition
     sub.w #1,HERO_STATE_FRAMES_LEFT
+    jsr DashSlashPositionUpdate
     rts
 
 ; HERO_STATE_FRAMES_LEFT,BUTTON_RELEASED_SINCE_LAST_SLASH,NEW_ANIM_STATE
@@ -548,7 +568,8 @@ HeroStateSlashActiveUpdate
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
-    beq.w HeroStateHurt
+    bne .AfterHurtCheck
+    rts
 
 .AfterHurtCheck
 
@@ -558,21 +579,23 @@ HeroStateSlashActiveUpdate
     move.w #HERO_STATE_DASHING,HERO_STATE
     move.w #1,HERO_NEW_STATE
     move.w #0,DASH_BUFFERED
-    bra HeroStateDashing
+    rts
 .AfterDashTransition
 
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
     jsr StateSlashActiveNewState
+    clr.w HERO_NEW_STATE
 .AfterNewState
     ; Maybe transition to recovery
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.s .NoTransition
     move.w #HERO_STATE_SLASH_RECOVERY,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    bra HeroStateSlashRecovery
+    rts
 .NoTransition
     sub.w #1,HERO_STATE_FRAMES_LEFT
+    jsr DashSlashPositionUpdate
     rts
 
 ; HERO_STATE_FRAMES_LEFT,SLASH AABB,NEW_ANIM_STATE
@@ -634,11 +657,14 @@ HeroStateSlashRecoveryUpdate
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_HURT,d0
-    beq.w HeroStateHurt
+    bne .AfterHurtTransition
+    rts
+.AfterHurtTransition
 
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
     move.w #SLASH_RECOVERY_ITERS,HERO_STATE_FRAMES_LEFT
+    clr.w HERO_NEW_STATE
 .AfterNewState
     ; Maybe transition back to idle. Only transition after HERO_STATE_FRAMES_LEFT == 0 and
     ; HERO_DASH_CURRENT_SPEED == 0.
@@ -650,9 +676,10 @@ HeroStateSlashRecoveryUpdate
     move.w #HERO_DASH_COOLDOWN,HERO_DASH_COOLDOWN_FRAMES_LEFT
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    bra HeroStateIdle
+    rts
 .NoTransition
     sub.w #1,HERO_STATE_FRAMES_LEFT
+    jsr DashSlashPositionUpdate
     rts
 
 ; go hog wild on registers
@@ -753,13 +780,15 @@ HeroStateDashingUpdate
     move.w #0,HERO_STATE_FRAMES_LEFT ; used for flicker
     ; set current anim to windup
     jsr SetWindupFromFacingDirection
+    clr.w HERO_NEW_STATE
     rts ; no movement until after freeze time.
 .AfterNewState
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_STARTUP,d0
-    beq HeroStateSlashStartup
+    bne .AfterSlashTransition
+.AfterSlashTransition
 
     add.w #1,HERO_STATE_FRAMES_LEFT ; for flicker
 
@@ -786,7 +815,7 @@ HeroStateDashingUpdate
     move.w #HERO_DASH_COOLDOWN,HERO_DASH_COOLDOWN_FRAMES_LEFT
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
-    bra HeroStateIdle
+    rts
 .NoTransition
     move.l HERO_DASH_CURRENT_SPEED,d0
 
