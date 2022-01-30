@@ -733,17 +733,21 @@ UtilUpdateDashDirectionFromControllerInD0
 
 ; Should be called during freeze only
 CheckForDashBuffer:
-    ; if slash is active, this is an attack hitstop. look for a buffered input to dash.
+    tst.b (DASH_BUFFERED+1) ; if dash is already buffered, exit
+    bne .End
+    ; if slash is active, this is an attack hitstop. can dash buffer.
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_ACTIVE,d0
-    bne.w .End
-    tst.w DASH_BUFFERED ; if dash is already buffered, exit
-    bne.w .End
+    beq .CanDashBuffer
+    ; If dash is active, this is a dash attack hitstop. can dash buffer.
+    cmp.w #HERO_STATE_DASHING,d0
+    bne .End
+.CanDashBuffer
     GetControls d0,d1
     move.b CONTROLLER,d0
     btst.l #C_BIT,d0
     beq.s .End
-    move.w #1,DASH_BUFFERED
+    move.b #1,(DASH_BUFFERED+1)
     jsr UtilUpdateDashDirectionFromControllerInD0
 .End
     rts

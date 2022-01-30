@@ -54,6 +54,9 @@ HeroStateUpdate:
 .AfterJumpTable
     ; if there was a state transition, evaluate the state machine again.
     tst.w HERO_NEW_STATE
+    ; it's possible that we buffer a dash during hitstop, and then on the very first hero state update afterward,
+    ; we change state (so the dash buffer doesn't get "consumed"). So we clear it here to ensure this doesn't happen.
+    clr.b (DASH_BUFFERED+1)
     bne HeroStateUpdate
     rts
 
@@ -71,7 +74,7 @@ HeroStateIsDashActive:
 ; Update FACING_DIRECTION,NEW_ANIM_STATE,NEW_X,NEW_Y
 HeroStateIdleUpdate:
     clr.w HERO_NEW_STATE
-    
+
     ; Hurt Transition
     jsr CheckIfHeroNewlyHurt
     move.w HERO_STATE,d0
@@ -783,6 +786,17 @@ HeroStateDashingUpdate
     clr.w HERO_NEW_STATE
     rts ; no movement until after freeze time.
 .AfterNewState
+    ; New dash transition if buffered during hitstop
+    ; TODO: try to unify all dash transitions under one "maybestartnewdash" function
+    tst.b (DASH_BUFFERED+1)
+    beq.s .AfterDashTransition
+    ;move.w #HERO_STATE_DASHING,HERO_STATE
+    move.b #1,(HERO_NEW_STATE+1)
+    ; move.b #0,(DASH_BUFFERED+1) no longer needed with new-state-buffer-clear right?
+    move.b CONTROLLER,d0
+    jsr UtilUpdateDashDirectionFromControllerInD0
+    rts
+.AfterDashTransition
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
