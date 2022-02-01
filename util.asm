@@ -741,7 +741,11 @@ CheckForDashBuffer:
     beq .CanDashBuffer
     ; If dash is active, this is a dash attack hitstop. can dash buffer.
     cmp.w #HERO_STATE_DASHING,d0
-    bne .End
+    beq .CanDashBuffer
+    ; If parry success active, this is a parry hitstop. can dash buffer.
+    cmp.w #HERO_STATE_PARRY_SUCCESS_RECOVERY,d0
+    beq .CanDashBuffer
+    bra .End
 .CanDashBuffer
     GetControls d0,d1
     move.b CONTROLLER,d0

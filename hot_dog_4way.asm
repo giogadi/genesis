@@ -161,6 +161,7 @@ HotDogStoppedUpdate:
     jsr HotDogSetNewStateBit
     move.b #HOT_DOG_STATE_MOVING,d0
     jsr HotDogSetState
+    rts
 .StayStopped
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     rts
@@ -179,6 +180,7 @@ HotDogMovingUpdate:
     jsr HotDogSetNewStateBit
     move.b #HOT_DOG_STATE_STOPPED,d0
     jsr HotDogSetState
+    rts
 .StayMoving
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     ; Is it time to update the target?

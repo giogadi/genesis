@@ -7,7 +7,8 @@ HERO_DASH_MIN_SPEED: equ 65536
 HERO_PARRY_STARTUP_FRAMES: equ 4
 HERO_PARRY_ACTIVE_FRAMES: equ 30
 HERO_PARRY_FAIL_RECOVERY_FRAMES: equ 30
-HERO_PARRY_SUCCESS_RECOVERY_FRAMES: equ 30
+;HERO_PARRY_SUCCESS_RECOVERY_FRAMES: equ 30
+HERO_PARRY_SUCCESS_RECOVERY_FRAMES: equ 1
 
 HeroStateUpdate:
     move.l #.HeroStateJumpTable,a0
@@ -54,10 +55,12 @@ HeroStateUpdate:
 .AfterJumpTable
     ; if there was a state transition, evaluate the state machine again.
     tst.w HERO_NEW_STATE
+    beq .Done
     ; it's possible that we buffer a dash during hitstop, and then on the very first hero state update afterward,
     ; we change state (so the dash buffer doesn't get "consumed"). So we clear it here to ensure this doesn't happen.
     clr.b (DASH_BUFFERED+1)
-    bne HeroStateUpdate
+    bra HeroStateUpdate
+.Done
     rts
 
 ; return value in d0
@@ -337,6 +340,8 @@ HeroStateParryActiveUpdate
 HeroStateParrySuccessRecoveryUpdate
     tst.w HERO_NEW_STATE
     beq .AfterNewState
+    ; start some hitstop.
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     move.w #HERO_PARRY_SUCCESS_RECOVERY_FRAMES,HERO_STATE_FRAMES_LEFT
     clr.w HERO_NEW_STATE
 .AfterNewState
@@ -562,6 +567,12 @@ UpdateButtonReleasedSinceLastParry
     rts
 
 HeroStateSlashActiveUpdate
+    tst.w HERO_NEW_STATE
+    beq.s .AfterNewState
+    jsr StateSlashActiveNewState
+    clr.w HERO_NEW_STATE
+.AfterNewState
+
     ; if dashing, hero can't get hurt.
     jsr HeroStateIsDashActive
     tst.w d0
@@ -576,20 +587,19 @@ HeroStateSlashActiveUpdate
 
 .AfterHurtCheck
 
-    ; Dash Transition if buffered
-    tst.w DASH_BUFFERED
-    beq.s .AfterDashTransition
-    move.w #HERO_STATE_DASHING,HERO_STATE
-    move.w #1,HERO_NEW_STATE
-    move.w #0,DASH_BUFFERED
+    ; Maybe start a dash if requested
+    jsr HeroStateMaybeStartDash
+    tst.b (HERO_NEW_STATE+1)
+    beq .AfterDashTransition
     rts
+    ; tst.w DASH_BUFFERED
+    ; beq.s .AfterDashTransition
+    ; move.w #HERO_STATE_DASHING,HERO_STATE
+    ; move.w #1,HERO_NEW_STATE
+    ; move.w #0,DASH_BUFFERED
+    ; rts
 .AfterDashTransition
 
-    tst.w HERO_NEW_STATE
-    beq.s .AfterNewState
-    jsr StateSlashActiveNewState
-    clr.w HERO_NEW_STATE
-.AfterNewState
     ; Maybe transition to recovery
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.s .NoTransition
@@ -732,19 +742,41 @@ MaybeSetNewlyHurtState
 .SetNewHurtStateEnd
     rts
 
+; HeroStateMaybeStartDash
+;     tst.w BUTTON_RELEASED_SINCE_LAST_DASH
+;     beq .End
+;     tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
+;     bgt .End
+;     move.b CONTROLLER,d0
+;     btst.l #C_BIT,d0
+;     beq .End
+;     move.w #HERO_STATE_DASHING,HERO_STATE
+;     move.w #1,HERO_NEW_STATE
+;     move.w #0,DASH_BUFFERED
+;     jsr UtilUpdateDashDirectionFromControllerInD0
+; .End    
+;     rts
+
 HeroStateMaybeStartDash
-    tst.w BUTTON_RELEASED_SINCE_LAST_DASH
-    beq .End
-    tst.w HERO_DASH_COOLDOWN_FRAMES_LEFT
+    ; Check hero dash cooldown (TODO: are we still doing this?)
+    tst.b (HERO_DASH_COOLDOWN_FRAMES_LEFT+1)
     bgt .End
     move.b CONTROLLER,d0
-    btst.l #C_BIT,d0
+    ; first check dash buffer
+    tst.b (DASH_BUFFERED+1)
     beq .End
+    ; ; if no dash buffer, check controller
+    ; tst.b (BUTTON_RELEASED_SINCE_LAST_DASH+1)
+    ; beq .End
+    ; btst.l #C_BIT,d0
+    ; beq .End
+    ; we dashin!
+.StartNewDash
     move.w #HERO_STATE_DASHING,HERO_STATE
-    move.w #1,HERO_NEW_STATE
-    move.w #0,DASH_BUFFERED
-    jsr UtilUpdateDashDirectionFromControllerInD0
-.End    
+    move.b #1,(HERO_NEW_STATE+1)
+    ; TODO maybe not necessary anymore
+    clr.b (DASH_BUFFERED+1)
+.End
     rts
 
 ; TODO re-use this in slash startup?
@@ -786,17 +818,13 @@ HeroStateDashingUpdate
     clr.w HERO_NEW_STATE
     rts ; no movement until after freeze time.
 .AfterNewState
-    ; New dash transition if buffered during hitstop
-    ; TODO: try to unify all dash transitions under one "maybestartnewdash" function
-    tst.b (DASH_BUFFERED+1)
-    beq.s .AfterDashTransition
-    ;move.w #HERO_STATE_DASHING,HERO_STATE
-    move.b #1,(HERO_NEW_STATE+1)
-    ; move.b #0,(DASH_BUFFERED+1) no longer needed with new-state-buffer-clear right?
-    move.b CONTROLLER,d0
-    jsr UtilUpdateDashDirectionFromControllerInD0
-    rts
+
+    ; Maybe start new dash (new direction, speed) if requested
+    jsr HeroStateMaybeStartDash
+    tst.b (HERO_NEW_STATE+1)
+    beq .AfterDashTransition
 .AfterDashTransition
+
     ; Slash Transition
     jsr HeroStateMaybeStartSlash
     move.w HERO_STATE,d0
