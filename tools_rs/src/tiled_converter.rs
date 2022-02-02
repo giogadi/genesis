@@ -105,25 +105,9 @@ fn convert_with_xmltree(
                 continue;
             }
 
-            // let mut enemy_type_num = 0;
-            let mut enemy_name = "";
-            if type_attr == "butt" {
-                // enemy_type_num = 0;
-                enemy_name = "ENTITY_TYPE_BUTT";
-            } else if type_attr == "hot_dog" {
-                // enemy_type_num = 1;
-                enemy_name = "ENTITY_TYPE_HOT_DOG";
-            } else if type_attr == "ogre" {
-                // enemy_type_num = 2;
-                enemy_name = "ENTITY_TYPE_OGRE";
-            } else if type_attr == "red_seal" {
-                // enemy_type_num = 3;
-                enemy_name = "ENTITY_TYPE_RED_SEAL";
-            } else if type_attr == "spawner" {
-                // enemy_type_num = 4;
-                enemy_name = "ENTITY_TYPE_SPAWNER";
-            }
-            enemy_strings.push(format!("\tdc.w {},{},{}", enemy_name, x, y));
+            // we take enemy_name, make it all caps, and prepend "ENTITY_TYPE" to it
+            let entity_name = String::from("ENTITY_TYPE_") + &type_attr.to_uppercase();
+            enemy_strings.push(format!("\tdc.w {},{},{}", entity_name, x, y));
         }
     }
     assert!(hero_start.is_some());

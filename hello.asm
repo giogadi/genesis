@@ -212,6 +212,7 @@ ENTITY_TYPE_OGRE: equ 2
 ENTITY_TYPE_RED_SEAL: equ 3
 ENTITY_TYPE_SPAWNER: equ 4
 ENTITY_TYPE_FIREBALL: equ 5
+ENTITY_TYPE_SLIME: equ 6
 
 SPRITE_COUNTER: so.w 1 ; used to help with sprite link data
 LAST_LINK_WRITTEN: so.w 1
@@ -234,6 +235,7 @@ SCROLL_TILE_H: equ (1<<SCROLL_TILE_H_LOG2)
     include red_seal.asm
     include crab_spawner.asm
     include fireball.asm
+    include slime.asm
 
 ; INIT
 ; ------------------------------------------------------------------------------
@@ -497,8 +499,17 @@ FIREBALL_SPRITE_TILE_SIZE: equ 1
     move.l (a0)+,vdp_data
     dbra d0,.loop
 
+SlimeSpriteLoad:
+SLIME_SPRITE_TILE_START: equ (FIREBALL_SPRITE_TILE_START+FIREBALL_SPRITE_TILE_SIZE)
+SLIME_SPRITE_TILE_SIZE: equ (2*2)
+    move.w #(8*SLIME_SPRITE_TILE_SIZE)-1,d0
+    move.l #SlimeSprite,a0
+.loop
+    move.l (a0)+,vdp_data
+    dbra d0,.loop
+
 FutureSpriteLoad:
-FUTURE_SPRITE_TILE_START: equ (FIREBALL_SPRITE_TILE_START+FIREBALL_SPRITE_TILE_SIZE)
+FUTURE_SPRITE_TILE_START: equ (SLIME_SPRITE_TILE_START+SLIME_SPRITE_TILE_SIZE)
 FUTURE_SPRITE_TILE_SIZE: equ 1
     move.w #(8*FUTURE_SPRITE_TILE_SIZE)-1,d0
     move.l #FutureSprite,a0
@@ -1174,6 +1185,9 @@ DashBarSprite:
 
 FireballSprite:
     include art/fireball.asm
+
+SlimeSprite:
+    include art/slime.asm
 
 FutureSprite:
     include art/future.asm
