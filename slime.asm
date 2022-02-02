@@ -6,13 +6,89 @@ SlimeVTable:
     dc.l SlimeBlockHero
     dc.l SlimeLoad
 
+; ENEMY_DATA1: 0000 0000 0000 000(moving_state,1)
+; ENEMY_DATA2: 0000 0000 0000 000(move_left,1)
+; ENEMY_DATA3: 0000 0000 0000 000(new_state,1)
+
+SLIME_STATE_DYING: equ 1
+SLIME_STATE_MOVING: equ 2
+SLIME_STATE_STOPPED: equ 3
+
+; \1: entity pointer
+M_TestNewState: macro
+    tst.b (N_ENEMY_DATA3+1)(\1)
+    endm
+
+M_ClearNewState: macro
+    and.b #$FE,(N_ENEMY_DATA3+1)(\1)
+    endm
+
+M_SetNewState: macro
+    or.b #$01,(N_ENEMY_DATA3+1)(\1)
+    endm
+
 SlimeUpdate:
+    jsr SlimeUpdateFromSlash
+.StartUpdate
+    clr.l d0
+    move.w N_ENEMY_STATE(a2),d0
+    M_JumpTable #.StateJumpTable,a0,d0
+.StateJumpTable dc.l .Dead,.Dying,.Moving,.Stopped
+.Dead:
+    ; shouldn't happen
+    rts
+.Dying:
+    jsr SlimeDyingUpdate
+    bra .End
+.Moving:
+    jsr SlimeMovingUpdate
+    bra .End
+.Stopped:
+    jsr SlimeStoppedUpdate
+    bra .End
+.End
+    M_TestNewState a2
+    bne .StartUpdate
+    rts
+
+SlimeDyingUpdate:
+    M_TestNewState a2
+    beq .AfterNewState
+    move.w #ENEMY_DYING_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    M_ClearNewState a2
+.AfterNewState
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .AfterTransition
+    ; transition to dead
+    move.w #ENEMY_STATE_DEAD,N_ENEMY_STATE(a2)
+    rts
+.AfterTransition
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    rts
+
+SlimeMovingUpdate:
+    rts
+
+SlimeStoppedUpdate:
+    rts
+
+SlimeUpdateFromSlash:
+    move.w N_ENEMY_STATE(a2),d0
+    cmp.w #SLIME_STATE_DYING,d0
+    beq .Done
+    jsr UtilIsEnemyHitBySlash
+    beq .Done
+    ; Enemy is hit! switch to dying and activate hitstop.
+    move.w #SLIME_STATE_DYING,N_ENEMY_STATE(a2)
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
+    M_SetNewState a2
+.Done
     rts
 
 SlimeMaybeHurtHero:
     move.w N_ENEMY_STATE(a2),d0
-    cmp.w #ENEMY_STATE_ALIVE,d0
-    bne .end
+    cmp.w #SLIME_STATE_DYING,d0
+    beq .end
     move.w CURRENT_Y,-(sp)
     move.w CURRENT_X,-(sp)
     move.w N_ENEMY_HALF_H(a2),-(sp)
@@ -33,7 +109,7 @@ SlimeMaybeHurtHero:
 SlimeDrawEnemy:
     move.w N_ENEMY_STATE(a2),d0
     ; if dying, flicker sprite
-    cmp.w #ENEMY_STATE_DYING,d0
+    cmp.w #SLIME_STATE_DYING,d0
     bne .DoDraw
     ; always draw sprite during hitstop
     tst.w HITSTOP_FRAMES_LEFT
@@ -69,4 +145,5 @@ SlimeBlockHero:
 SlimeLoad:
     move.w #8,N_ENEMY_HALF_W(a2)
     move.w #8,N_ENEMY_HALF_H(a2)
+    move.w #SLIME_STATE_MOVING,N_ENEMY_STATE(a2)
     rts
