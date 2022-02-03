@@ -457,7 +457,7 @@ HeroStateMaybeStartSlash
 HeroStateSlashStartupUpdate
     ; New state setup
     tst.w HERO_NEW_STATE
-    beq.s .AfterNewState
+    beq .AfterNewState
     jsr SlashStartupNewState
     clr.w HERO_NEW_STATE
 .AfterNewState
@@ -528,7 +528,7 @@ SlashStartupNewState
 
 UpdateButtonReleasedSinceLastSlash
     tst.w BUTTON_RELEASED_SINCE_LAST_SLASH
-    bne.s .End
+    bne .End
     ; move.w HERO_STATE,d0
     ; cmp.w #HERO_STATE_SLASH_STARTUP,d0
     ; beq.s .End
@@ -538,7 +538,7 @@ UpdateButtonReleasedSinceLastSlash
     ; beq.s .End
     move.b CONTROLLER,d0
     btst.l #A_BIT,d0
-    bne.s .End
+    bne .End
     move.w #1,BUTTON_RELEASED_SINCE_LAST_SLASH
 .End
     rts

@@ -6,6 +6,10 @@ SlimeVTable:
     dc.l SlimeBlockHero
     dc.l SlimeLoad
 
+SLIME_MOVING_FRAMES: equ 60
+SLIME_STOPPED_FRAMES: equ 60
+SLIME_WALK_SPEED: equ (ONE_PIXEL_LONG_UNIT/2)
+
 ; ENEMY_DATA1: 0000 0000 0000 000(moving_state,1)
 ; ENEMY_DATA2: 0000 0000 0000 000(move_left,1)
 ; ENEMY_DATA3: 0000 0000 0000 000(new_state,1)
@@ -15,16 +19,24 @@ SLIME_STATE_MOVING: equ 2
 SLIME_STATE_STOPPED: equ 3
 
 ; \1: entity pointer
-M_TestNewState: macro
+M_SlimeTestNewState: macro
     tst.b (N_ENEMY_DATA3+1)(\1)
     endm
 
-M_ClearNewState: macro
+M_SlimeClearNewState: macro
     and.b #$FE,(N_ENEMY_DATA3+1)(\1)
     endm
 
-M_SetNewState: macro
+M_SlimeSetNewState: macro
     or.b #$01,(N_ENEMY_DATA3+1)(\1)
+    endm
+
+M_SlimeFlipDirection: macro
+    bchg.b #0,(N_ENEMY_DATA2+1)(\1)
+    endm
+
+M_SlimeTestIsLeft: macro
+    btst.b #0,(N_ENEMY_DATA2+1)(\1)
     endm
 
 SlimeUpdate:
@@ -47,15 +59,15 @@ SlimeUpdate:
     jsr SlimeStoppedUpdate
     bra .End
 .End
-    M_TestNewState a2
+    M_SlimeTestNewState a2
     bne .StartUpdate
     rts
 
 SlimeDyingUpdate:
-    M_TestNewState a2
+    M_SlimeTestNewState a2
     beq .AfterNewState
     move.w #ENEMY_DYING_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
-    M_ClearNewState a2
+    M_SlimeClearNewState a2
 .AfterNewState
     tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
     bgt .AfterTransition
@@ -67,9 +79,44 @@ SlimeDyingUpdate:
     rts
 
 SlimeMovingUpdate:
+    M_SlimeTestNewState a2
+    beq .AfterNewState
+    ; pick a direction to move in
+    M_SlimeFlipDirection a2
+    move.w #SLIME_MOVING_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    M_SlimeClearNewState a2
+.AfterNewState
+    ; check if we should transition to stopped
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .AfterTransition
+    move.w #SLIME_STATE_STOPPED,N_ENEMY_STATE(a2)
+    M_SlimeSetNewState a2
+    rts
+.AfterTransition
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    M_SlimeTestIsLeft a2
+    beq .GoRight
+    ; going left
+    sub.l #SLIME_WALK_SPEED,N_ENEMY_X(a2)
+    rts
+.GoRight
+    add.l #SLIME_WALK_SPEED,N_ENEMY_X(a2)
     rts
 
 SlimeStoppedUpdate:
+    M_SlimeTestNewState a2
+    beq .AfterNewState
+    move.w #SLIME_STOPPED_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    M_SlimeClearNewState a2
+.AfterNewState
+    ; check if we should transition to moving
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .AfterTransition
+    move.w #SLIME_STATE_MOVING,N_ENEMY_STATE(a2)
+    M_SlimeSetNewState a2
+    rts
+.AfterTransition
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     rts
 
 SlimeUpdateFromSlash:
@@ -81,7 +128,7 @@ SlimeUpdateFromSlash:
     ; Enemy is hit! switch to dying and activate hitstop.
     move.w #SLIME_STATE_DYING,N_ENEMY_STATE(a2)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
-    M_SetNewState a2
+    M_SlimeSetNewState a2
 .Done
     rts
 
