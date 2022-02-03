@@ -192,5 +192,14 @@ SlimeBlockHero:
 SlimeLoad:
     move.w #8,N_ENEMY_HALF_W(a2)
     move.w #8,N_ENEMY_HALF_H(a2)
-    move.w #SLIME_STATE_MOVING,N_ENEMY_STATE(a2)
+    move.w #SLIME_STATE_STOPPED,N_ENEMY_STATE(a2)
+    M_SlimeClearNewState a2
+    jsr UtilRand16
+    btst.l #0,d0
+    beq .AfterDirection
+    M_SlimeFlipDirection a2
+.AfterDirection
+    ; use first 7 bits as a random initial value for state-frames-left.
+    and.w #$007F,d0
+    move.w d0,N_ENEMY_STATE_FRAMES_LEFT(a2)
     rts

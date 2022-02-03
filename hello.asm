@@ -387,6 +387,9 @@ Z80Reset:   equ $A11200  ; Z80 reset line
     move.l #0,(vdp_data)
     dbf d0,@vsram_loop
 
+RNG_SEED: so.w 1
+    move.w #$FEB6,RNG_SEED
+
     jsr LoadPalettes
 
 ; Load in one simple tile at 2nd loc. Need to start writing to VRAM at $0020 = %0000 0000 0010 0000
@@ -698,9 +701,6 @@ CAMERA_MANUAL_PAN_X: so.b 1
     move.b #0,CAMERA_MANUAL_PAN_X
 CAMERA_MANUAL_PAN_Y: so.b 1
     move.b #0,CAMERA_MANUAL_PAN_Y
-
-RNG_SEED: so.w 1
-    move.w #1,RNG_SEED
 
 ; Title screen
 ; Dimensions of title sprite are 320x136 (40x17 tiles)
