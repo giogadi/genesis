@@ -1232,3 +1232,20 @@ UtilGetEnemy4WayTargetPos:
     ; reset stack
     add.l #2,sp
     rts
+
+; d0: direction. returns opposite direction in d0
+UtilOppositeDirection:
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable: dc.l .Up,.Down,.Left,.Right
+.Up
+    move.b #FACING_DOWN,d0
+    rts
+.Down
+    move.b #FACING_UP,d0
+    rts
+.Left
+    move.b #FACING_RIGHT,d0
+    rts
+.Right
+    move.b #FACING_LEFT,d0
+    rts

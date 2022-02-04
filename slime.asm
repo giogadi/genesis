@@ -9,14 +9,19 @@ SlimeVTable:
 SLIME_MOVING_FRAMES: equ 60
 SLIME_STOPPED_FRAMES: equ 60
 SLIME_WALK_SPEED: equ (ONE_PIXEL_LONG_UNIT/2)
+SLIME_HURT_FRAMES: equ 8
+SLIME_HURT_SPEED: equ (ONE_PIXEL_LONG_UNIT*4)
 
-; ENEMY_DATA1: 0000 0000 0000 000(moving_state,1)
+; ENEMY_DATA1: 0000 0000 0000 000(moving_state,1) (while moving)
+; ENEMY_DATA1: 0000 0000 0000 00(hurt_direction,2) (while hurt)
+
 ; ENEMY_DATA2: 0000 0000 0000 000(move_left,1)
 ; ENEMY_DATA3: 0000 0000 0000 000(new_state,1)
 
 SLIME_STATE_DYING: equ 1
 SLIME_STATE_MOVING: equ 2
 SLIME_STATE_STOPPED: equ 3
+SLIME_STATE_HURT: equ 4
 
 ; \1: entity pointer
 M_SlimeTestNewState: macro
@@ -39,13 +44,21 @@ M_SlimeTestIsLeft: macro
     btst.b #0,(N_ENEMY_DATA2+1)(\1)
     endm
 
+M_SlimeSetHurtDirection: macro
+    move.b \1,(N_ENEMY_DATA1+1)(\2)
+    endm
+
+M_SlimeGetHurtDirection: macro
+    move.b (N_ENEMY_DATA1+1)(\1),\2
+    endm
+
 SlimeUpdate:
     jsr SlimeUpdateFromSlash
 .StartUpdate
     clr.l d0
     move.w N_ENEMY_STATE(a2),d0
     M_JumpTable #.StateJumpTable,a0,d0
-.StateJumpTable dc.l .Dead,.Dying,.Moving,.Stopped
+.StateJumpTable dc.l .Dead,.Dying,.Moving,.Stopped,.Hurt
 .Dead:
     ; shouldn't happen
     rts
@@ -57,6 +70,9 @@ SlimeUpdate:
     bra .End
 .Stopped:
     jsr SlimeStoppedUpdate
+    bra .End
+.Hurt:
+    jsr SlimeHurtUpdate
     bra .End
 .End
     M_SlimeTestNewState a2
@@ -123,13 +139,60 @@ SlimeUpdateFromSlash:
     move.w N_ENEMY_STATE(a2),d0
     cmp.w #SLIME_STATE_DYING,d0
     beq .Done
+    cmp.w #SLIME_STATE_HURT,d0
+    beq .Done
     jsr UtilIsEnemyHitBySlash
     beq .Done
-    ; Enemy is hit! switch to dying and activate hitstop.
+    ; Enemy is hit! Reduce hp
+    sub.w #1,N_ENEMY_HP(a2)
+    ble .Dead
+    ; still alive. activate hitstop and enter hurt state
+    move.w #3,HITSTOP_FRAMES_LEFT
+    clr.l d0
+    move.b (FACING_DIRECTION+1),d0
+    M_SlimeSetHurtDirection d0,a2
+    move.w #SLIME_STATE_HURT,N_ENEMY_STATE(a2)
+    M_SlimeSetNewState a2
+    rts
+.Dead
+    ; out of hp! switch to dying and activate hitstop.
     move.w #SLIME_STATE_DYING,N_ENEMY_STATE(a2)
     move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     M_SlimeSetNewState a2
 .Done
+    rts
+
+SlimeHurtUpdate
+    M_SlimeTestNewState a2
+    beq .AfterNewState
+    move.w #SLIME_HURT_FRAMES,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    M_SlimeClearNewState a2
+    ; don't push slime back on first frame of hurt
+    rts
+.AfterNewState
+    tst.w N_ENEMY_STATE_FRAMES_LEFT(a2)
+    bgt .AfterTransition
+    ; transition back to stopped
+    move.w #SLIME_STATE_STOPPED,N_ENEMY_STATE(a2)
+    M_SlimeSetNewState a2
+    rts
+.AfterTransition
+    sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
+    clr.l d0
+    M_SlimeGetHurtDirection a2,d0
+    M_JumpTable #.DirectionJumpTable,a0,d0
+.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+.Up
+    sub.l #SLIME_HURT_SPEED,N_ENEMY_Y(a2)
+    rts
+.Down
+    add.l #SLIME_HURT_SPEED,N_ENEMY_Y(a2)
+    rts
+.Left
+    sub.l #SLIME_HURT_SPEED,N_ENEMY_X(a2)
+    rts
+.Right
+    add.l #SLIME_HURT_SPEED,N_ENEMY_X(a2)
     rts
 
 SlimeMaybeHurtHero:
@@ -192,6 +255,7 @@ SlimeBlockHero:
 SlimeLoad:
     move.w #8,N_ENEMY_HALF_W(a2)
     move.w #8,N_ENEMY_HALF_H(a2)
+    move.w #3,N_ENEMY_HP(a2)
     move.w #SLIME_STATE_STOPPED,N_ENEMY_STATE(a2)
     M_SlimeClearNewState a2
     jsr UtilRand16
