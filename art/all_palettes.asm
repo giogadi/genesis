@@ -21,7 +21,7 @@
 	dc.w $0427
 	dc.w $0158
 	dc.w $053b
-	dc.w $0000
+	dc.w $0533
 	dc.w $0000
 	dc.w $0000
 	dc.w $0000
@@ -33,22 +33,22 @@
 	dc.w $0000
 	dc.w $0000
 ; Palette 2
+	dc.w $0eee
+	dc.w $0ddd
+	dc.w $0cca
+	dc.w $0aa8
+	dc.w $0876
+	dc.w $0868
+	dc.w $0cac
+	dc.w $0ccd
+	dc.w $0cdd
+	dc.w $0acc
+	dc.w $09ab
+	dc.w $0678
 	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
-	dc.w $0000
+	dc.w $0666
+	dc.w $0aaa
+	dc.w $0ccc
 ; Palette 3
 	dc.w $0000
 	dc.w $0000

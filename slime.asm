@@ -239,7 +239,19 @@ SlimeDrawEnemy:
     move.w d1,vdp_data ; y
     move.w d0,vdp_data ; link data
     move.w d0,LAST_LINK_WRITTEN
-    move.w #SLIME_SPRITE_TILE_START,vdp_data
+    ; assemble tile and palette in d0. If hurt or dying, we flicker palette based on frames_left
+    move.w #SLIME_SPRITE_TILE_START,d0
+    move.w N_ENEMY_STATE(a2),d1
+    cmp.w #SLIME_STATE_HURT,d1
+    beq .CheckFlicker
+    cmp.w #SLIME_STATE_DYING,d1
+    bne .AfterFlicker
+.CheckFlicker
+    btst.b #1,(N_ENEMY_STATE_FRAMES_LEFT+1)(a2)
+    bne .AfterFlicker
+    bset.l #14,d0
+.AfterFlicker
+    move.w d0,vdp_data
     move.w N_ENEMY_X(a2),d1
     sub.w N_ENEMY_HALF_W(a2),d1
     add.w #MIN_DISPLAY_X,d1
