@@ -224,6 +224,7 @@ SCROLL_TILE_H_LOG2: equ 5
 SCROLL_TILE_W: equ (1<<SCROLL_TILE_W_LOG2)
 SCROLL_TILE_H: equ (1<<SCROLL_TILE_H_LOG2)
 
+    include hero_anim.asm
     include util.asm
     include script_functions.asm
     include text.asm
@@ -401,7 +402,7 @@ FIRST_TILE_INDEX: equ 1
     SetVramAddr d0,d1
     
 SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
-NUM_SAMURAI_TILES: equ (3*2*9) ; 3x2 sprite with 9 frames
+NUM_SAMURAI_TILES: equ (3*2*11) ; 3x2 sprite with 11 frames
     move #(8*NUM_SAMURAI_TILES)-1,d0
     move.l #SamuraiLeft1Sprite,a0
 @samurai_sprite_load_loop
@@ -583,6 +584,18 @@ TILEMAP_ENEMY_DATA: equ (TILEMAP_HERO_START_DATA+4)
 __main
 ; PSG test.
     ;jsr @test_psg
+
+HERO_CURRENT_ANIM_PTR: so.l 1
+    move.l #HeroLeftWalkAnim,HERO_CURRENT_ANIM_PTR
+; if negative, means "new state"
+HERO_CURRENT_ANIM_FRAME_INDEX: so.b 1
+    move.b #0,HERO_CURRENT_ANIM_FRAME_INDEX
+HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED: so.b 1
+    move.b #0,HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED
+HERO_CURRENT_ANIM_TILE_INDEX: so.w 1
+    move.w #SAMURAI_SPRITE_TILE_START,HERO_CURRENT_ANIM_TILE_INDEX
+
+    M_HeroAnimNewState #HeroRightWalkAnim
 
 LEFT_IDLE_STATE: equ 0
 RIGHT_IDLE_STATE: equ 1
@@ -904,6 +917,8 @@ MainGameLoop
 
     jsr HeroStateUpdate
 
+    jsr HeroAnimUpdate
+
 .CheckNewPosition ; new position is in NEW_X,NEW_Y
     move.w NEW_X,d4
     move.w NEW_Y,d5
@@ -960,22 +975,22 @@ MainGameLoop
 
     jsr UtilUpdateCamera
 
-    clr.l d0
-    move.w NEW_ANIM_STATE,d0 ; move new anim state to d0
-    jsr UpdateAnimState
+    ; clr.l d0
+    ; move.w NEW_ANIM_STATE,d0 ; move new anim state to d0
+    ; jsr UpdateAnimState
 
     ; update animation
-    sub.w #1,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-    bgt.w .AfterAnimFrameIncrement
-    move.w ANIM_STRIDE,d0
-    add.w d0,ANIM_CURRENT_INDEX
-    move.w ANIM_LAST_INDEX,d0
-    cmp.w ANIM_CURRENT_INDEX,d0
-    bge.w .AfterAnimFrameFlip
-    move.w ANIM_START_INDEX,ANIM_CURRENT_INDEX
-.AfterAnimFrameFlip
-    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-.AfterAnimFrameIncrement:
+;     sub.w #1,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+;     bgt.w .AfterAnimFrameIncrement
+;     move.w ANIM_STRIDE,d0
+;     add.w d0,ANIM_CURRENT_INDEX
+;     move.w ANIM_LAST_INDEX,d0
+;     cmp.w ANIM_CURRENT_INDEX,d0
+;     bge.w .AfterAnimFrameFlip
+;     move.w ANIM_START_INDEX,ANIM_CURRENT_INDEX
+; .AfterAnimFrameFlip
+;     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
+; .AfterAnimFrameIncrement:
 
     ; update alive enemies' behavior
     jsr UtilUpdateEnemies
@@ -1144,6 +1159,12 @@ WindupLeftSprite:
 
 WindupRightSprite:
     include art/samurai/windup_right.asm
+
+SamuraiVertSlashWindupRightSprite:
+    include art/samurai/vert_slash_windup_right.asm
+
+SamuraiVertSlashRightSprite:
+    include art/samurai/vert_slash_right.asm
 
 HurtLeftSprite:
     include art/samurai/hurt_left.asm
