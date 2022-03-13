@@ -7,6 +7,10 @@ M_HeroAnimGetAnimLength: macro
     move.b 1(\1),\2
     endm
 
+M_HeroAnimGetAnimFlip: macro
+    move.b (\1),\2
+    endm
+
 ; In these, \1 is an address register for the current anim frame.
 M_HeroAnimGetAnimFrameLength: macro
     move.w (\1),\2
@@ -72,21 +76,21 @@ HeroAnimUpdate:
     align 2
 
 HeroLeftIdleAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,0 ; frame_count0,tile_index0
 
     align 2
 
 HeroRightIdleAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,2*6
 
     align 2
 
 HeroLeftWalkAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 2 ; anim frame count
     dc.w 20,1*6
     dc.w 20,0*6
@@ -94,7 +98,7 @@ HeroLeftWalkAnim:
     align 2
 
 HeroRightWalkAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 2 ; anim frame count
     dc.w 20,3*6
     dc.w 20,2*6
@@ -102,42 +106,42 @@ HeroRightWalkAnim:
     align 2
 
 HeroLeftWindupAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,6*6    
 
     align 2
 
 HeroRightWindupAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,7*6    
 
     align 2
 
 HeroLeftSlashAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,4*6
 
     align 2
 
 HeroRightSlashAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,5*6
 
     align 2
 
 HeroLeftHurtAnim:
-    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,8*6
 
     align 2
 
 HeroRightHurtAnim:
-    dc.b (1|(0<<1)) ; flip_h | flip_v
+    dc.b ((0<<1)|1)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count
     dc.w -1,8*6
 

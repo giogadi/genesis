@@ -459,16 +459,19 @@ DrawHero:
     move.w d0,vdp_data
     move.w d0,LAST_LINK_WRITTEN
 
-    ; construct 3rd entry from tile number of animation we're in
-    ; move.l HERO_CURRENT_ANIM_PTR,a0
-    ; M_HeroAnimGetTileStart a0,d0
+    ; construct 3rd entry from color palette number, flip_v/h, and sprite tile number (from anim)
     move.w HERO_CURRENT_ANIM_TILE_INDEX,d0
-
-    ; construct 3rd entry from color palette number and tile number
-    ;move.w ANIM_CURRENT_INDEX,d0
     move.w GLOBAL_PALETTE,d1
     ror.w #3,d1 ; put palette in position
     or.w d1,d0 ; add palette to d0
+    
+    ; anim flip
+    move.l HERO_CURRENT_ANIM_PTR,a0
+    clr.w d1
+    M_HeroAnimGetAnimFlip a0,d1
+    lsl.w #8,d1 ; put flip in position
+    or.w d1,d0 ; add flip to d0
+
     move.w d0,vdp_data
     move.w CURRENT_X,d0
     add.w #MIN_DISPLAY_X,d0
