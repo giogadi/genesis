@@ -404,7 +404,7 @@ FIRST_TILE_INDEX: equ 1
 SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
 NUM_SAMURAI_TILES: equ (3*2*11) ; 3x2 sprite with 11 frames
     move #(8*NUM_SAMURAI_TILES)-1,d0
-    move.l #SamuraiLeft1Sprite,a0
+    move.l #SamuraiSpriteSheet,a0
 @samurai_sprite_load_loop
     move.l (a0)+,vdp_data
     dbra d0,@samurai_sprite_load_loop
@@ -586,7 +586,7 @@ __main
     ;jsr @test_psg
 
 HERO_CURRENT_ANIM_PTR: so.l 1
-    move.l #HeroLeftWalkAnim,HERO_CURRENT_ANIM_PTR
+    move.l #0,HERO_CURRENT_ANIM_PTR ; this forces the "new animation" logic on first frame.
 ; if negative, means "new state"
 HERO_CURRENT_ANIM_FRAME_INDEX: so.b 1
     move.b #0,HERO_CURRENT_ANIM_FRAME_INDEX
@@ -595,22 +595,23 @@ HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED: so.b 1
 HERO_CURRENT_ANIM_TILE_INDEX: so.w 1
     move.w #SAMURAI_SPRITE_TILE_START,HERO_CURRENT_ANIM_TILE_INDEX
 
-    M_HeroAnimNewState #HeroRightWalkAnim
+HERO_CURRENT_ANIM_FRAME_PTR: so.l 1
+    ; starts out invalid
 
-LEFT_IDLE_STATE: equ 0
-RIGHT_IDLE_STATE: equ 1
-WALK_LEFT_STATE: equ 2
-WALK_RIGHT_STATE: equ 3
-SLASH_LEFT_STATE: equ 4
-SLASH_RIGHT_STATE: equ 5
-WINDUP_LEFT_STATE: equ 6
-WINDUP_RIGHT_STATE: equ 7
-HURT_LEFT_STATE: equ 8
-HURT_RIGHT_STATE: equ 9
-PREVIOUS_ANIM_STATE: so.w 1
-    move.w #LEFT_IDLE_STATE,PREVIOUS_ANIM_STATE
-NEW_ANIM_STATE: so.w 1
-    move.w PREVIOUS_ANIM_STATE,NEW_ANIM_STATE
+HERO_NEW_ANIM_PTR: so.l 1
+    move.l #HeroLeftIdleAnim,HERO_NEW_ANIM_PTR
+
+; Old anim states. Maybe we'll use an enum for this again.
+; LEFT_IDLE_STATE: equ 0
+; RIGHT_IDLE_STATE: equ 1
+; WALK_LEFT_STATE: equ 2
+; WALK_RIGHT_STATE: equ 3
+; SLASH_LEFT_STATE: equ 4
+; SLASH_RIGHT_STATE: equ 5
+; WINDUP_LEFT_STATE: equ 6
+; WINDUP_RIGHT_STATE: equ 7
+; HURT_LEFT_STATE: equ 8
+; HURT_RIGHT_STATE: equ 9
 
 FACING_UP: equ 0
 FACING_DOWN: equ 1
@@ -975,23 +976,6 @@ MainGameLoop
 
     jsr UtilUpdateCamera
 
-    ; clr.l d0
-    ; move.w NEW_ANIM_STATE,d0 ; move new anim state to d0
-    ; jsr UpdateAnimState
-
-    ; update animation
-;     sub.w #1,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-;     bgt.w .AfterAnimFrameIncrement
-;     move.w ANIM_STRIDE,d0
-;     add.w d0,ANIM_CURRENT_INDEX
-;     move.w ANIM_LAST_INDEX,d0
-;     cmp.w ANIM_CURRENT_INDEX,d0
-;     bge.w .AfterAnimFrameFlip
-;     move.w ANIM_START_INDEX,ANIM_CURRENT_INDEX
-; .AfterAnimFrameFlip
-;     move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-; .AfterAnimFrameIncrement:
-
     ; update alive enemies' behavior
     jsr UtilUpdateEnemies
 
@@ -1136,38 +1120,8 @@ TitleTiles:
 FontTiles:
     include art/font.asm
 
-SamuraiLeft1Sprite:
-    include art/samurai/left1.asm
-
-SamuraiLeft2Sprite:
-    include art/samurai/left2.asm
-
-SamuraiRight1Sprite:
-    include art/samurai/right1.asm
-
-SamuraiRight2Sprite:
-    include art/samurai/right2.asm
-
-SamuraSlashLeftSprite:
-    include art/samurai/slash_left.asm
-
-SamuraSlashRightSprite:
-    include art/samurai/slash_right.asm
-
-WindupLeftSprite:
-    include art/samurai/windup_left.asm
-
-WindupRightSprite:
-    include art/samurai/windup_right.asm
-
-SamuraiVertSlashWindupRightSprite:
-    include art/samurai/vert_slash_windup_right.asm
-
-SamuraiVertSlashRightSprite:
-    include art/samurai/vert_slash_right.asm
-
-HurtLeftSprite:
-    include art/samurai/hurt_left.asm
+SamuraiSpriteSheet:
+    include art/samurai/samurai.asm
 
 SlashRightSprite:
     include art/slash_sprite.asm

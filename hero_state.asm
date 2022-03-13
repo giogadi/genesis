@@ -74,7 +74,7 @@ HeroStateIsDashActive:
     move.b #0,d0
     rts
 
-; Update FACING_DIRECTION,NEW_ANIM_STATE,NEW_X,NEW_Y
+; Update FACING_DIRECTION,HERO_NEW_ANIM_PTR,NEW_X,NEW_Y
 HeroStateIdleUpdate:
     clr.w HERO_NEW_STATE
 
@@ -119,16 +119,16 @@ HeroStateIdleUpdate:
     jmp (a0)
 .DefaultAnimJumpTable dc.l .DefaultFacingUp,.DefaultFacingDown,.DefaultFacingLeft,.DefaultFacingRight
 .DefaultFacingUp
-    move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
+    move.l #HeroRightIdleAnim,HERO_NEW_ANIM_PTR
     bra.s .AfterDefaultAnim
 .DefaultFacingDown
-    move.w #LEFT_IDLE_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftIdleAnim,HERO_NEW_ANIM_PTR
     bra.s .AfterDefaultAnim
 .DefaultFacingLeft
-    move.w #LEFT_IDLE_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftIdleAnim,HERO_NEW_ANIM_PTR
     bra.s .AfterDefaultAnim
 .DefaultFacingRight
-    move.w #RIGHT_IDLE_STATE,NEW_ANIM_STATE
+    move.l #HeroRightIdleAnim,HERO_NEW_ANIM_PTR
 .AfterDefaultAnim
 
     clr.w d4 ; dx = 0
@@ -142,25 +142,25 @@ HeroStateIdleUpdate:
     btst.l #UP_BIT,d7
     beq.s .UpNotPressed
     sub.w #HERO_SPEED,d5
-    move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWalkAnim,HERO_NEW_ANIM_PTR
     move.w #FACING_UP,FACING_DIRECTION
 .UpNotPressed
     btst.l #DOWN_BIT,d7
     beq.s .DownNotPressed
     add.w #HERO_SPEED,d5
-    move.w #WALK_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWalkAnim,HERO_NEW_ANIM_PTR
     move.w #FACING_DOWN,FACING_DIRECTION
 .DownNotPressed
     btst.l #LEFT_BIT,d7
     beq.s .LeftNotPressed
     sub.w #HERO_SPEED,d4
-    move.w #WALK_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWalkAnim,HERO_NEW_ANIM_PTR
     move.w #FACING_LEFT,FACING_DIRECTION
 .LeftNotPressed
     btst.l #RIGHT_BIT,d7
     beq.s .RightNotPressed
     add.w #HERO_SPEED,d4
-    move.w #WALK_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWalkAnim,HERO_NEW_ANIM_PTR
     move.w #FACING_RIGHT,FACING_DIRECTION
 .RightNotPressed
     add.w CURRENT_X,d4
@@ -272,16 +272,16 @@ HeroStateParryStartupUpdate
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingDown
-    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingLeft
-    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingRight
-    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .AfterAnimState
     move.w #0,HERO_NEW_STATE
@@ -306,16 +306,16 @@ HeroStateParryActiveUpdate
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingDown
-    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingLeft
-    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingRight
-    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .AfterAnimState
     move.w #0,HERO_NEW_STATE
@@ -380,16 +380,16 @@ HeroStateParryFailRecoveryUpdate
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightHurtAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingDown
-    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftHurtAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingLeft
-    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftHurtAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingRight
-    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightHurtAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .AfterAnimState
     move.w #0,HERO_NEW_STATE
@@ -486,7 +486,7 @@ HeroStateSlashStartupUpdate
     jsr DashSlashPositionUpdate
     rts
 
-; HERO_STATE_FRAMES_LEFT,BUTTON_RELEASED_SINCE_LAST_SLASH,NEW_ANIM_STATE
+; HERO_STATE_FRAMES_LEFT,BUTTON_RELEASED_SINCE_LAST_SLASH,HERO_NEW_ANIM_PTR
 SlashStartupNewState
     ; ; if dashing, slash should start up instantly.
     ; jsr HeroStateIsDashActive
@@ -514,16 +514,16 @@ SlashStartupNewState
     jmp (a0)
 .AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingDown
-    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingLeft
-    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingRight
-    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
     rts
 
 UpdateButtonReleasedSinceLastSlash
@@ -611,7 +611,7 @@ HeroStateSlashActiveUpdate
     jsr DashSlashPositionUpdate
     rts
 
-; HERO_STATE_FRAMES_LEFT,SLASH AABB,NEW_ANIM_STATE
+; HERO_STATE_FRAMES_LEFT,SLASH AABB,HERO_NEW_ANIM_PTR
 StateSlashActiveNewState
     move.w #1,HERO_STATE_FRAMES_LEFT ; 1 active frame
     ; update Slash AABB and Animation state
@@ -633,7 +633,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MAX_Y
     sub.w #4*8,d1
     move.w d1,SLASH_MIN_Y
-    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingDown
     move.w d0,SLASH_MIN_X
@@ -643,7 +643,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #4*8,d1 ; slash height
     move.w d1,SLASH_MAX_Y
-    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingLeft
     move.w d0,SLASH_MAX_X
@@ -652,7 +652,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
-    move.w #SLASH_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingRight
     add.w #2*8,d0 ; hero width
@@ -662,7 +662,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
-    move.w #SLASH_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
     rts
 
 HeroStateSlashRecoveryUpdate
@@ -729,16 +729,16 @@ MaybeSetNewlyHurtState
     jmp (a0)
 .HurtAnimJumpTable dc.l .HurtAnimMovingUp,.HurtAnimMovingDown,.HurtAnimMovingLeft,.HurtAnimMovingRight
 .HurtAnimMovingUp:
-    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftHurtAnim,HERO_NEW_ANIM_PTR
     rts
 .HurtAnimMovingDown:
-    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightHurtAnim,HERO_NEW_ANIM_PTR
     rts
 .HurtAnimMovingLeft:
-    move.w #HURT_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightHurtAnim,HERO_NEW_ANIM_PTR
     rts
 .HurtAnimMovingRight:
-    move.w #HURT_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftHurtAnim,HERO_NEW_ANIM_PTR
 .SetNewHurtStateEnd
     rts
 
@@ -792,16 +792,16 @@ SetWindupFromFacingDirection:
     jmp (a0)
 .AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingDown
-    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingLeft
-    move.w #WINDUP_LEFT_STATE,NEW_ANIM_STATE
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingRight
-    move.w #WINDUP_RIGHT_STATE,NEW_ANIM_STATE
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
     rts
 
 HeroStateDashingUpdate

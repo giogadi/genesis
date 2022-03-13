@@ -439,57 +439,6 @@ SetHurtRightAnim:
     move.w #6,ANIM_STRIDE
     rts
 
-; new state is in d0. d0 gets clobbered. No return value
-UpdateAnimState:
-    cmp.w PREVIOUS_ANIM_STATE,d0
-    bne.s .AfterEarlyReturn
-    rts
-.AfterEarlyReturn
-    move.w #ITERATIONS_PER_ANIM_FRAME,ITERATIONS_UNTIL_NEXT_ANIM_FRAME
-    move.w d0,PREVIOUS_ANIM_STATE
-
-    move.l #.NewAnimStateJumpTable,a0
-    and.l #$0000FFFF,d0 ; d0 is gonna be used as a long, so make sure the upper word is cleared out
-    ; d0 is now the offset in longs into jump table
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
-    jmp (a0)
-.NewAnimStateJumpTable dc.l .LeftIdle,.RightIdle,.LeftWalk,.RightWalk,.LeftSlashState,.RightSlashState,.LeftWindupState,.RightWindupState,.LeftHurtState,.RightHurtState
-.LeftIdle
-    jsr SetLeftIdleAnim
-    rts
-.RightIdle
-    jsr SetRightIdleAnim
-    rts
-.LeftWalk
-    jsr SetWalkLeftAnim
-    rts
-.RightWalk
-    jsr SetWalkRightAnim
-    rts
-.LeftSlashState
-    jsr SetSlashLeftAnim
-    rts
-.RightSlashState
-    jsr SetSlashRightAnim
-    rts
-.LeftWindupState
-    jsr SetWindupLeftAnim
-    rts
-.RightWindupState
-    jsr SetWindupRightAnim
-    rts
-.LeftHurtState
-    jsr SetHurtLeftAnim
-    rts
-.RightHurtState
-    jsr SetHurtRightAnim
-    rts
-.UpdateAnimStateEnd
-    rts
-
 DrawHero:
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_DASHING,d0

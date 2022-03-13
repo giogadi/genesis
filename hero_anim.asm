@@ -1,30 +1,43 @@
-M_HeroAnimGetTileStart: macro
-    move.w (\1),\2
+M_HeroAnimGetFirstAnimFrame: macro
+    move.l \1,\2
+    add.l #2,\2
     endm
 
-M_HeroAnimGetFrameCount: macro
-    move.w 3(\1),\2
+M_HeroAnimGetAnimLength: macro
+    move.b 1(\1),\2
     endm
+
+; In these, \1 is an address register for the current anim frame.
+M_HeroAnimGetAnimFrameLength: macro
+    move.w (\1),\2
+    endm
+M_HeroAnimGetAnimFrameTileIndex: macro
+    move.w 2(\1),\2
+    add.w #SAMURAI_SPRITE_TILE_START,\2
+    endm
+
+HeroAnimFrameSize: equ 4
 
 M_HeroAnimNewState: macro
     move.l \1,HERO_CURRENT_ANIM_PTR
     move.b #-1,HERO_CURRENT_ANIM_FRAME_INDEX
     endm
 
-
 HeroAnimUpdate:
-    move.l HERO_CURRENT_ANIM_PTR,a0
+    move.l HERO_NEW_ANIM_PTR,a0
     clr.l d0
-    move.b HERO_CURRENT_ANIM_FRAME_INDEX,d0
-    bge .notNewAnimState
-    ; new state
-    M_HeroAnimGetTileStart a0,d0
-    move.w d0,HERO_CURRENT_ANIM_TILE_INDEX
+    cmp.l HERO_CURRENT_ANIM_PTR,a0
+    beq .notNewAnimState
+    move.l a0,HERO_CURRENT_ANIM_PTR
+    M_HeroAnimGetFirstAnimFrame a0,a1
+    move.l a1,HERO_CURRENT_ANIM_FRAME_PTR
+    M_HeroAnimGetAnimFrameTileIndex a1,HERO_CURRENT_ANIM_TILE_INDEX
     move.b #0,HERO_CURRENT_ANIM_FRAME_INDEX
     move.b #0,HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED
     rts
 .notNewAnimState
-    move.b 4(a0,d0),d1 ; d1 contains length of current anim frame
+    move.l HERO_CURRENT_ANIM_FRAME_PTR,a1
+    M_HeroAnimGetAnimFrameLength a1,d1
     blt .end ; if frame length < 0, we never change frames.
     ; check if it's time to switch frames
     move.b HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED,d0
@@ -34,86 +47,99 @@ HeroAnimUpdate:
     move.b #0,HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED
     move.b HERO_CURRENT_ANIM_FRAME_INDEX,d0
     add.b #1,d0 ; increment frame index
-    add.w #6,HERO_CURRENT_ANIM_TILE_INDEX ; increment tile index by anim frame stride
-    M_HeroAnimGetFrameCount a0,d1 ; frame count in d1
-    cmp.b d1,d0 ; current_index - frame_count
+    M_HeroAnimGetAnimLength a0,d1
+    cmp.b d1,d0 ; current_index - frame_length
     blt .no_loop
     ; need to loop back to 1st frame of anim
+    M_HeroAnimGetFirstAnimFrame a0,a1
     move.b #0,HERO_CURRENT_ANIM_FRAME_INDEX
-    M_HeroAnimGetTileStart a0,d0
-    move.w d0,HERO_CURRENT_ANIM_TILE_INDEX
-    rts
+    bra .afterFrameChange
 .no_loop:
     add.b #1,HERO_CURRENT_ANIM_FRAME_INDEX
+    add.l #HeroAnimFrameSize,a1
+    
+.afterFrameChange:
+    move.l a1,HERO_CURRENT_ANIM_FRAME_PTR
+    M_HeroAnimGetAnimFrameTileIndex a1,HERO_CURRENT_ANIM_TILE_INDEX
     rts
-    ; } switching anim frames
+    ; } switching anim frame
 .stayOnFrame:
     add.b #1,d0 ; in this case, d0 still holds frame time elapsed
     move.b d0,HERO_CURRENT_ANIM_FRAME_TIME_ELAPSED
 .end:
     rts
 
+    align 2
+
+HeroLeftIdleAnim:
+    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b 1 ; anim frame count
+    dc.w -1,0 ; frame_count0,tile_index0
+
+    align 2
+
+HeroRightIdleAnim:
+    dc.b (0|(0<<1)) ; flip_h | flip_v
+    dc.b 1 ; anim frame count
+    dc.w -1,2*6
+
+    align 2
+
 HeroLeftWalkAnim:
-    dc.w SAMURAI_SPRITE_TILE_START ; anim's first tile index
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 2 ; anim frame count
-    dc.b 20,20 ; frame counts
+    dc.w 20,1*6
+    dc.w 20,0*6
 
     align 2
 
 HeroRightWalkAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+2*6 ; anim's first tile index
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 2 ; anim frame count
-    dc.b 20,20 ; frame counts
+    dc.w 20,3*6
+    dc.w 20,2*6
 
     align 2
 
-HeroWindupLeftAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+6*6
+HeroLeftWindupAnim:
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 1 ; anim frame count
-    dc.b -1 ; frame counts
+    dc.w -1,6*6    
 
     align 2
 
-HeroWindupRightAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+7*6
+HeroRightWindupAnim:
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 1 ; anim frame count
-    dc.b -1 ; frame counts
+    dc.w -1,7*6    
 
     align 2
 
-HeroSlashLeftAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+4*6
+HeroLeftSlashAnim:
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 1 ; anim frame count
-    dc.b -1 ; frame counts
+    dc.w -1,4*6
 
     align 2
 
-HeroSlashRightAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+5*6
+HeroRightSlashAnim:
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 1 ; anim frame count
-    dc.b -1 ; frame counts
+    dc.w -1,5*6
 
     align 2
 
-HeroHurtLeftAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+8*6
+HeroLeftHurtAnim:
     dc.b (0|(0<<1)) ; flip_h | flip_v
     dc.b 1 ; anim frame count
-    dc.b -1 ; frame counts
+    dc.w -1,8*6
 
     align 2
 
-HeroHurtRightAnim:
-    dc.w SAMURAI_SPRITE_TILE_START+8*6
+HeroRightHurtAnim:
     dc.b (1|(0<<1)) ; flip_h | flip_v
     dc.b 1 ; anim frame count
-    dc.b -1 ; frame counts
+    dc.w -1,8*6
 
     align 2
 
