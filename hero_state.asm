@@ -58,7 +58,7 @@ HeroStateUpdate:
     beq .Done
     ; it's possible that we buffer a dash during hitstop, and then on the very first hero state update afterward,
     ; we change state (so the dash buffer doesn't get "consumed"). So we clear it here to ensure this doesn't happen.
-    move.b #eBufferedNone,(gBufferedAction+1)
+    ; move.b #eBufferedNone,(gBufferedAction+1)
     bra HeroStateUpdate
 .Done
     rts
@@ -486,6 +486,74 @@ HeroStateSlashStartupUpdate
     jsr DashSlashPositionUpdate
     rts
 
+; direction in d0
+GetSlash1WindupFromDirection
+    M_JumpTable #.AnimJumpTable,a0,d0
+.AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingDown
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingLeft
+    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingRight
+    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+
+; direction in d0
+GetSlash2WindupFromDirection
+    M_JumpTable #.AnimJumpTable,a0,d0
+.AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.l #HeroRightVertWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingDown
+    move.l #HeroLeftVertWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingLeft
+    move.l #HeroLeftVertWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingRight
+    move.l #HeroRightVertWindupAnim,HERO_NEW_ANIM_PTR
+    rts
+
+; direction in d0
+GetSlash1ActiveFromDirection
+    M_JumpTable #.AnimJumpTable,a0,d0
+.AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingDown
+    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingLeft
+    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingRight
+    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+
+; direction in d0
+GetSlash2ActiveFromDirection
+    M_JumpTable #.AnimJumpTable,a0,d0
+.AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
+.FacingUp
+    move.l #HeroRightVertSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingDown
+    move.l #HeroLeftVertSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingLeft
+    move.l #HeroLeftVertSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+.FacingRight
+    move.l #HeroRightVertSlashAnim,HERO_NEW_ANIM_PTR
+    rts
+
 ; HERO_STATE_FRAMES_LEFT,BUTTON_RELEASED_SINCE_LAST_SLASH,HERO_NEW_ANIM_PTR
 SlashStartupNewState
     ; ; if dashing, slash should start up instantly.
@@ -504,26 +572,17 @@ SlashStartupNewState
     move.w #SLASH_STARTUP_ITERS,HERO_STATE_FRAMES_LEFT
 .AfterSetFramesLeft
     move.w #0,BUTTON_RELEASED_SINCE_LAST_SLASH
-    move.l #.AnimJumpTable,a0
     clr.l d0
-    move.w FACING_DIRECTION,d0; offset in longs into jump table
-    lsl.l #2,d0 ; translate longs into bytes
-    add.l d0,a0
-    ; dereference jump table to get address to jump to
-    move.l (a0),a0
-    jmp (a0)
-.AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
-.FacingUp
-    move.l #HeroRightVertWindupAnim,HERO_NEW_ANIM_PTR
+    move.b gHeroComboState,d0
+    M_JumpTable #.ComboJumpTable,a0,d0
+.ComboJumpTable dc.l .Slash1,.Slash2
+.Slash1
+    move.w FACING_DIRECTION,d0
+    jsr GetSlash1WindupFromDirection
     rts
-.FacingDown
-    move.l #HeroLeftVertWindupAnim,HERO_NEW_ANIM_PTR
-    rts
-.FacingLeft
-    move.l #HeroLeftVertWindupAnim,HERO_NEW_ANIM_PTR
-    rts
-.FacingRight
-    move.l #HeroRightVertWindupAnim,HERO_NEW_ANIM_PTR
+.Slash2
+    move.w FACING_DIRECTION,d0
+    jsr GetSlash2WindupFromDirection
     rts
 
 UpdateButtonReleasedSinceLastSlash
@@ -600,18 +659,6 @@ HeroStateSlashActiveUpdate
     ; rts
 .AfterDashTransition
 
-    ; Transition to new attack if buffered
-    move.b #eBufferedAttack,d0
-    cmp.b (gBufferedAction+1),d0
-    bne .AfterAttackTransition
-    move.w #HERO_STATE_SLASH_STARTUP,HERO_STATE
-    move.w #1,HERO_NEW_STATE
-    ; not necessary?
-    move.b #eBufferedNone,(gBufferedAction+1)
-    rts
-.AfterAttackTransition
-
-
     ; Maybe transition to recovery
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.s .NoTransition
@@ -626,7 +673,22 @@ HeroStateSlashActiveUpdate
 ; HERO_STATE_FRAMES_LEFT,SLASH AABB,HERO_NEW_ANIM_PTR
 StateSlashActiveNewState
     move.w #1,HERO_STATE_FRAMES_LEFT ; 1 active frame
-    ; update Slash AABB and Animation state
+    ; update animation state
+    clr.l d0
+    move.b gHeroComboState,d0
+    M_JumpTable #.ComboJumpTable,a0,d0
+.ComboJumpTable dc.l .Slash1,.Slash2
+.Slash1
+    move.w FACING_DIRECTION,d0
+    jsr GetSlash1ActiveFromDirection
+    bra .AfterAnim
+.Slash2
+    move.w FACING_DIRECTION,d0
+    jsr GetSlash2ActiveFromDirection
+    bra .AfterAnim
+.AfterAnim
+    
+    ; update Slash AABB
     move.l #.SlashAnimJumpTable,a0
     clr.l d0
     move.w FACING_DIRECTION,d0; offset in longs into jump table
@@ -645,7 +707,6 @@ StateSlashActiveNewState
     move.w d1,SLASH_MAX_Y
     sub.w #4*8,d1
     move.w d1,SLASH_MIN_Y
-    move.l #HeroRightVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingDown
     move.w d0,SLASH_MIN_X
@@ -655,7 +716,6 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #4*8,d1 ; slash height
     move.w d1,SLASH_MAX_Y
-    move.l #HeroLeftVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingLeft
     move.w d0,SLASH_MAX_X
@@ -664,7 +724,6 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
-    move.l #HeroLeftVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingRight
     add.w #2*8,d0 ; hero width
@@ -674,7 +733,6 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
-    move.l #HeroRightVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 
 HeroStateSlashRecoveryUpdate
@@ -688,8 +746,33 @@ HeroStateSlashRecoveryUpdate
 
     tst.w HERO_NEW_STATE
     beq.s .AfterNewState
-    move.w #SLASH_RECOVERY_ITERS,HERO_STATE_FRAMES_LEFT
     clr.w HERO_NEW_STATE
+    ; check if we can cancel recovery into another attack
+    ; Maybe transition to new attack if buffered
+    move.b #eBufferedAttack,d0
+    cmp.b (gBufferedAction+1),d0
+    bne .AfterAttackTransition
+    move.b #eBufferedNone,(gBufferedAction+1)
+    ; figure out what combo state to transition into
+    clr.l d0
+    move.b gHeroComboState,d0
+    M_JumpTable #.ComboJumpTable,a0,d0
+.ComboJumpTable dc.l .FromSlash1,.FromSlash2
+.FromSlash1
+    move.b #eHeroComboStateSlash2,gHeroComboState
+    bra .AfterComboJump
+.FromSlash2
+    ; We don't combo out of slash 2. So just skip to recovery transition logic.
+    bra .AfterAttackTransition
+    bra .AfterComboJump
+.AfterComboJump
+    ; Transition to next attack
+    move.w #HERO_STATE_SLASH_STARTUP,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    rts
+.AfterAttackTransition
+    move.w #SLASH_RECOVERY_ITERS,HERO_STATE_FRAMES_LEFT
+    
 .AfterNewState
     ; Maybe transition back to idle. Only transition after HERO_STATE_FRAMES_LEFT == 0 and
     ; HERO_DASH_CURRENT_SPEED == 0.
@@ -699,6 +782,8 @@ HeroStateSlashRecoveryUpdate
     bgt.s .NoTransition
     ; Reset dash cooldown after slash
     move.w #HERO_DASH_COOLDOWN,HERO_DASH_COOLDOWN_FRAMES_LEFT
+    ; Reset combo state when we transition back to idle
+    move.b #eHeroComboStateSlash1,gHeroComboState
     move.w #HERO_STATE_IDLE,HERO_STATE
     move.w #1,HERO_NEW_STATE
     rts

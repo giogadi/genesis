@@ -620,7 +620,7 @@ FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
 
-SLASH_STARTUP_ITERS: equ 5
+SLASH_STARTUP_ITERS: equ 30
 SLASH_RECOVERY_ITERS: equ 30
 
 ITERATIONS_PER_ANIM_FRAME: equ 20
@@ -652,6 +652,11 @@ HERO_NEW_STATE: so.w 1
     move.w #1,HERO_NEW_STATE
 
 HERO_STATE_FRAMES_LEFT: so.w 1
+
+eHeroComboStateSlash1: equ 0
+eHeroComboStateSlash2: equ 1
+gHeroComboState: so.b 1
+    move.b #eHeroComboStateSlash1,gHeroComboState
 
 ; Hero-state-specific fields
 HURT_DIRECTION: so.w 1

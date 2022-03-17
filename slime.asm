@@ -139,8 +139,8 @@ SlimeUpdateFromSlash:
     move.w N_ENEMY_STATE(a2),d0
     cmp.w #SLIME_STATE_DYING,d0
     beq .Done
-    cmp.w #SLIME_STATE_HURT,d0
-    beq .Done
+    ; cmp.w #SLIME_STATE_HURT,d0
+    ; beq .Done
     jsr UtilIsEnemyHitBySlash
     beq .Done
     ; Enemy is hit! Reduce hp
@@ -179,20 +179,20 @@ SlimeHurtUpdate
 .AfterTransition
     sub.w #1,N_ENEMY_STATE_FRAMES_LEFT(a2)
     clr.l d0
-    M_SlimeGetHurtDirection a2,d0
-    M_JumpTable #.DirectionJumpTable,a0,d0
-.DirectionJumpTable dc.l .Up,.Down,.Left,.Right
-.Up
-    sub.l #SLIME_HURT_SPEED,N_ENEMY_Y(a2)
-    rts
-.Down
-    add.l #SLIME_HURT_SPEED,N_ENEMY_Y(a2)
-    rts
-.Left
-    sub.l #SLIME_HURT_SPEED,N_ENEMY_X(a2)
-    rts
-.Right
-    add.l #SLIME_HURT_SPEED,N_ENEMY_X(a2)
+;     M_SlimeGetHurtDirection a2,d0
+;     M_JumpTable #.DirectionJumpTable,a0,d0
+; .DirectionJumpTable dc.l .Up,.Down,.Left,.Right
+; .Up
+;     sub.l #SLIME_HURT_SPEED,N_ENEMY_Y(a2)
+;     rts
+; .Down
+;     add.l #SLIME_HURT_SPEED,N_ENEMY_Y(a2)
+;     rts
+; .Left
+;     sub.l #SLIME_HURT_SPEED,N_ENEMY_X(a2)
+;     rts
+; .Right
+;     add.l #SLIME_HURT_SPEED,N_ENEMY_X(a2)
     rts
 
 SlimeMaybeHurtHero:
