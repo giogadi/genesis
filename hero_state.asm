@@ -58,7 +58,7 @@ HeroStateUpdate:
     beq .Done
     ; it's possible that we buffer a dash during hitstop, and then on the very first hero state update afterward,
     ; we change state (so the dash buffer doesn't get "consumed"). So we clear it here to ensure this doesn't happen.
-    clr.b (DASH_BUFFERED+1)
+    move.b #eBufferedNone,(gBufferedAction+1)
     bra HeroStateUpdate
 .Done
     rts
@@ -514,16 +514,16 @@ SlashStartupNewState
     jmp (a0)
 .AnimJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroRightVertWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingDown
-    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroLeftVertWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingLeft
-    move.l #HeroLeftWindupAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroLeftVertWindupAnim,HERO_NEW_ANIM_PTR
     rts
 .FacingRight
-    move.l #HeroRightWindupAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroRightVertWindupAnim,HERO_NEW_ANIM_PTR
     rts
 
 UpdateButtonReleasedSinceLastSlash
@@ -600,6 +600,18 @@ HeroStateSlashActiveUpdate
     ; rts
 .AfterDashTransition
 
+    ; Transition to new attack if buffered
+    move.b #eBufferedAttack,d0
+    cmp.b (gBufferedAction+1),d0
+    bne .AfterAttackTransition
+    move.w #HERO_STATE_SLASH_STARTUP,HERO_STATE
+    move.w #1,HERO_NEW_STATE
+    ; not necessary?
+    move.b #eBufferedNone,(gBufferedAction+1)
+    rts
+.AfterAttackTransition
+
+
     ; Maybe transition to recovery
     tst.w HERO_STATE_FRAMES_LEFT
     bgt.s .NoTransition
@@ -633,7 +645,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MAX_Y
     sub.w #4*8,d1
     move.w d1,SLASH_MIN_Y
-    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroRightVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingDown
     move.w d0,SLASH_MIN_X
@@ -643,7 +655,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #4*8,d1 ; slash height
     move.w d1,SLASH_MAX_Y
-    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroLeftVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingLeft
     move.w d0,SLASH_MAX_X
@@ -652,7 +664,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
-    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroLeftVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 .SlashFacingRight
     add.w #2*8,d0 ; hero width
@@ -662,7 +674,7 @@ StateSlashActiveNewState
     move.w d1,SLASH_MIN_Y
     add.w #3*8,d1
     move.w d1,SLASH_MAX_Y
-    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroRightVertSlashAnim,HERO_NEW_ANIM_PTR
     rts
 
 HeroStateSlashRecoveryUpdate
@@ -761,11 +773,12 @@ HeroStateMaybeStartDash
     ; Check hero dash cooldown (TODO: are we still doing this?)
     tst.b (HERO_DASH_COOLDOWN_FRAMES_LEFT+1)
     bgt .End
-    move.b CONTROLLER,d0
     ; first check dash buffer
-    tst.b (DASH_BUFFERED+1)
-    beq .End
+    move.b #eBufferedDash,d0
+    cmp.b (gBufferedAction+1),d0
+    bne .End
     ; ; if no dash buffer, check controller
+    ; move.b CONTROLLER,d0
     ; tst.b (BUTTON_RELEASED_SINCE_LAST_DASH+1)
     ; beq .End
     ; btst.l #C_BIT,d0
@@ -775,7 +788,7 @@ HeroStateMaybeStartDash
     move.w #HERO_STATE_DASHING,HERO_STATE
     move.b #1,(HERO_NEW_STATE+1)
     ; TODO maybe not necessary anymore
-    clr.b (DASH_BUFFERED+1)
+    move.b #eBufferedNone,(gBufferedAction+1)
 .End
     rts
 

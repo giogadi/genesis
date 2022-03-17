@@ -133,6 +133,34 @@ HeroRightSlashAnim:
 
     align 2
 
+HeroRightVertWindupAnim:
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
+    dc.b 1 ; anim frame count
+    dc.w -1,9*6
+
+    align 2
+
+HeroLeftVertWindupAnim:
+    dc.b ((0<<1)|1)<<3 ; flip_v | flip_h
+    dc.b 1 ; anim frame count
+    dc.w -1,9*6
+
+    align 2
+
+HeroRightVertSlashAnim:
+    dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
+    dc.b 1 ; anim frame count
+    dc.w -1,10*6
+
+    align 2
+
+HeroLeftVertSlashAnim:
+    dc.b ((0<<1)|1)<<3 ; flip_v | flip_h
+    dc.b 1 ; anim frame count
+    dc.w -1,10*6
+
+    align 2
+
 HeroLeftHurtAnim:
     dc.b ((0<<1)|0)<<3 ; flip_v | flip_h
     dc.b 1 ; anim frame count

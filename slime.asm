@@ -147,7 +147,7 @@ SlimeUpdateFromSlash:
     sub.w #1,N_ENEMY_HP(a2)
     ble .Dead
     ; still alive. activate hitstop and enter hurt state
-    move.w #3,HITSTOP_FRAMES_LEFT
+    move.w #HITSTOP_FRAMES,HITSTOP_FRAMES_LEFT
     clr.l d0
     move.b (FACING_DIRECTION+1),d0
     M_SlimeSetHurtDirection d0,a2

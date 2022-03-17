@@ -693,27 +693,45 @@ UtilUpdateDashDirectionFromControllerInD0
     rts
 
 ; Should be called during freeze only
-CheckForDashBuffer:
-    tst.b (DASH_BUFFERED+1) ; if dash is already buffered, exit
+CheckForBufferedDash:
+    tst.b (gBufferedAction+1) ; if action is already buffered, exit
     bne .End
-    ; if slash is active, this is an attack hitstop. can dash buffer.
+    ; if slash is active, this is an attack hitstop. can buffer an action.
     move.w HERO_STATE,d0
     cmp.w #HERO_STATE_SLASH_ACTIVE,d0
-    beq .CanDashBuffer
-    ; If dash is active, this is a dash attack hitstop. can dash buffer.
+    beq .CanBuffer
+    ; If dash is active, this is a dash attack hitstop. can buffer.
     cmp.w #HERO_STATE_DASHING,d0
-    beq .CanDashBuffer
+    beq .CanBuffer
     ; If parry success active, this is a parry hitstop. can dash buffer.
     cmp.w #HERO_STATE_PARRY_SUCCESS_RECOVERY,d0
-    beq .CanDashBuffer
+    beq .CanBuffer
     bra .End
-.CanDashBuffer
+.CanBuffer
     GetControls d0,d1
     move.b CONTROLLER,d0
     btst.l #C_BIT,d0
     beq.s .End
-    move.b #1,(DASH_BUFFERED+1)
+    move.b #eBufferedDash,(gBufferedAction+1)
     jsr UtilUpdateDashDirectionFromControllerInD0
+.End
+    rts
+
+CheckForBufferedSlash:
+    tst.b (gBufferedAction+1) ; if action is already buffered, exit
+    bne .End
+    ; if slash is active, this is an attack hitstop. can buffer a slash.
+    move.w HERO_STATE,d0
+    cmp.w #HERO_STATE_SLASH_ACTIVE,d0
+    beq .CanBuffer
+    bra .End
+.CanBuffer
+    GetControls d0,d1
+    move.b CONTROLLER,d0
+    btst.l #A_BIT,d0
+    beq.s .End
+    move.b #eBufferedAttack,(gBufferedAction+1)
+    ;jsr UtilUpdateDashDirectionFromControllerInD0
 .End
     rts
 

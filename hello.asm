@@ -620,10 +620,8 @@ FACING_RIGHT: equ 3
 FACING_DIRECTION: so.w 1
     move.w #FACING_LEFT,FACING_DIRECTION
 
-;SLASH_STARTUP_ITERS: equ 20
 SLASH_STARTUP_ITERS: equ 5
-;SLASH_RECOVERY_ITERS: equ 20
-SLASH_RECOVERY_ITERS: equ 2
+SLASH_RECOVERY_ITERS: equ 30
 
 ITERATIONS_PER_ANIM_FRAME: equ 20
 ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
@@ -632,11 +630,9 @@ ITERATIONS_UNTIL_NEXT_ANIM_FRAME: so.w 1
 HITSTOP_FRAMES_LEFT: so.w 1
     move.w #0,HITSTOP_FRAMES_LEFT
 HITSTOP_FRAMES: equ 15
-;HITSTOP_FRAMES: equ 20
 
 HERO_SPEED: equ 1
 DASHING_SPEED: equ (5*HERO_SPEED)
-;HERO_DASH_COOLDOWN: equ 32
 HERO_DASH_COOLDOWN: equ 2
 
 HERO_STATE: so.w 1
@@ -682,8 +678,12 @@ BUTTON_RELEASED_SINCE_LAST_PARRY: so.w 1
 GLOBAL_PALETTE: so.w 1
     move.w #0,GLOBAL_PALETTE
 
-DASH_BUFFERED: so.w 1
-    move.w #0,DASH_BUFFERED
+eBufferedNone: equ 0
+eBufferedDash: equ 1
+eBufferedAttack: equ 2
+
+gBufferedAction: so.w 1
+    move.w #0,gBufferedAction
 
 CURRENT_HSCROLL_A: so.w 1
     move.w #0,CURRENT_HSCROLL_A
@@ -883,7 +883,8 @@ MainGameLoop
     tst.w HITSTOP_FRAMES_LEFT
     beq.w .NoHitstop
     sub.w #1,HITSTOP_FRAMES_LEFT
-    jsr CheckForDashBuffer
+    jsr CheckForBufferedDash
+    jsr CheckForBufferedSlash
     jmp WaitNewFrame
 .NoHitstop
     GetControls d0,d1
