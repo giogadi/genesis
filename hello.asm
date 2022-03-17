@@ -402,7 +402,7 @@ FIRST_TILE_INDEX: equ 1
     SetVramAddr d0,d1
     
 SAMURAI_SPRITE_TILE_START: equ FIRST_TILE_INDEX
-NUM_SAMURAI_TILES: equ (3*2*11) ; 3x2 sprite with 11 frames
+NUM_SAMURAI_TILES: equ (3*2*12) ; 3x2 sprite with 12 frames
     move #(8*NUM_SAMURAI_TILES)-1,d0
     move.l #SamuraiSpriteSheet,a0
 @samurai_sprite_load_loop

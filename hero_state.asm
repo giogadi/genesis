@@ -306,16 +306,16 @@ HeroStateParryActiveUpdate
     M_JumpTable #.DirectionJumpTable,a0,d0
 .DirectionJumpTable dc.l .FacingUp,.FacingDown,.FacingLeft,.FacingRight
 .FacingUp
-    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroRightParryAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingDown
-    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroLeftParryAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingLeft
-    move.l #HeroLeftSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroLeftParryAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .FacingRight
-    move.l #HeroRightSlashAnim,HERO_NEW_ANIM_PTR
+    move.l #HeroRightParryAnim,HERO_NEW_ANIM_PTR
     bra .AfterAnimState
 .AfterAnimState
     move.w #0,HERO_NEW_STATE
